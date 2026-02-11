@@ -1,15 +1,5 @@
 /** biome-ignore-all lint/suspicious/noArrayIndexKey: this is fine */
 
-import {
-  ArrowRight,
-  Calendar,
-  DollarSign,
-  MapPin,
-  Search,
-  Star,
-  TrendingUp,
-  Users,
-} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -20,6 +10,25 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  ArrowRight,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  DollarSign,
+  MapPin,
+  Search,
+  Star,
+  TrendingUp,
+  Users,
+} from 'lucide-react';
 
 export default function Page() {
   return (
@@ -38,13 +47,31 @@ export default function Page() {
               href='#destinations'
               className='text-sm text-muted-foreground hover:text-foreground transition'
             >
-              Destinations
+              About
+            </a>
+            <a
+              href='#destinations'
+              className='text-sm text-muted-foreground hover:text-foreground transition'
+            >
+              Package
+            </a>
+            <a
+              href='#destinations'
+              className='text-sm text-muted-foreground hover:text-foreground transition'
+            >
+              Book a Tour
             </a>
             <a
               href='#features'
               className='text-sm text-muted-foreground hover:text-foreground transition'
             >
-              Why Us
+              Festivals
+            </a>
+            <a
+              href='#destinations'
+              className='text-sm text-muted-foreground hover:text-foreground transition'
+            >
+              Gallery
             </a>
             <a
               href='#testimonials'
@@ -54,123 +81,220 @@ export default function Page() {
             </a>
           </div>
           <div className='flex items-center gap-3'>
-            <Button variant='ghost' size='sm'>
-              Log in
-            </Button>
-            <Button size='sm' className='bg-primary hover:bg-primary/90'>
-              Sign up
-            </Button>
+            <Button variant='ghost'>Log in</Button>
+            <Button>Sign up</Button>
           </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className='relative overflow-hidden pt-12 pb-20 md:pt-20 md:pb-28'>
+      {/* Hero Section - IMPROVED */}
+      <section className='relative overflow-hidden pt-16 pb-24 md:pt-24 md:pb-32'>
+        {/* Background decoration */}
+        <div className='absolute inset-0 -z-10 overflow-hidden'>
+          <div className='absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl' />
+          <div className='absolute bottom-0 left-0 w-96 h-96 bg-secondary/5 rounded-full blur-3xl' />
+        </div>
+
         <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
-          <div className='grid grid-cols-1 lg:grid-cols-2 gap-12 items-center'>
+          <div className='grid grid-cols-1 lg:grid-cols-2 gap-16 items-center'>
             {/* Left Content */}
             <div className='space-y-8'>
-              <div className='space-y-4'>
-                <h1 className='text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight text-balance'>
-                  Discover Authentic Travel Experiences
+              {/* Badge */}
+              <div className='inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium'>
+                <CheckCircle2 className='w-4 h-4' />
+                <span>Trusted by 10,000+ Travelers</span>
+              </div>
+
+              <div className='space-y-6'>
+                <h1 className='text-5xl sm:text-6xl lg:text-7xl font-bold text-foreground leading-[1.1] tracking-tight'>
+                  Explore Bangladesh
+                  <span className='block text-primary mt-2'>Your Way</span>
                 </h1>
-                <p className='text-lg text-muted-foreground max-w-lg'>
-                  Book amazing tours and connect with local guides. Create
-                  unforgettable memories with GoShareBD.
+                <p className='text-xl text-muted-foreground max-w-xl leading-relaxed'>
+                  Join our expertly curated scheduled tours. Professional
+                  guides, fixed departures, and authentic experiences across
+                  Bangladesh's most beautiful destinations.
                 </p>
               </div>
+
               <div className='flex flex-col sm:flex-row gap-4'>
-                <Button size='lg' className='bg-primary hover:bg-primary/90'>
-                  Explore Tours <ArrowRight className='ml-2 w-4 h-4' />
+                <Button
+                  size='lg'
+                  className='bg-primary hover:bg-primary/90 text-base h-12 px-8'
+                >
+                  Browse Scheduled Tours
+                  <ArrowRight className='ml-2 w-5 h-5' />
                 </Button>
-                <Button size='lg' variant='outline'>
-                  Learn More
+                <Button
+                  size='lg'
+                  variant='outline'
+                  className='text-base h-12 px-8'
+                >
+                  View Destinations
                 </Button>
               </div>
-              <div className='flex items-center gap-8 pt-4'>
+
+              {/* Stats */}
+              <div className='grid grid-cols-3 gap-6 pt-8 border-t border-border'>
                 <div>
-                  <p className='text-2xl font-bold text-primary'>500+</p>
-                  <p className='text-sm text-muted-foreground'>
-                    Tours Available
+                  <p className='text-3xl font-bold text-foreground'>500+</p>
+                  <p className='text-sm text-muted-foreground mt-1'>
+                    Scheduled Tours
                   </p>
                 </div>
                 <div>
-                  <p className='text-2xl font-bold text-primary'>10K+</p>
-                  <p className='text-sm text-muted-foreground'>
-                    Happy Travelers
+                  <p className='text-3xl font-bold text-foreground'>50+</p>
+                  <p className='text-sm text-muted-foreground mt-1'>
+                    Destinations
                   </p>
                 </div>
                 <div>
-                  <p className='text-2xl font-bold text-primary'>4.8★</p>
-                  <p className='text-sm text-muted-foreground'>
-                    Average Rating
+                  <p className='text-3xl font-bold text-foreground'>4.8★</p>
+                  <p className='text-sm text-muted-foreground mt-1'>
+                    Avg Rating
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Right - Search Card */}
+            {/* Right - Tour Search Card */}
             <div className='relative'>
-              <div className='bg-white rounded-2xl shadow-2xl p-8 space-y-6'>
-                <h2 className='text-2xl font-bold text-foreground'>
-                  Find Your Next Adventure
-                </h2>
+              {/* Decorative elements */}
+              <div className='absolute -top-6 -right-6 w-24 h-24 bg-primary/20 rounded-full blur-2xl' />
+              <div className='absolute -bottom-6 -left-6 w-32 h-32 bg-secondary/20 rounded-full blur-2xl' />
 
-                <div className='space-y-4'>
+              <Card className='relative p-0 bg-white/80 backdrop-blur-sm shadow-2xl border-0 overflow-hidden'>
+                {/* Card header with gradient */}
+                <div className='bg-primary p-6 text-white'>
+                  <h2 className='text-2xl font-bold mb-2'>
+                    Find Your Perfect Tour
+                  </h2>
+                  <p className='text-sm opacity-90'>
+                    Search from our scheduled departures
+                  </p>
+                </div>
+
+                <CardContent className='p-6 space-y-5'>
+                  {/* Destination Selection */}
                   <div className='space-y-2'>
-                    <Label>Destination</Label>
-                    <div className='flex items-center gap-2 bg-muted rounded-lg px-4 py-3'>
-                      <MapPin className='w-5 h-5 text-primary' />
-                      <Input
-                        placeholder='Where are you going?'
-                        className='bg-transparent border-0 focus:outline-none'
-                      />
-                    </div>
+                    <Label className='text-sm font-medium'>
+                      Choose Destination
+                    </Label>
+                    <Select>
+                      <SelectTrigger className='h-12 bg-muted/50 border-0'>
+                        <div className='flex items-center gap-2'>
+                          <MapPin className='w-5 h-5 text-primary' />
+                          <SelectValue placeholder='Select a destination' />
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value='sundarbans'>
+                          Sundarbans Mangrove Forest
+                        </SelectItem>
+                        <SelectItem value='coxs-bazar'>
+                          Cox's Bazar Beach
+                        </SelectItem>
+                        <SelectItem value='sylhet'>
+                          Sylhet Tea Gardens
+                        </SelectItem>
+                        <SelectItem value='chittagong'>
+                          Chittagong Hill Tracts
+                        </SelectItem>
+                        <SelectItem value='bandarban'>
+                          Bandarban Mountains
+                        </SelectItem>
+                        <SelectItem value='dhaka'>Dhaka City</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
-                  <div className='grid grid-cols-2 gap-4'>
-                    <div className='space-y-2'>
-                      <Label>Check-in</Label>
-                      <div className='flex items-center gap-2 bg-muted rounded-lg px-4 py-3'>
-                        <Calendar className='w-5 h-5 text-primary' />
-                        <Input
-                          type='date'
-                          className='bg-transparent border-0 focus:outline-none text-sm'
-                        />
-                      </div>
-                    </div>
-                    <div className='space-y-2'>
-                      <Label>Check-out</Label>
-                      <div className='flex items-center gap-2 bg-muted rounded-lg px-4 py-3'>
-                        <Calendar className='w-5 h-5 text-primary' />
-                        <Input
-                          type='date'
-                          className='bg-transparent border-0 focus:outline-none text-sm'
-                        />
-                      </div>
-                    </div>
+                  {/* Tour Month */}
+                  <div className='space-y-2'>
+                    <Label className='text-sm font-medium'>Travel Month</Label>
+                    <Select>
+                      <SelectTrigger className='h-12 bg-muted/50 border-0'>
+                        <div className='flex items-center gap-2'>
+                          <Calendar className='w-5 h-5 text-primary' />
+                          <SelectValue placeholder='Select month' />
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value='feb-2026'>February 2026</SelectItem>
+                        <SelectItem value='mar-2026'>March 2026</SelectItem>
+                        <SelectItem value='apr-2026'>April 2026</SelectItem>
+                        <SelectItem value='may-2026'>May 2026</SelectItem>
+                        <SelectItem value='jun-2026'>June 2026</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
+                  {/* Tour Duration */}
                   <div className='space-y-2'>
-                    <Label>Travelers</Label>
-                    <div className='flex items-center gap-2 bg-muted rounded-lg px-4 py-3'>
+                    <Label className='text-sm font-medium'>Tour Duration</Label>
+                    <Select>
+                      <SelectTrigger className='h-12 bg-muted/50 border-0'>
+                        <div className='flex items-center gap-2'>
+                          <Clock className='w-5 h-5 text-primary' />
+                          <SelectValue placeholder='Select duration' />
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value='1-day'>1 Day Trip</SelectItem>
+                        <SelectItem value='2-3-days'>2-3 Days</SelectItem>
+                        <SelectItem value='4-5-days'>4-5 Days</SelectItem>
+                        <SelectItem value='week'>1 Week</SelectItem>
+                        <SelectItem value='week-plus'>1 Week+</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Number of Travelers */}
+                  <div className='space-y-2'>
+                    <Label className='text-sm font-medium'>Travelers</Label>
+                    <div className='flex items-center gap-2 bg-muted/50 rounded-lg px-4 h-12'>
                       <Users className='w-5 h-5 text-primary' />
                       <Input
                         type='number'
-                        placeholder='Number of travelers'
-                        className='bg-transparent border-0 focus:outline-none'
+                        min='1'
+                        max='20'
+                        defaultValue='2'
+                        className='bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0'
                       />
                     </div>
                   </div>
-                </div>
 
-                <Button
-                  size='lg'
-                  className='w-full bg-primary hover:bg-primary/90 text-base'
-                >
-                  <Search className='w-5 h-5 mr-2' />
-                  Search Tours
-                </Button>
+                  {/* Search Button */}
+                  <Button
+                    size='lg'
+                    className='w-full bg-primary hover:bg-primary/90 text-base h-12 mt-2'
+                  >
+                    <Search className='w-5 h-5 mr-2' />
+                    Search Available Tours
+                  </Button>
+
+                  {/* Quick info */}
+                  <div className='flex items-center justify-center gap-4 pt-2 text-xs text-muted-foreground'>
+                    <div className='flex items-center gap-1'>
+                      <CheckCircle2 className='w-3 h-3 text-primary' />
+                      <span>Fixed Departures</span>
+                    </div>
+                    <div className='flex items-center gap-1'>
+                      <CheckCircle2 className='w-3 h-3 text-primary' />
+                      <span>Expert Guides</span>
+                    </div>
+                    <div className='flex items-center gap-1'>
+                      <CheckCircle2 className='w-3 h-3 text-primary' />
+                      <span>Best Prices</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Floating badge */}
+              <div className='absolute -bottom-4 left-1/2 -translate-x-1/2 bg-white px-4 py-2 rounded-full shadow-lg border border-border'>
+                <p className='text-xs font-medium text-foreground'>
+                  🔥 New tours added weekly
+                </p>
               </div>
             </div>
           </div>
