@@ -1,16 +1,16 @@
 import {
   Cta,
   Features,
-  Footer,
-  Header,
   Hero,
   PopularDestinations,
   Testimonials,
 } from '@/components/landing';
+import Footer from '@/components/layout/footer/footer';
+import Header from '@/components/layout/header/header';
 
 export default function Page() {
   return (
-    <div className='min-h-screen bg-gradient-to-br from-background via-background to-secondary/5'>
+    <div className='min-h-screen bg-linear-to-br from-background via-background to-secondary/5'>
       <Header />
       <Hero />
       <Features />

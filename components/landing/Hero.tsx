@@ -1,220 +1,166 @@
 'use client';
-import {
-  ArrowRight,
-  Calendar,
-  CheckCircle2,
-  Clock,
-  MapPin,
-  Search,
-  Users,
-} from 'lucide-react';
+import { ArrowRight, Play, Star } from 'lucide-react';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 
 export default function Hero() {
   return (
-    <section className='relative overflow-hidden pt-16 pb-24 md:pt-24 md:pb-32'>
-      <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
-        <div className='grid grid-cols-1 lg:grid-cols-2 gap-16 items-center'>
-          {/* Left Content */}
-          <div className='space-y-8'>
-            {/* Badge */}
-            <div className='inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium'>
-              <CheckCircle2 className='w-4 h-4' />
-              <span>Trusted by 10,000+ Travelers</span>
-            </div>
-
-            <div className='space-y-6'>
-              <h1 className='text-5xl sm:text-6xl lg:text-7xl font-bold text-foreground leading-[1.1] tracking-tight'>
-                Explore Bangladesh
-                <span className='block text-primary mt-2'>Your Way</span>
+    <section className='relative min-h-screen flex items-center overflow-hidden bg-background'>
+      <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative z-20 w-full'>
+        <div className='grid lg:grid-cols-2 gap-12 items-center'>
+          {/* Left side - Content */}
+          <div className='space-y-8 animate-in fade-in slide-in-from-left duration-700'>
+            {/* Heading */}
+            <div className='space-y-4'>
+              <h1 className='text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight'>
+                Discover the Soul of{' '}
+                <span className='text-primary'>Bangladesh</span>
               </h1>
-              <p className='text-xl text-muted-foreground max-w-xl leading-relaxed'>
-                Join our expertly curated scheduled tours. Professional guides,
-                fixed departures, and authentic experiences across
-                Bangladesh&apos;s most beautiful destinations.
+
+              <p className='text-lg md:text-xl text-muted-foreground max-w-xl leading-relaxed'>
+                Embark on unforgettable journeys through lush tea gardens,
+                pristine beaches, and ancient mangrove forests with expert local
+                guides.
               </p>
             </div>
 
+            {/* Buttons */}
             <div className='flex flex-col sm:flex-row gap-4'>
-              <Button
-                size='lg'
-                className='bg-primary hover:bg-primary/90 text-base h-12 px-8'
-              >
-                Browse Scheduled Tours
-                <ArrowRight className='ml-2 w-5 h-5' />
+              <Button size='lg' className='text-base h-12 px-8 gap-2'>
+                Explore Tours
+                <ArrowRight className='w-5 h-5' />
               </Button>
               <Button
                 size='lg'
                 variant='outline'
-                className='text-base h-12 px-8'
+                className='text-base h-12 px-8 gap-2'
               >
-                View Destinations
+                <Play className='w-5 h-5' />
+                Watch Video
               </Button>
             </div>
 
             {/* Stats */}
-            <div className='grid grid-cols-3 gap-6 pt-8 border-t border-border'>
+            <div className='grid grid-cols-4 gap-6 pt-8'>
               <div>
-                <p className='text-3xl font-bold text-foreground'>500+</p>
-                <p className='text-sm text-muted-foreground mt-1'>
-                  Scheduled Tours
-                </p>
+                <div className='flex items-center gap-1 mb-1'>
+                  <p className='text-2xl font-bold'>50+</p>
+                </div>
+                <p className='text-xs text-muted-foreground'>Destinations</p>
               </div>
               <div>
-                <p className='text-3xl font-bold text-foreground'>50+</p>
-                <p className='text-sm text-muted-foreground mt-1'>
-                  Destinations
-                </p>
+                <div className='flex items-center gap-1 mb-1'>
+                  <p className='text-2xl font-bold'>10K+</p>
+                </div>
+                <p className='text-xs text-muted-foreground'>Travelers</p>
               </div>
               <div>
-                <p className='text-3xl font-bold text-foreground'>4.8★</p>
-                <p className='text-sm text-muted-foreground mt-1'>Avg Rating</p>
+                <div className='flex items-center gap-1 mb-1'>
+                  <p className='text-2xl font-bold'>500+</p>
+                </div>
+                <p className='text-xs text-muted-foreground'>Tours</p>
+              </div>
+              <div>
+                <div className='flex items-center gap-1 mb-1'>
+                  <p className='text-2xl font-bold'>4.8</p>
+                  <Star className='w-4 h-4 fill-primary text-primary' />
+                </div>
+                <p className='text-xs text-muted-foreground'>Rating</p>
               </div>
             </div>
           </div>
 
-          {/* Right - Tour Search Card */}
-          <div className='relative'>
-            <Card className='relative p-0 bg-white/80 dark:bg-black/80 backdrop-blur-sm shadow-2xl border-0 overflow-hidden'>
-              {/* Card header with gradient */}
-              <div className='bg-primary p-6 text-white'>
-                <h2 className='text-2xl font-bold mb-2'>
-                  Find Your Perfect Tour
-                </h2>
-                <p className='text-sm opacity-90'>
-                  Search from our scheduled departures
+          {/* Right side - Image Grid */}
+          <div
+            className='relative h-150 animate-in fade-in slide-in-from-right duration-700'
+            style={{ animationDelay: '200ms' }}
+          >
+            {/* Main large image */}
+            <div className='absolute top-0 right-0 w-[70%] h-[55%] rounded-2xl overflow-hidden shadow-2xl border-4 border-background z-10 group'>
+              <Image
+                src='https://images.unsplash.com/photo-1665152038920-e3b63b660075?q=80&w=774&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
+                alt='Cox Bazar Beach'
+                height={720}
+                width={1200}
+                className='w-full h-full object-cover group-hover:scale-110 transition-transform duration-700'
+              />
+
+              <div className='absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent' />
+              <div className='absolute bottom-0 left-0 right-0 p-6 text-white'>
+                <p className='text-sm font-medium mb-1'>Featured Destination</p>
+                <p className='text-2xl font-bold'>Cox's Bazar</p>
+                <p className='text-sm opacity-90 mt-1'>
+                  World's longest natural beach
                 </p>
               </div>
+            </div>
 
-              <CardContent className='p-6 space-y-5'>
-                {/* Destination Selection */}
-                <div className='space-y-2'>
-                  <Label className='text-sm font-medium'>
-                    Choose Destination
-                  </Label>
-                  <Select>
-                    <SelectTrigger className='h-12 bg-muted/50 border-0'>
-                      <div className='flex items-center gap-2'>
-                        <MapPin className='w-5 h-5 text-primary' />
-                        <SelectValue placeholder='Select a destination' />
-                      </div>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value='sundarbans'>
-                        Sundarbans Mangrove Forest
-                      </SelectItem>
-                      <SelectItem value='coxs-bazar'>
-                        Cox&apos;s Bazar Beach
-                      </SelectItem>
-                      <SelectItem value='sylhet'>Sylhet Tea Gardens</SelectItem>
-                      <SelectItem value='chittagong'>
-                        Chittagong Hill Tracts
-                      </SelectItem>
-                      <SelectItem value='bandarban'>
-                        Bandarban Mountains
-                      </SelectItem>
-                      <SelectItem value='dhaka'>Dhaka City</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+            {/* Secondary image - top left */}
+            <div className='absolute top-12 left-0 w-[45%] h-[35%] rounded-2xl overflow-hidden shadow-xl border-4 border-background z-20 group'>
+              <Image
+                src='https://images.unsplash.com/photo-1551615577-1c7e180a77ac?q=80&w=967&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
+                alt='Sundarbans Mangrove'
+                height={720}
+                width={1200}
+                className='w-full h-full object-cover group-hover:scale-110 transition-transform duration-700'
+              />
+              <div className='absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent' />
+              <div className='absolute bottom-0 left-0 right-0 p-4 text-white'>
+                <p className='text-sm font-bold'>Sundarbans</p>
+                <p className='text-xs opacity-90'>Wildlife Safari</p>
+              </div>
+            </div>
 
-                {/* Tour Month */}
-                <div className='space-y-2'>
-                  <Label className='text-sm font-medium'>Travel Month</Label>
-                  <Select>
-                    <SelectTrigger className='h-12 bg-muted/50 border-0'>
-                      <div className='flex items-center gap-2'>
-                        <Calendar className='w-5 h-5 text-primary' />
-                        <SelectValue placeholder='Select month' />
-                      </div>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value='feb-2026'>February 2026</SelectItem>
-                      <SelectItem value='mar-2026'>March 2026</SelectItem>
-                      <SelectItem value='apr-2026'>April 2026</SelectItem>
-                      <SelectItem value='may-2026'>May 2026</SelectItem>
-                      <SelectItem value='jun-2026'>June 2026</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+            {/* Third image - bottom left */}
+            <div className='absolute bottom-0 left-8 w-[42%] h-[32%] rounded-2xl overflow-hidden shadow-xl border-4 border-background z-30 group'>
+              <Image
+                src='https://images.unsplash.com/photo-1667120205301-a2a3a886886e?q=80&w=774&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
+                alt='Sylhet Tea Gardens'
+                height={720}
+                width={1200}
+                className='w-full h-full object-cover group-hover:scale-110 transition-transform duration-700'
+              />
+              <div className='absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent' />
+              <div className='absolute bottom-0 left-0 right-0 p-4 text-white'>
+                <p className='text-sm font-bold'>Sylhet</p>
+                <p className='text-xs opacity-90'>Tea Gardens</p>
+              </div>
+            </div>
 
-                {/* Tour Duration */}
-                <div className='space-y-2'>
-                  <Label className='text-sm font-medium'>Tour Duration</Label>
-                  <Select>
-                    <SelectTrigger className='h-12 bg-muted/50 border-0'>
-                      <div className='flex items-center gap-2'>
-                        <Clock className='w-5 h-5 text-primary' />
-                        <SelectValue placeholder='Select duration' />
-                      </div>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value='1-day'>1 Day Trip</SelectItem>
-                      <SelectItem value='2-3-days'>2-3 Days</SelectItem>
-                      <SelectItem value='4-5-days'>4-5 Days</SelectItem>
-                      <SelectItem value='week'>1 Week</SelectItem>
-                      <SelectItem value='week-plus'>1 Week+</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Number of Travelers */}
-                <div className='space-y-2'>
-                  <Label className='text-sm font-medium'>Travelers</Label>
-                  <div className='flex items-center gap-2 bg-muted/50 rounded-lg px-4 h-12'>
-                    <Users className='w-5 h-5 text-primary' />
-                    <Input
-                      type='number'
-                      min='1'
-                      max='20'
-                      defaultValue='2'
-                      className='bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0'
-                    />
-                  </div>
-                </div>
-
-                {/* Search Button */}
-                <Button
-                  size='lg'
-                  className='w-full bg-primary hover:bg-primary/90 text-base h-12 mt-2'
-                >
-                  <Search className='w-5 h-5 mr-2' />
-                  Search Available Tours
-                </Button>
-
-                {/* Quick info */}
-                <div className='flex items-center justify-center gap-4 pt-2 text-xs text-muted-foreground'>
-                  <div className='flex items-center gap-1'>
-                    <CheckCircle2 className='w-3 h-3 text-primary' />
-                    <span>Fixed Departures</span>
-                  </div>
-                  <div className='flex items-center gap-1'>
-                    <CheckCircle2 className='w-3 h-3 text-primary' />
-                    <span>Expert Guides</span>
-                  </div>
-                  <div className='flex items-center gap-1'>
-                    <CheckCircle2 className='w-3 h-3 text-primary' />
-                    <span>Best Prices</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Fourth image - bottom right, small */}
+            <div className='absolute bottom-8 right-4 w-[35%] h-[28%] rounded-2xl overflow-hidden shadow-xl border-4 border-background z-20 group'>
+              <Image
+                src='https://images.unsplash.com/photo-1585123388867-3bfe6dd4bdbf?q=80&w=801&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
+                alt='Bandarban Hills'
+                height={720}
+                width={1200}
+                className='w-full h-full object-cover group-hover:scale-110 transition-transform duration-700'
+              />
+              <div className='absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent' />
+              <div className='absolute bottom-0 left-0 right-0 p-3 text-white'>
+                <p className='text-xs font-bold'>Bandarban</p>
+                <p className='text-[10px] opacity-90'>Mountain Trek</p>
+              </div>
+            </div>
 
             {/* Floating badge */}
-            <div className='absolute -bottom-4 left-1/2 -translate-x-1/2 bg-white px-4 py-2 rounded-full shadow-lg border border-border'>
-              <p className='text-xs font-medium text-foreground'>
-                🔥 New tours added weekly
-              </p>
+            <div
+              className='absolute top-[45%] left-[15%] z-40 bg-background rounded-full p-4 shadow-2xl border-2 border-border animate-bounce'
+              style={{ animationDuration: '3s' }}
+            >
+              <div className='text-center'>
+                <p className='text-2xl font-bold text-primary'>4.8</p>
+                <div className='flex gap-0.5 mt-1'>
+                  <Star className='w-3 h-3 fill-primary text-primary' />
+                  <Star className='w-3 h-3 fill-primary text-primary' />
+                  <Star className='w-3 h-3 fill-primary text-primary' />
+                  <Star className='w-3 h-3 fill-primary text-primary' />
+                  <Star className='w-3 h-3 fill-primary text-primary' />
+                </div>
+                <p className='text-[10px] text-muted-foreground mt-1'>
+                  10K+ Reviews
+                </p>
+              </div>
             </div>
           </div>
         </div>
