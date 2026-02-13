@@ -12,6 +12,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { ModeToggle } from './theme-toggle';
+import UserDropDown from './user';
 
 const navItems = [
   { name: 'About', href: '/about' },
@@ -124,24 +125,20 @@ export default function Header() {
         <div className='flex items-center gap-2'>
           {/* Desktop Only Buttons */}
           <div className='hidden md:flex items-center gap-2'>
-            <Button variant='ghost' asChild>
+            <Button variant='outline' asChild>
               <Link href='/list-tour' className='gap-2'>
                 <Plus className='w-4 h-4' />
                 List Your Tour
               </Link>
             </Button>
             <ModeToggle />
-            <Button asChild>
-              <Link href='/sign-in'>Sign in</Link>
-            </Button>
+            <UserDropDown />
           </div>
 
           {/* Mobile Only: Theme + Login */}
           <div className='flex md:hidden items-center gap-2'>
             <ModeToggle />
-            <Button size='sm' asChild>
-              <Link href='/sign-in'>Sign in</Link>
-            </Button>
+            <UserDropDown />
           </div>
         </div>
       </div>

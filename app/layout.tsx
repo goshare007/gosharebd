@@ -1,5 +1,8 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono, Inter } from 'next/font/google';
+import Footer from '@/components/layout/footer/footer';
+import Header from '@/components/layout/header/header';
+import { Toaster } from '@/components/ui/sonner';
 import { ThemeProvider } from '@/context/theme-provider';
 import './globals.css';
 
@@ -36,7 +39,10 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          <Header />
           {children}
+          <Footer />
+          <Toaster richColors />
         </ThemeProvider>
       </body>
     </html>
