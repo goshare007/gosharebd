@@ -9,7 +9,7 @@ export default function Hero() {
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative z-20 w-full'>
         <div className='grid lg:grid-cols-2 gap-12 items-center'>
           {/* Left side - Content */}
-          <div className='space-y-8 animate-in fade-in slide-in-from-left duration-700'>
+          <div className='space-y-8'>
             {/* Heading */}
             <div className='space-y-4'>
               <h1 className='text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-tight'>
@@ -71,10 +71,7 @@ export default function Hero() {
           </div>
 
           {/* Right side - Image Grid */}
-          <div
-            className='relative h-150 animate-in fade-in slide-in-from-right duration-700'
-            style={{ animationDelay: '200ms' }}
-          >
+          <div className='relative h-150 ' style={{ animationDelay: '200ms' }}>
             {/* Main large image */}
             <div className='absolute top-0 right-0 w-[70%] h-[55%] rounded-2xl overflow-hidden shadow-2xl border-4 border-background z-10 group'>
               <Image
