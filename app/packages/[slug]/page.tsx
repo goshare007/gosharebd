@@ -1,3 +1,6 @@
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import {
   ArrowLeft,
   Clock,
@@ -11,9 +14,6 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { use } from 'react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
 
 // This would normally come from your database or API based on params.slug
 export default function DestinationPackagesPage({
