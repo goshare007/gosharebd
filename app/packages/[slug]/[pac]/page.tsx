@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import { use, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -25,194 +26,45 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { destinations } from '@/constants/destinations';
 
-// This would normally come from your database or API
 export default function PackageDetailPage({
   params,
 }: {
-  params: Promise<{ destination: string; pac: string }>;
+  params: Promise<{ slug: string; pac: string }>;
 }) {
-  const { destination, pac } = use(params);
+  const { slug, pac } = use(params);
+
+  const destination = destinations.find((d) => d.slug === slug);
+  const packageData = destination?.packages.find((p) => p.slug === pac);
+
+  if (!packageData) {
+    notFound();
+  }
+
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [numberOfPeople, setNumberOfPeople] = useState(2);
   const [isLiked, setIsLiked] = useState(false);
-  const [showCouple, setShowCouple] = useState(true);
-
-  // Mock package data
-  const packageData = {
-    slug: pac,
-    destination: 'Dhaka',
-    destinationSlug: destination,
-    title: 'Dhaka Romantic Evening Tour',
-    tagline: 'A perfect evening for couples exploring Dhaka',
-    images: [
-      'https://images.unsplash.com/photo-1523978591478-c753949ff840?w=1200&h=800&fit=crop',
-      'https://images.unsplash.com/photo-1523978591478-c753949ff840?w=1200&h=800&fit=crop',
-      'https://images.unsplash.com/photo-1523978591478-c753949ff840?w=1200&h=800&fit=crop',
-    ],
-    rating: 4.8,
-    // reviews: 87,
-    duration: '1 Day (6 hours)',
-    groupSize: 'Private (2 people)',
-    pricePerPerson: 3500,
-    originalPricePerPerson: 4500,
-    couplePrice: 6500,
-    originalCouplePrice: 8500,
-    isCouple: true,
-    isBestseller: false,
-    category: 'Culture & Romance',
-
-    description:
-      "Experience the magic of Dhaka as the sun sets. This exclusive tour is designed for couples looking to explore the city's romantic side. Enjoy a private boat cruise on the Buriganga River, watch the sunset from the best viewpoints, and end with a candlelight dinner at a riverside restaurant.",
-
-    highlights: [
-      'Private rickshaw tour of Old Dhaka',
-      'Sunset boat cruise on Buriganga River',
-      'Visit to Ahsan Manzil (Pink Palace)',
-      'Romantic dinner at riverside restaurant',
-      'Professional photography service',
-      'Complimentary flower bouquet',
-    ],
-
-    included: [
-      'Private transportation',
-      'Professional English-speaking guide',
-      'All entrance fees',
-      'Boat cruise tickets',
-      'Romantic dinner for two',
-      'Bottled water',
-      'Photography service',
-      'Flower bouquet',
-    ],
-
-    notIncluded: [
-      'Personal expenses',
-      'Tips and gratuities',
-      'Travel insurance',
-      'Additional food and drinks',
-    ],
-
-    itinerary: [
-      {
-        time: '4:00 PM',
-        title: 'Pickup from Hotel',
-        description:
-          'Our guide will pick you up from your hotel in a private vehicle.',
-      },
-      {
-        time: '4:30 PM',
-        title: 'Old Dhaka Rickshaw Tour',
-        description:
-          'Explore the narrow streets of Old Dhaka on a decorated rickshaw, visiting local markets and historic buildings.',
-      },
-      {
-        time: '5:30 PM',
-        title: 'Ahsan Manzil Visit',
-        description:
-          'Visit the iconic Pink Palace and learn about its rich history while enjoying the river views.',
-      },
-      {
-        time: '6:30 PM',
-        title: 'Sunset River Cruise',
-        description:
-          'Board a private boat for a romantic sunset cruise on the Buriganga River with photography.',
-      },
-      {
-        time: '7:30 PM',
-        title: 'Romantic Dinner',
-        description:
-          'Enjoy a candlelight dinner at a premium riverside restaurant with authentic Bengali cuisine.',
-      },
-      {
-        time: '9:00 PM',
-        title: 'Drop-off at Hotel',
-        description: 'Return to your hotel with wonderful memories.',
-      },
-    ],
-
-    availableDates: [
-      { date: '2026-02-20', slots: 3 },
-      { date: '2026-02-21', slots: 5 },
-      { date: '2026-02-22', slots: 2 },
-      { date: '2026-02-25', slots: 4 },
-      { date: '2026-02-27', slots: 6 },
-    ],
-
-    tourGuide: {
-      name: 'Ahmed Rahman',
-      image:
-        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop',
-      role: 'Senior Tour Guide',
-      experience: '8 years',
-      languages: ['English', 'Bengali', 'Hindi'],
-      rating: 4.9,
-      tours: 450,
-    },
-
-    reviews: [
-      {
-        id: 1,
-        name: 'Sarah & John',
-        avatar:
-          'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop',
-        rating: 5,
-        date: 'January 2026',
-        comment:
-          'Absolutely magical evening! Ahmed was an excellent guide and made our anniversary so special. The boat ride at sunset was breathtaking!',
-        images: [
-          'https://images.unsplash.com/photo-1523978591478-c753949ff840?w=400&h=300&fit=crop',
-        ],
-      },
-      {
-        id: 2,
-        name: 'Priya & Rahul',
-        avatar:
-          'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop',
-        rating: 5,
-        date: 'December 2025',
-        comment:
-          'Perfect romantic tour! Everything was well-organized and the dinner was delicious. Highly recommend for couples!',
-        images: [],
-      },
-      {
-        id: 3,
-        name: 'Emma & David',
-        avatar:
-          'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop',
-        rating: 4,
-        date: 'November 2025',
-        comment:
-          'Great experience overall. The only thing is the traffic was a bit heavy, but Ahmed managed it well. Beautiful sunset!',
-        images: [],
-      },
-    ],
-
-    policies: {
-      cancellation:
-        'Free cancellation up to 24 hours before the tour starts. 50% refund for cancellations within 24 hours.',
-      weatherPolicy:
-        'In case of bad weather, we will reschedule or provide a full refund.',
-      ageRestriction:
-        'This tour is designed for adults. Children under 12 are not permitted.',
-      groupSize: 'This is a private tour for couples only (2 people).',
-    },
-  };
+  const [showCouple, setShowCouple] = useState(packageData.isCouple);
 
   const calculateSavings = () => {
     if (showCouple) {
-      return packageData.originalCouplePrice - packageData.couplePrice;
+      return (
+        (packageData.originalCouplePrice || 0) - (packageData.couplePrice || 0)
+      );
     }
     return (
-      (packageData.originalPricePerPerson - packageData.pricePerPerson) *
+      ((packageData.originalPricePerPerson || 0) -
+        (packageData.pricePerPerson || 0)) *
       numberOfPeople
     );
   };
 
   const calculateTotal = () => {
     if (showCouple) {
-      return packageData.couplePrice;
+      return packageData.couplePrice || 0;
     }
-    return packageData.pricePerPerson * numberOfPeople;
+    return (packageData.pricePerPerson || 0) * numberOfPeople;
   };
 
   return (
@@ -294,7 +146,9 @@ export default function PackageDetailPage({
             {/* Header */}
             <div className='space-y-4'>
               <div className='flex flex-wrap gap-2'>
-                <Badge className='bg-pink-500/90'>❤️ Couple Package</Badge>
+                {packageData.isCouple && (
+                  <Badge className='bg-pink-500/90'>❤️ Couple Package</Badge>
+                )}
                 <Badge variant='secondary'>{packageData.category}</Badge>
                 <Link href={`/packages/${packageData.destinationSlug}`}>
                   <Badge
@@ -612,23 +466,27 @@ export default function PackageDetailPage({
                     <span className='text-3xl font-bold text-primary'>
                       ৳
                       {showCouple
-                        ? packageData.couplePrice.toLocaleString()
-                        : packageData.pricePerPerson.toLocaleString()}
+                        ? (packageData.couplePrice || 0).toLocaleString()
+                        : (packageData.pricePerPerson || 0).toLocaleString()}
                     </span>
                     <span className='text-lg text-muted-foreground line-through'>
                       ৳
                       {showCouple
-                        ? packageData.originalCouplePrice.toLocaleString()
-                        : packageData.originalPricePerPerson.toLocaleString()}
+                        ? (
+                            packageData.originalCouplePrice || 0
+                          ).toLocaleString()
+                        : (
+                            packageData.originalPricePerPerson || 0
+                          ).toLocaleString()}
                     </span>
                   </div>
                   <p className='text-sm text-green-600 dark:text-green-400 mt-1'>
                     You save ৳
                     {(showCouple
-                      ? packageData.originalCouplePrice -
-                        packageData.couplePrice
-                      : packageData.originalPricePerPerson -
-                        packageData.pricePerPerson
+                      ? (packageData.originalCouplePrice || 0) -
+                        (packageData.couplePrice || 0)
+                      : (packageData.originalPricePerPerson || 0) -
+                        (packageData.pricePerPerson || 0)
                     ).toLocaleString()}
                   </p>
                 </div>

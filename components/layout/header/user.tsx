@@ -46,13 +46,6 @@ export default function UserDropDown() {
       <>
         {/* Desktop buttons */}
         <div className='hidden items-center gap-2 md:flex'>
-          <Button variant='ghost' asChild>
-            <Link href='/list-tour' className='gap-2'>
-              <Plus className='w-4 h-4' />
-              List Your Tour
-            </Link>
-          </Button>
-
           <Button asChild>
             <Link href='/sign-in'>Sign in</Link>
           </Button>
