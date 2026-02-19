@@ -111,7 +111,7 @@ export default function GalleryDetailPage({
   };
 
   return (
-    <div className='min-h-screen bg-background mt-16'>
+    <div className='min-h-screen bg-background'>
       {/* Hero Section with Cover Image */}
       <section className='relative h-[60vh] md:h-[70vh] overflow-hidden'>
         <Image
@@ -121,7 +121,7 @@ export default function GalleryDetailPage({
           className='object-cover'
           priority
         />
-        <div className='absolute inset-0 bg-linear-to-b from-background/60 via-background/40 to-background' />
+        <div className='absolute inset-0 bg-linear-to-b from-black/60 via-black/40 to-black' />
 
         {/* Back Button */}
         <div className='absolute top-6 left-4 sm:left-6 lg:left-8 z-10'>

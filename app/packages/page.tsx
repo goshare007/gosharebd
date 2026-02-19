@@ -7,7 +7,7 @@ import { destinationsSummary } from '@/constants/destinations-summary';
 
 export default function PackagesIndexPage() {
   return (
-    <div className='min-h-screen bg-background mt-16'>
+    <div className='min-h-screen bg-background '>
       {/* Header Section */}
       <section className='relative py-10 overflow-hidden bg-linear-to-bl from-primary/10 to-primary/5'>
         <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10'>

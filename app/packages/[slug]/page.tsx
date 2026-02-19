@@ -33,7 +33,7 @@ export default function DestinationPackagesPage({
   }
 
   return (
-    <div className='min-h-screen mt-16'>
+    <div className='min-h-screen'>
       {/* Hero Section with Destination Cover */}
       <section className='relative h-[50vh] md:h-[60vh] overflow-hidden'>
         <Image

@@ -6,7 +6,7 @@ export default function NotFound() {
   return (
     <>
       <Header />
-      <div className='grid min-h-[90vh] mt-20 grid-cols-1 lg:grid-cols-2'>
+      <div className='grid min-h-[90vh] grid-cols-1 lg:grid-cols-2'>
         <div className='flex flex-col items-center justify-center px-4 py-8 text-center'>
           <h2 className='mb-6 text-5xl font-semibold'>Whoops!</h2>
           <h3 className='mb-1.5 text-3xl font-semibold'>

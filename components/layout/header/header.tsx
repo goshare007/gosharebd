@@ -1,5 +1,9 @@
 'use client';
 
+import { Menu, Plus } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -9,10 +13,6 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
-import { Menu, Plus } from 'lucide-react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
 import { ModeToggle } from './theme-toggle';
 import UserDropDown from './user';
 
@@ -97,7 +97,7 @@ export default function Header() {
             href='/'
             className='flex items-center transition-opacity hover:opacity-90'
           >
-            <span className='text-xl font-bold tracking-tighter text-foreground'>
+            <span className='text-2xl font-bold tracking-tighter text-foreground'>
               GoShare<span className='text-primary'>BD</span>
             </span>
           </Link>
