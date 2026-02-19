@@ -1,18 +1,4 @@
 'use client';
-import {
-  Bell,
-  Calendar,
-  CreditCard,
-  Headphones,
-  Heart,
-  LayoutDashboard,
-  MapPin,
-  Plus,
-  Settings,
-  Star,
-  UserCog,
-} from 'lucide-react';
-import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -28,6 +14,20 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSession } from '@/lib/auth-client';
 import { getInitials } from '@/lib/utils';
+import {
+  Bell,
+  Calendar,
+  CreditCard,
+  Headphones,
+  Heart,
+  LayoutDashboard,
+  MapPin,
+  Plus,
+  Settings,
+  Star,
+  UserCog,
+} from 'lucide-react';
+import Link from 'next/link';
 import { SignOut } from './logout';
 
 export default function UserDropDown() {
@@ -53,7 +53,7 @@ export default function UserDropDown() {
 
         {/* Mobile buttons */}
         <div className='flex items-center gap-2 md:hidden'>
-          <Button size='sm' asChild>
+          <Button asChild>
             <Link href='/sign-in'>Sign in</Link>
           </Button>
         </div>
