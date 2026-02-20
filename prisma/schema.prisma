@@ -76,14 +76,50 @@ model Verification {
 }
 
 model Destination {
-  id       String   @id @default(cuid())
-  name     String
-  division String
-  summary  String
-  image    String
-  imageId  String
-  tags     String[]
+  id        String    @id @default(cuid())
+  name      String
+  division  String
+  summary   String
+  image     String
+  imageId   String
+  tags      String[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  packages  Package[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  @@map("destination")
+}
+
+model Package {
+  id            String      @id @default(cuid())
+  destinationId String
+  destination   Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  name          String
+  summary       String
+  price         Decimal     @db.Decimal(10, 2)
+  duration      Int // in days
+  groupSize     Int // max number of people
+  coverImage    String
+  coverImageId  String
+  includes      String[] // e.g. ["Hotel", "Breakfast", "Transport"]
+  excludes      String[] // e.g. ["Flights", "Travel Insurance"]
+  itinerary     Itinerary[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([destinationId])
+  @@map("package")
+}
+
+model Itinerary {
+  id          String   @id @default(cuid())
+  packageId   String
+  package     Package  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  day         Int // Day 1, Day 2, etc.
+  title       String // e.g. "Arrival & Beach Walk"
+  description String
+  activities  String[]
+
+  @@index([packageId])
+  @@map("itinerary")
 }

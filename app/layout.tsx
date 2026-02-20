@@ -1,9 +1,10 @@
-import type { Metadata } from 'next';
-import { Geist, Geist_Mono, Philosopher } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import TanstackQueryProvider from '@/context/tanstack-query-provider';
 import { ThemeProvider } from '@/context/theme-provider';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import type { Metadata } from 'next';
+import { Geist, Geist_Mono, Philosopher } from 'next/font/google';
 import './globals.css';
 
 // 1. Set Geist as our primary Sans font
@@ -48,6 +49,7 @@ export default function RootLayout({
           >
             <TooltipProvider>{children}</TooltipProvider>
             <Toaster richColors />
+            <ReactQueryDevtools initialIsOpen={false} />
           </ThemeProvider>
         </body>
       </html>
