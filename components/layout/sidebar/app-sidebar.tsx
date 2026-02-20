@@ -95,7 +95,7 @@ export const data: { navMain: NavItem[]; navSecondary: NavItem[] } = {
     },
     {
       title: 'Destinations',
-      url: '/admin/destinations',
+      url: '/dashboard/admin/destinations',
       icon: MapPin,
       role: ['ADMIN'],
     },

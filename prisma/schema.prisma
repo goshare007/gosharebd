@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client"
   output   = "./generated/prisma/client"
@@ -74,4 +73,17 @@ model Verification {
 
   @@index([identifier])
   @@map("verification")
+}
+
+model Destination {
+  id       String   @id @default(cuid())
+  name     String
+  division String
+  summary  String
+  image    String
+  imageId  String
+  tags     String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
