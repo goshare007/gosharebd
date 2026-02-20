@@ -3,11 +3,23 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { QUERY_KEYS } from '@/constants/query-keys';
 
-export const useAddDestination = () => {
+export const useDestinationWisePackages = (id: string) => {
+  return useQuery({
+    queryKey: [QUERY_KEYS.Single_DESTINATION_PACKAGES, id],
+    queryFn: async () => {
+      const response = await axios.get('/api/packages/destination', {
+        params: { id },
+      });
+      return response.data;
+    },
+  });
+};
+
+export const useAddPackage = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (formData: FormData) => {
-      const apiPromise = axios.post('/api/destinations/admin/add', formData, {
+      const apiPromise = axios.post('/api/packages/admin/add', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
@@ -24,16 +36,6 @@ export const useAddDestination = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.All_DESTINATION] });
-    },
-  });
-};
-
-export const useAllDestinations = () => {
-  return useQuery({
-    queryKey: [QUERY_KEYS.All_DESTINATION],
-    queryFn: async () => {
-      const response = await axios.get('/api/destinations');
-      return response.data;
     },
   });
 };

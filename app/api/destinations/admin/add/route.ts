@@ -1,9 +1,9 @@
-import { UploadImage } from '@/cloudinary';
-import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
 import { headers } from 'next/headers';
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { UploadImage } from '@/cloudinary';
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
 // 1. Define a schema to validate the incoming data
 const schema = z.object({

@@ -1,4 +1,4 @@
 export const QUERY_KEYS = {
   All_DESTINATION: 'all-destination',
-  USER_DESIGN: 'user-design',
+  Single_DESTINATION_PACKAGES: 'single-destination-packages',
 };
