@@ -1,6 +1,6 @@
 'use client';
 
-import { Camera, Image as ImageIcon, MapPin } from 'lucide-react';
+import { Image as ImageIcon, MapPin } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
@@ -10,20 +10,29 @@ export default function GalleryIndexPage() {
   return (
     <div className='min-h-screen bg-background'>
       {/* Header Section */}
-      <section className='relative py-20 overflow-hidden bg-linear-to-br from-secondary/20 to-background'>
-        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10'>
-          <div className='text-center space-y-6'>
-            <div className='inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium border border-primary/20'>
-              <Camera className='w-4 h-4' />
-              <span>Explore Bangladesh</span>
+      <section className='relative pt-16 pb-12 bg-primary/5 overflow-hidden'>
+        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative'>
+          <div className='max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-700'>
+            {/* Eyebrow */}
+            <div className='flex items-center gap-3 mb-6'>
+              <div className='h-px w-12 bg-primary' />
+              <span className='text-xs font-semibold tracking-[0.2em] uppercase text-primary'>
+                Explore Bangladesh
+              </span>
             </div>
 
-            <h1 className='text-5xl md:text-7xl font-bold tracking-tight'>
-              Visual <span className='text-primary'>Stories</span>
+            <h1 className='text-5xl sm:text-6xl md:text-7xl font-display font-bold leading-[1.05] tracking-tight mb-6'>
+              Visual
+              <br />
+              <span className=' font-light italic text-muted-foreground'>
+                Stories
+              </span>
+              <span className='text-primary'>.</span>
             </h1>
 
-            <p className='text-lg text-muted-foreground max-w-2xl mx-auto'>
-              A collection of moments captured across the green delta.
+            <p className='text-base md:text-lg text-muted-foreground max-w-xl leading-relaxed'>
+              A collection of moments captured across the green delta — rivers,
+              forests, and faces of Bangladesh.
             </p>
           </div>
         </div>

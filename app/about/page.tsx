@@ -2,13 +2,10 @@
 
 import {
   Award,
-  Compass,
   Heart,
   MapPin,
   Shield,
-  Sparkles,
   Star,
-  Target,
   TreePine,
   Users,
 } from 'lucide-react';
@@ -101,80 +98,91 @@ export default function AboutPage() {
 
   return (
     <div className='min-h-screen bg-background'>
-      {/* Hero Section */}
-      <section className='relative min-h-[70vh] flex items-center justify-center overflow-hidden'>
-        {/* Background Image */}
+      {/* ── Hero ─────────────────────────────────────────────────────────── */}
+      <section className='relative min-h-[70vh] flex items-center overflow-hidden'>
         <div className='absolute inset-0 z-0'>
           <Image
-            src='https://images.unsplash.com/photo-1609137144813-7d9921338f24?w=1920&h=1080&fit=crop'
+            src='https://images.unsplash.com/photo-1502082553048-f009c37129b9?auto=format&fit=crop&w=800&q=80'
             alt='Bangladesh landscape'
             fill
             className='object-cover'
             priority
           />
-          <div className='absolute inset-0 bg-linear-to-b from-background/80 via-background/60 to-background' />
+          <div className='absolute inset-0 bg-linear-to-r from-background/95 via-background/60 to-background/10' />
         </div>
 
-        {/* Content */}
-        <div className='max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center space-y-6 animate-in fade-in slide-in-from-bottom duration-700'>
-          <div className='inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium border border-primary/20 backdrop-blur-sm'>
-            <Sparkles className='w-4 h-4' />
-            <span>Est. 2020</span>
-          </div>
+        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full'>
+          <div className='max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-700'>
+            <div className='flex items-center gap-3 mb-6'>
+              <div className='h-px w-12 bg-primary' />
+              <span className='text-xs font-semibold tracking-[0.2em] uppercase text-primary'>
+                Est. 2020
+              </span>
+            </div>
 
-          <h1 className='text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight'>
-            Your Gateway to
-            <span className='block text-primary mt-2'>Bangladesh</span>
-          </h1>
+            <h1 className='font-display text-5xl sm:text-6xl md:text-7xl font-bold leading-[1.05] tracking-tight mb-6'>
+              Your gateway
+              <br />
+              <span className='italic font-light text-muted-foreground'>
+                to
+              </span>{' '}
+              <span className='text-primary'>Bangladesh</span>
+              <span className='text-primary'>.</span>
+            </h1>
 
-          <p className='text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed'>
-            We're on a mission to help travelers discover the hidden gems, rich
-            culture, and natural beauty of Bangladesh through authentic,
-            sustainable, and unforgettable experiences.
-          </p>
+            <p className='text-base md:text-lg text-muted-foreground max-w-xl leading-relaxed mb-8'>
+              We're on a mission to help travelers discover the hidden gems,
+              rich culture, and natural beauty of Bangladesh through authentic,
+              sustainable, and unforgettable experiences.
+            </p>
 
-          <div className='flex flex-col sm:flex-row gap-4 justify-center pt-4'>
-            <Button size='lg' asChild className='text-base h-12 px-8'>
-              <Link href='/packages'>Explore Tours</Link>
-            </Button>
-            <Button
-              size='lg'
-              variant='outline'
-              asChild
-              className='text-base h-12 px-8'
-            >
-              <Link href='#team'>Meet Our Team</Link>
-            </Button>
+            <div className='flex flex-col sm:flex-row gap-3'>
+              <Button size='lg' asChild className='text-base h-12 px-8'>
+                <Link href='/packages'>Explore Tours</Link>
+              </Button>
+              <Button
+                size='lg'
+                variant='outline'
+                asChild
+                className='text-base h-12 px-8'
+              >
+                <Link href='#team'>Meet Our Team</Link>
+              </Button>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className='py-12 border-y border-border bg-secondary/20'>
+      {/* ── Stats ────────────────────────────────────────────────────────── */}
+      <section className='border-y border-border bg-primary/5'>
         <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
-          <div className='grid grid-cols-2 md:grid-cols-4 gap-8 text-center'>
+          <div className='grid grid-cols-2 md:grid-cols-4 divide-x divide-border'>
             {stats.map((stat, idx) => (
               <div
-                // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
+                // biome-ignore lint/suspicious/noArrayIndexKey: static list
                 key={idx}
-                className='space-y-2 animate-in fade-in slide-in-from-bottom duration-700'
-                style={{ animationDelay: `${idx * 100}ms` }}
+                className='py-10 px-6 text-center animate-in fade-in slide-in-from-bottom duration-700'
+                style={{ animationDelay: `${idx * 80}ms` }}
               >
-                <div className='flex items-center justify-center gap-2'>
-                  <stat.icon className='w-5 h-5 text-primary' />
-                  <p className='text-3xl md:text-4xl font-bold'>{stat.value}</p>
+                <p className='font-display text-4xl md:text-5xl font-bold text-primary mb-1'>
+                  {stat.value}
+                </p>
+                <div className='flex items-center justify-center gap-1.5 mt-2'>
+                  <stat.icon className='w-3.5 h-3.5 text-muted-foreground' />
+                  <p className='text-xs text-muted-foreground tracking-wide uppercase font-medium'>
+                    {stat.label}
+                  </p>
                 </div>
-                <p className='text-sm text-muted-foreground'>{stat.label}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Our Story Section */}
+      {/* ── Our Story ────────────────────────────────────────────────────── */}
       <section className='py-20 md:py-28'>
         <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
-          <div className='grid lg:grid-cols-2 gap-12 lg:gap-16 items-center'>
+          <div className='grid lg:grid-cols-2 gap-12 lg:gap-20 items-center'>
             {/* Image */}
             <div className='relative h-100 md:h-125 rounded-2xl overflow-hidden shadow-2xl animate-in fade-in slide-in-from-left duration-700'>
               <Image
@@ -183,10 +191,10 @@ export default function AboutPage() {
                 fill
                 className='object-cover'
               />
-              <div className='absolute inset-0 bg-linear-to-t from-black/50 to-transparent' />
+              <div className='absolute inset-0 bg-linear-to-t from-black/60 to-transparent' />
               <div className='absolute bottom-6 left-6 right-6 text-white'>
-                <p className='text-2xl font-bold'>Our Story</p>
-                <p className='text-sm opacity-90 mt-1'>
+                <p className='font-display text-2xl font-bold'>Our Story</p>
+                <p className='text-sm opacity-80 mt-1'>
                   Building bridges between travelers and local communities
                 </p>
               </div>
@@ -194,16 +202,22 @@ export default function AboutPage() {
 
             {/* Content */}
             <div className='space-y-6 animate-in fade-in slide-in-from-right duration-700'>
-              <div className='inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium'>
-                <Compass className='w-4 h-4' />
-                <span>Our Journey</span>
+              <div className='flex items-center gap-3'>
+                <div className='h-px w-12 bg-primary' />
+                <span className='text-xs font-semibold tracking-[0.2em] uppercase text-primary'>
+                  Our Journey
+                </span>
               </div>
 
-              <h2 className='text-3xl md:text-4xl font-bold'>
-                Connecting Travelers with the Heart of Bangladesh
+              <h2 className='font-display text-3xl md:text-4xl font-bold leading-tight'>
+                Connecting travelers with the{' '}
+                <span className='italic font-light text-muted-foreground'>
+                  heart
+                </span>{' '}
+                of Bangladesh
               </h2>
 
-              <div className='space-y-4 text-muted-foreground leading-relaxed'>
+              <div className='space-y-4 text-muted-foreground leading-relaxed text-sm md:text-base'>
                 <p>
                   Founded in 2020, GoShareBD was born from a simple belief: that
                   Bangladesh has so much more to offer than what meets the eye.
@@ -222,17 +236,15 @@ export default function AboutPage() {
                 <p>
                   Today, we're proud to support over 200 local guides and tour
                   operators, creating sustainable livelihoods while preserving
-                  our natural and cultural heritage. Every tour booked through
-                  GoShareBD directly contributes to local communities and
-                  conservation efforts.
+                  our natural and cultural heritage.
                 </p>
               </div>
 
-              <div className='flex items-center gap-4 pt-4'>
+              <div className='flex items-center gap-4 pt-2'>
                 <div className='flex -space-x-2'>
                   {team.slice(0, 3).map((member, idx) => (
                     <div
-                      // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
+                      // biome-ignore lint/suspicious/noArrayIndexKey: static list
                       key={idx}
                       className='relative w-10 h-10 rounded-full border-2 border-background overflow-hidden'
                     >
@@ -254,39 +266,48 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Values Section */}
-      <section className='py-20 md:py-28 bg-secondary/20'>
+      {/* ── Values ───────────────────────────────────────────────────────── */}
+      <section className='py-20 md:py-28 bg-primary/5'>
         <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
-          <div className='text-center space-y-4 mb-16 animate-in fade-in slide-in-from-bottom duration-700'>
-            <div className='inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium border border-primary/20'>
-              <Target className='w-4 h-4' />
-              <span>Our Values</span>
+          {/* Section header */}
+          <div className='max-w-xl mb-14 animate-in fade-in slide-in-from-bottom duration-700'>
+            <div className='flex items-center gap-3 mb-4'>
+              <div className='h-px w-12 bg-primary' />
+              <span className='text-xs font-semibold tracking-[0.2em] uppercase text-primary'>
+                Our Values
+              </span>
             </div>
-            <h2 className='text-3xl md:text-4xl lg:text-5xl font-bold'>
-              What We Stand For
+            <h2 className='font-display text-3xl md:text-4xl font-bold leading-tight mb-3'>
+              What we{' '}
+              <span className='italic font-light text-muted-foreground'>
+                stand
+              </span>{' '}
+              for
             </h2>
-            <p className='text-lg text-muted-foreground max-w-2xl mx-auto'>
+            <p className='text-muted-foreground leading-relaxed'>
               Our core values guide everything we do, from selecting tour
-              operators to supporting local communities
+              operators to supporting local communities.
             </p>
           </div>
 
-          <div className='grid sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8'>
+          <div className='grid sm:grid-cols-2 lg:grid-cols-4 gap-5'>
             {values.map((value, idx) => (
               <Card
-                // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
+                // biome-ignore lint/suspicious/noArrayIndexKey: static list
                 key={idx}
-                className='border-2 hover:border-primary/50 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group animate-in fade-in slide-in-from-bottom'
-                style={{ animationDelay: `${idx * 100}ms` }}
+                className='border-2 hover:border-primary/40 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group animate-in fade-in slide-in-from-bottom'
+                style={{ animationDelay: `${idx * 80}ms` }}
               >
                 <CardContent className='p-6 space-y-4'>
                   <div
-                    className={`w-12 h-12 rounded-xl ${value.bgColor} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}
+                    className={`w-11 h-11 rounded-xl ${value.bgColor} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}
                   >
-                    <value.icon className={`w-6 h-6 ${value.color}`} />
+                    <value.icon className={`w-5 h-5 ${value.color}`} />
                   </div>
-                  <h3 className='text-xl font-bold'>{value.title}</h3>
-                  <p className='text-muted-foreground leading-relaxed'>
+                  <h3 className='font-display text-lg font-bold'>
+                    {value.title}
+                  </h3>
+                  <p className='text-sm text-muted-foreground leading-relaxed'>
                     {value.description}
                   </p>
                 </CardContent>
@@ -296,55 +317,61 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Team Section */}
+      {/* ── Team ─────────────────────────────────────────────────────────── */}
       <section id='team' className='py-20 md:py-28'>
         <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
-          <div className='text-center space-y-4 mb-16 animate-in fade-in slide-in-from-bottom duration-700'>
-            <div className='inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium border border-primary/20'>
-              <Users className='w-4 h-4' />
-              <span>Our Team</span>
+          {/* Section header */}
+          <div className='max-w-xl mb-14 animate-in fade-in slide-in-from-bottom duration-700'>
+            <div className='flex items-center gap-3 mb-4'>
+              <div className='h-px w-12 bg-primary' />
+              <span className='text-xs font-semibold tracking-[0.2em] uppercase text-primary'>
+                Our Team
+              </span>
             </div>
-            <h2 className='text-3xl md:text-4xl lg:text-5xl font-bold'>
-              Meet the People Behind GoShareBD
+            <h2 className='font-display text-3xl md:text-4xl font-bold leading-tight mb-3'>
+              The people{' '}
+              <span className='italic font-light text-muted-foreground'>
+                behind
+              </span>{' '}
+              GoShareBD
             </h2>
-            <p className='text-lg text-muted-foreground max-w-2xl mx-auto'>
+            <p className='text-muted-foreground leading-relaxed'>
               A passionate team dedicated to making your Bangladesh experience
-              unforgettable
+              unforgettable.
             </p>
           </div>
 
           <Carousel
-            opts={{
-              align: 'start',
-              loop: true,
-            }}
+            opts={{ align: 'start', loop: true }}
             className='w-full animate-in fade-in duration-700'
             style={{ animationDelay: '200ms' }}
           >
             <CarouselContent className='-ml-4'>
               {team.map((member, idx) => (
                 <CarouselItem
-                  // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
+                  // biome-ignore lint/suspicious/noArrayIndexKey: static list
                   key={idx}
                   className='pl-4 md:basis-1/2 lg:basis-1/4 xl:basis-1/5'
                 >
-                  <Card className='border-2 overflow-hidden p-0 hover:border-primary/50 hover:shadow-xl transition-all duration-300  group h-full'>
+                  <Card className='overflow-hidden p-0 border-2 hover:border-primary/40 hover:shadow-lg transition-all duration-300 group h-full'>
                     <div className='relative h-64 overflow-hidden'>
                       <Image
                         src={member.image}
                         alt={member.name}
                         fill
-                        className='object-cover group-hover:scale-110 transition-transform duration-500'
+                        className='object-cover group-hover:scale-105 transition-transform duration-500'
                       />
-                      <div className='absolute inset-0 bg-linear-to-t from-black/80 via-black/40 to-transparent' />
+                      <div className='absolute inset-0 bg-linear-to-t from-black/80 via-black/30 to-transparent' />
                     </div>
-                    <CardContent className='p-6 space-y-2 -mt-16 relative z-10'>
-                      <div className='bg-background rounded-lg p-4 shadow-lg'>
-                        <h3 className='text-lg font-bold'>{member.name}</h3>
-                        <p className='text-sm text-primary font-medium mb-2'>
+                    <CardContent className='p-0 -mt-16 relative z-10'>
+                      <div className='bg-background mx-3 mb-3 rounded-xl p-4 shadow-lg border border-border/50'>
+                        <h3 className='font-display text-base font-bold'>
+                          {member.name}
+                        </h3>
+                        <p className='text-xs text-primary font-semibold tracking-wide mb-1.5'>
                           {member.role}
                         </p>
-                        <p className='text-xs text-muted-foreground'>
+                        <p className='text-xs text-muted-foreground leading-relaxed'>
                           {member.bio}
                         </p>
                       </div>

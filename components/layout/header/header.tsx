@@ -20,7 +20,6 @@ const navItems = [
   { name: 'Home', href: '/' },
   { name: 'About', href: '/about' },
   { name: 'Packages', href: '/packages' },
-  { name: 'Book a Tour', href: '/book' },
   { name: 'Festivals', href: '/festivals' },
   { name: 'Gallery', href: '/gallery' },
   { name: 'Reviews', href: '/reviews' },
@@ -131,7 +130,7 @@ export default function Header() {
             >
               <Link href='/list-tour' className='gap-2'>
                 <Plus className='w-4 h-4' />
-                List Tour
+                Book Now
               </Link>
             </Button>
           </div>

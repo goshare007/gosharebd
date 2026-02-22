@@ -104,7 +104,7 @@ export const GalleriesData: GalleryType[] = [
     slug: 'kuakata-beach',
     title: 'Kuakata Panorama',
     coverImage:
-      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1570641963303-92ce4845ed4c?auto=format&fit=crop&w=800&q=80',
     location: 'Kuakata',
     imageCount: 22,
     description:

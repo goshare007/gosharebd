@@ -7,7 +7,7 @@ export default function Cta() {
     <section className='py-20 md:py-28 bg-linear-to-br from-primary/10 to-secondary/20'>
       <div className='max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8'>
         <div className='space-y-4 animate-in fade-in slide-in-from-bottom duration-700'>
-          <h2 className='text-3xl md:text-4xl lg:text-5xl font-bold'>
+          <h2 className='text-3xl font-display md:text-4xl lg:text-5xl font-bold'>
             Ready to Explore Bangladesh?
           </h2>
           <p className='text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto'>

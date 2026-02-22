@@ -80,7 +80,7 @@ export default function Features() {
             <Shield className='w-4 h-4' />
             <span>Trusted & Reliable</span>
           </div>
-          <h2 className='text-4xl sm:text-5xl font-bold tracking-tight text-foreground'>
+          <h2 className='text-4xl font-display sm:text-5xl font-bold tracking-tight text-foreground'>
             Why Choose GoShare<span className='text-primary'>BD</span>?
           </h2>
           <p className='text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto'>

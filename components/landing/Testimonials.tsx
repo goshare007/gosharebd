@@ -76,7 +76,7 @@ export default function Testimonials() {
             <Star className='w-4 h-4 fill-primary' />
             <span>Trusted Reviews</span>
           </div>
-          <h2 className='text-4xl sm:text-5xl font-bold text-foreground'>
+          <h2 className='text-4xl font-display sm:text-5xl font-bold text-foreground'>
             What Our Travelers Say
           </h2>
           <p className='text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto'>
