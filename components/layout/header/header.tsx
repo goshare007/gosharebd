@@ -123,12 +123,8 @@ export default function Header() {
         {/* RIGHT SIDE ACTIONS */}
         <div className='flex items-center gap-2'>
           <div className='hidden sm:flex items-center gap-2'>
-            <Button
-              variant={pathname === '/list-tour' ? 'default' : 'outline'}
-              size='sm'
-              asChild
-            >
-              <Link href='/list-tour' className='gap-2'>
+            <Button variant='outline' size='sm' asChild>
+              <Link href='/book' className='gap-2'>
                 <Plus className='w-4 h-4' />
                 Book Now
               </Link>

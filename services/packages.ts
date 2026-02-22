@@ -3,11 +3,11 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import { QUERY_KEYS } from '@/constants/query-keys';
 import type { SingleDestinationType } from '@/types/destination';
-import type { SinglePackageType } from '@/types/package';
+import type { AllPackagesType, SinglePackageType } from '@/types/package';
 
 export const useDestinationWisePackages = (id: string) => {
   return useQuery<SingleDestinationType>({
-    queryKey: [QUERY_KEYS.Single_DESTINATION_PACKAGES, id],
+    queryKey: [QUERY_KEYS.SINGLE_DESTINATION_PACKAGES, id],
     queryFn: async () => {
       const response = await axios.get<SingleDestinationType>(
         '/api/packages/destination',
@@ -47,7 +47,7 @@ export const useAddPackage = () => {
 
 export const useSinglePackages = (PackageId: string) => {
   return useQuery<SinglePackageType>({
-    queryKey: [QUERY_KEYS.Single_PACKAGES, PackageId],
+    queryKey: [QUERY_KEYS.SINGLE_PACKAGES, PackageId],
     queryFn: async () => {
       const response = await axios.get<SinglePackageType>(
         '/api/packages/single-package',
@@ -55,6 +55,16 @@ export const useSinglePackages = (PackageId: string) => {
           params: { packageId: PackageId },
         },
       );
+      return response.data;
+    },
+  });
+};
+
+export const useAllPackages = () => {
+  return useQuery<AllPackagesType[]>({
+    queryKey: [QUERY_KEYS.ALL_PACKAGES],
+    queryFn: async () => {
+      const response = await axios.get<AllPackagesType[]>('/api/packages/all');
       return response.data;
     },
   });

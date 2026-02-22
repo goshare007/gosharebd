@@ -33,3 +33,10 @@ export interface SinglePackageType {
     },
   ];
 }
+
+export interface AllPackagesType {
+  id: string;
+  name: string;
+  Location: string;
+  pricePerPerson: number;
+}
