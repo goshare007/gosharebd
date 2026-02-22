@@ -12,13 +12,23 @@ export async function GET() {
         summary: true,
         tags: true,
         _count: {
-          select: {
-            packages: true,
-          },
+          select: { packages: true },
+        },
+        packages: {
+          select: { pricePerPerson: true },
+          orderBy: { pricePerPerson: 'asc' },
+          take: 1,
         },
       },
     });
-    return NextResponse.json(destinations);
+
+    const response = destinations.map(({ packages, _count, ...dest }) => ({
+      ...dest,
+      packageCount: _count.packages,
+      startingPrice: packages[0]?.pricePerPerson ?? null,
+    }));
+
+    return NextResponse.json(response);
   } catch (_error) {
     return NextResponse.json(
       { error: 'Internal Server Error' },

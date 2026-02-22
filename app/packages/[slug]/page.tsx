@@ -1,3 +1,4 @@
+'use client';
 import {
   ArrowLeft,
   Clock,
@@ -10,12 +11,11 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
 import { use } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
-import { destinations } from '@/constants/destinations';
+import { useDestinationWisePackages } from '@/services/packages';
 
 export default function DestinationPackagesPage({
   params,
@@ -24,12 +24,28 @@ export default function DestinationPackagesPage({
 }) {
   const { slug } = use(params);
 
-  // Find the specific destination from your constants data
-  const destination = destinations.find((d) => d.slug === slug);
+  const {
+    isPending,
+    data: destination,
+    isError,
+  } = useDestinationWisePackages(slug);
 
-  // If the URL slug doesn't match any destination, show a 404 page
-  if (!destination) {
-    notFound();
+  if (isPending) {
+    return (
+      <div className='flex items-center justify-center min-h-screen'>
+        <p className='text-lg text-muted-foreground'>Loading packages...</p>
+      </div>
+    );
+  }
+
+  if (isError || !destination) {
+    return (
+      <div className='flex items-center justify-center min-h-screen'>
+        <p className='text-lg text-destructive'>
+          Failed to load packages. Please try again.
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -37,7 +53,7 @@ export default function DestinationPackagesPage({
       {/* Hero Section with Destination Cover */}
       <section className='relative h-[50vh] md:h-[60vh] overflow-hidden'>
         <Image
-          src={destination.coverImage}
+          src={destination.image}
           alt={destination.name}
           fill
           className='object-cover'
@@ -67,11 +83,11 @@ export default function DestinationPackagesPage({
               <div className='flex flex-wrap items-center gap-3'>
                 <Badge variant='secondary' className='text-sm'>
                   <MapPin className='w-3.5 h-3.5 mr-1' />
-                  {destination.region}
+                  {destination.division}
                 </Badge>
                 <Badge variant='secondary' className='text-sm'>
                   <Package className='w-3.5 h-3.5 mr-1' />
-                  {destination.totalPackages} Tours Available
+                  {destination.packageCount} Tours Available
                 </Badge>
               </div>
 
@@ -79,8 +95,8 @@ export default function DestinationPackagesPage({
                 {destination.name}
               </h1>
 
-              <p className='text-base md:text-lg text-white/90 max-w-3xl'>
-                {destination.description}
+              <p className='text-base md:text-lg line-clamp-3 text-white/90 max-w-3xl'>
+                {destination.summary}
               </p>
             </div>
           </div>
@@ -91,14 +107,14 @@ export default function DestinationPackagesPage({
       <section className='border-b border-border bg-secondary/10'>
         <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6'>
           <div className='flex flex-wrap gap-2'>
-            {destination.highlights.map((highlight, idx) => (
+            {destination.tags.map((tag, idx) => (
               <Badge
                 // biome-ignore lint/suspicious/noArrayIndexKey: valid for static lists
                 key={idx}
                 variant='secondary'
                 className='text-sm px-3 py-1.5'
               >
-                {highlight}
+                {tag}
               </Badge>
             ))}
           </div>
@@ -109,7 +125,7 @@ export default function DestinationPackagesPage({
       <section className='py-4 border-b border-border'>
         <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
           <p className='text-sm font-medium text-muted-foreground'>
-            Showing all {destination.packages.length} available tours in{' '}
+            Showing all {destination.packageCount} available tours in{' '}
             {destination.name}
           </p>
         </div>
@@ -122,7 +138,7 @@ export default function DestinationPackagesPage({
             {destination.packages.map((pkg, idx) => (
               <Link
                 key={pkg.id}
-                href={`/packages/${destination.slug}/${pkg.slug}`}
+                href={`/packages/${destination.id}/${pkg.id}`}
                 className='group'
               >
                 <Card
@@ -131,8 +147,8 @@ export default function DestinationPackagesPage({
                 >
                   <div className='relative h-48 overflow-hidden'>
                     <Image
-                      src={pkg.image}
-                      alt={pkg.title}
+                      src={pkg.coverImage}
+                      alt={pkg.name}
                       fill
                       className='object-cover group-hover:scale-110 transition-transform duration-700'
                     />
@@ -152,23 +168,23 @@ export default function DestinationPackagesPage({
                   <CardContent className='p-5 space-y-3 flex-1 flex flex-col'>
                     <div className='flex-1'>
                       <h3 className='font-bold text-lg mb-2 line-clamp-2 group-hover:text-primary transition-colors'>
-                        {pkg.title}
+                        {pkg.name}
                       </h3>
                       <p className='text-sm text-muted-foreground line-clamp-2'>
-                        {pkg.description}
+                        {pkg.summary}
                       </p>
                     </div>
 
                     <div className='space-y-3'>
                       <div className='flex flex-wrap gap-1.5'>
-                        {pkg.highlights.slice(0, 3).map((highlight, i) => (
+                        {pkg.tags.slice(0, 3).map((tag, i) => (
                           <Badge
                             // biome-ignore lint/suspicious/noArrayIndexKey: valid static rendering
                             key={i}
                             variant='secondary'
                             className='text-xs px-2 py-0.5'
                           >
-                            {highlight}
+                            {tag}
                           </Badge>
                         ))}
                       </div>
@@ -176,12 +192,12 @@ export default function DestinationPackagesPage({
                       <div className='flex items-center gap-4 text-sm text-muted-foreground'>
                         <div className='flex items-center gap-1'>
                           <Clock className='w-4 h-4 text-primary' />
-                          <span>{pkg.duration}</span>
+                          <span>{pkg.durationDays} days</span>
                         </div>
                         <div className='flex items-center gap-1'>
                           <Users className='w-4 h-4 text-primary' />
                           <span className='text-xs'>
-                            {pkg.groupSize.split(' ')[0]}
+                            {pkg.minGroupSize}-{pkg.maxGroupSize} people
                           </span>
                         </div>
                       </div>
@@ -189,10 +205,10 @@ export default function DestinationPackagesPage({
                       <div className='flex items-center gap-2'>
                         <Star className='w-4 h-4 fill-yellow-400 text-yellow-400' />
                         <span className='font-semibold text-sm'>
-                          {pkg.rating}
+                          {pkg.avgRating}
                         </span>
                         <span className='text-xs text-muted-foreground'>
-                          ({pkg.reviews?.length || 0} reviews)
+                          {pkg.reviewCount}
                         </span>
                       </div>
                     </div>
@@ -210,7 +226,7 @@ export default function DestinationPackagesPage({
                               ৳{pkg.pricePerPerson.toLocaleString()}
                             </span>
                             <span className='text-xs text-muted-foreground line-through'>
-                              ৳{pkg.originalPricePerPerson?.toLocaleString()}
+                              ৳{pkg.originalPrice?.toLocaleString()}
                             </span>
                           </div>
                         </div>

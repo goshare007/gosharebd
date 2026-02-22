@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { QUERY_KEYS } from '@/constants/query-keys';
+import type { DestinationType } from '@/types/destination';
 
 export const useAddDestination = () => {
   const queryClient = useQueryClient();
@@ -29,10 +30,10 @@ export const useAddDestination = () => {
 };
 
 export const useAllDestinations = () => {
-  return useQuery({
+  return useQuery<DestinationType[]>({
     queryKey: [QUERY_KEYS.All_DESTINATION],
     queryFn: async () => {
-      const response = await axios.get('/api/destinations');
+      const response = await axios.get<DestinationType[]>('/api/destinations');
       return response.data;
     },
   });

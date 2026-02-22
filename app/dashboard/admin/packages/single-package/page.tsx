@@ -17,42 +17,34 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { use, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useSinglePackages } from '@/services/packages';
 
-export default function PackageDetailPage({
-  params,
-}: {
-  params: Promise<{ slug: string; pac: string }>;
-}) {
-  const { pac } = use(params);
-
+function SinglePackageContent() {
+  const searchParams = useSearchParams();
+  const packageId = searchParams.get('packageId');
   const [showCouple, setShowCouple] = useState(false);
 
-  const { isPending, data: packageData, isError } = useSinglePackages(pac);
+  const {
+    data: packageData,
+    isLoading,
+    error,
+  } = useSinglePackages(packageId || '');
 
-  if (isPending) {
-    return (
-      <div className='flex items-center justify-center min-h-screen'>
-        <p className='text-lg text-muted-foreground'>Loading packages...</p>
-      </div>
-    );
+  if (isLoading) {
+    return <div>Loading...</div>;
   }
 
-  if (isError) {
+  if (error || !packageData) {
     return (
-      <div className='flex items-center justify-center min-h-screen'>
-        <p className='text-lg text-destructive'>
-          Failed to load package details. Please try again.
-        </p>
-      </div>
+      <div className='text-center py-20'>Failed to load package details.</div>
     );
   }
-
   return (
     <div className='min-h-screen bg-background'>
       {/* Hero Image - Clean & Simple */}
@@ -469,5 +461,13 @@ export default function PackageDetailPage({
         </div>
       </div>
     </div>
+  );
+}
+
+export default function page() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SinglePackageContent />
+    </Suspense>
   );
 }

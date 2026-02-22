@@ -15,7 +15,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAllDestinations } from '@/services/destinations';
-import type { RealDestinationType } from '@/types/real/destination';
 
 export default function DestinationsPage() {
   const { isPending, data, isError, refetch } = useAllDestinations();
@@ -110,7 +109,7 @@ export default function DestinationsPage() {
       </div>
 
       <div className='grid sm:grid-cols-2 lg:grid-cols-3 gap-6'>
-        {data.map((dest: RealDestinationType) => (
+        {data.map((dest) => (
           <Link
             key={dest.id}
             href={`/dashboard/admin/destinations/${dest.id}`}
@@ -124,6 +123,7 @@ export default function DestinationsPage() {
                   fill
                   className='object-cover group-hover:scale-110 transition-transform duration-700'
                 />
+
                 <div className='absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent' />
                 <div className='absolute bottom-0 left-0 right-0 p-4 text-white'>
                   <h3 className='text-lg font-bold mb-1 group-hover:text-primary-foreground transition-colors'>
@@ -161,10 +161,18 @@ export default function DestinationsPage() {
                       <span className='text-xs font-medium uppercase'>
                         Packages
                       </span>
+                      <span className='font-bold text-primary'>
+                        {dest.packageCount || 0}
+                      </span>
                     </div>
-                    <span className='font-bold text-primary'>
-                      {dest._count?.packages || 0}
-                    </span>
+                    <div className='flex items-center gap-2'>
+                      <p className='text-xs text-muted-foreground'>
+                        Starting from
+                      </p>
+                      <p className='text-sm font-semibold'>
+                        {dest.startingPrice ? `৳${dest.startingPrice}` : 'N/A'}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </CardContent>

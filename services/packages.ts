@@ -2,14 +2,19 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { QUERY_KEYS } from '@/constants/query-keys';
+import type { SingleDestinationType } from '@/types/destination';
+import type { SinglePackageType } from '@/types/package';
 
 export const useDestinationWisePackages = (id: string) => {
-  return useQuery({
+  return useQuery<SingleDestinationType>({
     queryKey: [QUERY_KEYS.Single_DESTINATION_PACKAGES, id],
     queryFn: async () => {
-      const response = await axios.get('/api/packages/destination', {
-        params: { id },
-      });
+      const response = await axios.get<SingleDestinationType>(
+        '/api/packages/destination',
+        {
+          params: { id },
+        },
+      );
       return response.data;
     },
   });
@@ -36,6 +41,21 @@ export const useAddPackage = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.All_DESTINATION] });
+    },
+  });
+};
+
+export const useSinglePackages = (PackageId: string) => {
+  return useQuery<SinglePackageType>({
+    queryKey: [QUERY_KEYS.Single_PACKAGES, PackageId],
+    queryFn: async () => {
+      const response = await axios.get<SinglePackageType>(
+        '/api/packages/single-package',
+        {
+          params: { packageId: PackageId },
+        },
+      );
+      return response.data;
     },
   });
 };

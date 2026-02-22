@@ -24,6 +24,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { z } from 'zod';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -249,8 +250,8 @@ function AddNewPackageContent() {
   const handleCoverImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Max 5MB');
+    if (file.size > 2 * 1024 * 1024) {
+      toast.info('Max 2MB');
       return;
     }
     setCoverImageFile(file);
@@ -271,7 +272,8 @@ function AddNewPackageContent() {
   // Gallery
   const handleGalleryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []).filter(
-      (f) => f.type.startsWith('image/') && f.size <= 5 * 1024 * 1024,
+      (f) => f.type.startsWith('image/') && f.size <= 2 * 1024 * 1024,
+      toast.info('Max 2MB'),
     );
     setGalleryFiles((prev) =>
       [
@@ -343,9 +345,12 @@ function AddNewPackageContent() {
         {/* Header */}
         <div className='mb-8'>
           <Button variant='ghost' size='sm' className='mb-4' asChild>
-            <Link href='/admin/packages' className='gap-2'>
+            <Link
+              href={`/dashboard/admin/destinations/${destinationId}`}
+              className='gap-2'
+            >
               <ArrowLeft className='w-4 h-4' />
-              Back to Packages
+              Back to Destinations
             </Link>
           </Button>
           <div className='flex items-center gap-3 mb-2'>
