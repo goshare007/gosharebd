@@ -22,7 +22,7 @@ const navItems = [
   { name: 'Packages', href: '/packages' },
   { name: 'Festivals', href: '/festivals' },
   { name: 'Gallery', href: '/gallery' },
-  { name: 'Reviews', href: '/reviews' },
+  { name: 'Blog', href: '/blog' },
 ];
 
 export default function Header() {
