@@ -21,6 +21,8 @@ model User {
   banExpires    DateTime?
   sessions      Session[]
   accounts      Account[]
+  bookings      Booking[]
+  reviews       Review[]
 
   @@unique([email])
   @@map("user")
@@ -136,8 +138,9 @@ model Package {
   itinerary Itinerary[]
   reviews   Review[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  bookings  Booking[]
 
   @@index([destinationId])
   @@map("package")
@@ -161,10 +164,12 @@ model Review {
   id        String  @id @default(cuid())
   packageId String
   package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
 
   name    String
   avatar  String?
-  rating  Int // 1-5
+  rating  Int
   comment String
   images  String[]
   date    DateTime @default(now())
@@ -183,4 +188,74 @@ model GalleryImage {
   package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
+}
+
+model Booking {
+  id String @id @default(cuid())
+
+  // Relations
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  packageId String
+  package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  // Trip details
+  travelDate DateTime
+  notes      String?
+
+  // Group composition snapshot
+  adultCount   Int
+  preteenCount Int
+  childCount   Int
+  infantCount  Int
+
+  // Pricing snapshot (frozen at booking time)
+  subtotal Decimal @db.Decimal(10, 2)
+  vat      Decimal @db.Decimal(10, 2)
+  total    Decimal @db.Decimal(10, 2)
+
+  // Status
+  status BookingStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members BookingMember[]
+
+  @@index([userId])
+  @@index([packageId])
+  @@map("booking")
+}
+
+model BookingMember {
+  id        String  @id @default(cuid())
+  bookingId String
+  booking   Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  type     BookingMemberType
+  fullName String
+  gender   Gender
+  idNumber String
+  email    String
+  phone    String
+
+  @@index([bookingId])
+  @@map("booking_member")
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+enum BookingMemberType {
+  adult
+  preteen
+}
+
+enum Gender {
+  male
+  female
+  other
 }

@@ -1,10 +1,5 @@
 'use client';
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { useSinglePackages } from '@/services/packages';
 import {
   ArrowLeft,
   Award,
@@ -23,6 +18,11 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { use, useState } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { useSinglePackages } from '@/services/packages';
 
 export default function PackageDetailPage({
   params,

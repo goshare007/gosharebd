@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Label } from '@/components/ui/label';
 import {
@@ -52,9 +52,7 @@ function PackageSelector({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function BookNowPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const initialPackageId = searchParams.get('packageId') ?? '';
-  const [selectedPackageId, setSelectedPackageId] = useState(initialPackageId);
+  const [selectedPackageId, setSelectedPackageId] = useState('');
 
   const handlePackageSelect = (id: string) => {
     setSelectedPackageId(id);
