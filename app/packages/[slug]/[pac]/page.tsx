@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  AlertTriangle,
   ArrowLeft,
   Award,
   CheckCircle2,
@@ -9,6 +10,7 @@ import {
   MapPin,
   MessageCircle,
   Phone,
+  RefreshCcw,
   Share2,
   Shield,
   Star,
@@ -22,6 +24,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useSinglePackages } from '@/services/packages';
 
 export default function PackageDetailPage({
@@ -37,18 +40,190 @@ export default function PackageDetailPage({
 
   if (isPending) {
     return (
-      <div className='flex items-center justify-center min-h-screen'>
-        <p className='text-lg text-muted-foreground'>Loading packages...</p>
+      <div className='min-h-screen bg-background'>
+        {/* Hero skeleton */}
+        <section className='relative h-[50vh] md:h-[60vh]'>
+          <Skeleton className='w-full h-full rounded-none' />
+          <div className='absolute bottom-0 left-0 right-0 p-6 md:p-8 lg:p-12'>
+            <div className='max-w-7xl mx-auto space-y-4'>
+              <div className='flex gap-2'>
+                <Skeleton className='h-6 w-28' />
+                <Skeleton className='h-6 w-24' />
+              </div>
+              <Skeleton className='h-12 w-2/3' />
+              <div className='flex gap-4'>
+                <Skeleton className='h-5 w-32' />
+                <Skeleton className='h-5 w-24' />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
+          <div className='grid lg:grid-cols-3 gap-8'>
+            {/* Main content skeleton */}
+            <div className='lg:col-span-2 space-y-10'>
+              {/* Quick info bar */}
+              <div className='grid grid-cols-3 gap-4 p-6 bg-secondary/20 rounded-xl border-2'>
+                {Array.from({ length: 3 }).map((_, i) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
+                  <div key={i} className='flex flex-col items-center gap-2'>
+                    <Skeleton className='w-6 h-6 rounded-full' />
+                    <Skeleton className='h-3 w-16' />
+                    <Skeleton className='h-5 w-12' />
+                  </div>
+                ))}
+              </div>
+
+              {/* About */}
+              <div className='space-y-3'>
+                <Skeleton className='h-8 w-48' />
+                <Skeleton className='h-4 w-full' />
+                <Skeleton className='h-4 w-full' />
+                <Skeleton className='h-4 w-3/4' />
+              </div>
+
+              {/* Highlights */}
+              <div className='bg-primary/5 border-2 border-primary/10 rounded-xl p-6 space-y-4'>
+                <Skeleton className='h-8 w-40' />
+                <div className='grid sm:grid-cols-2 gap-4'>
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
+                    <div key={i} className='flex items-start gap-3'>
+                      <Skeleton className='w-5 h-5 rounded-full shrink-0 mt-0.5' />
+                      <Skeleton className='h-4 w-full' />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Itinerary */}
+              <div className='space-y-6'>
+                <Skeleton className='h-8 w-48' />
+                {Array.from({ length: 4 }).map((_, i) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
+                  <div key={i} className='flex gap-4'>
+                    <div className='flex flex-col items-center'>
+                      <Skeleton className='w-12 h-12 rounded-full shrink-0' />
+                      {i < 3 && <Skeleton className='w-0.5 flex-1 mt-2 h-12' />}
+                    </div>
+                    <div className='flex-1 pb-6 space-y-2'>
+                      <div className='flex gap-2'>
+                        <Skeleton className='h-6 w-24 rounded-full' />
+                        <Skeleton className='h-6 w-40' />
+                      </div>
+                      <Skeleton className='h-4 w-full' />
+                      <Skeleton className='h-4 w-3/4' />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Includes / Excludes */}
+              <div className='grid md:grid-cols-2 gap-6'>
+                {Array.from({ length: 2 }).map((_, i) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
+                  <Card key={i} className='border-2'>
+                    <CardContent className='p-6 space-y-3'>
+                      <Skeleton className='h-6 w-40' />
+                      {Array.from({ length: 4 }).map((_, j) => (
+                        // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
+                        <div key={j} className='flex items-start gap-2'>
+                          <Skeleton className='w-5 h-5 rounded-full shrink-0' />
+                          <Skeleton className='h-4 w-full' />
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Important info */}
+              <Card className='border-2'>
+                <CardContent className='p-6 space-y-4'>
+                  <Skeleton className='h-8 w-56' />
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
+                    <div key={i} className='space-y-2'>
+                      <Skeleton className='h-5 w-40' />
+                      <Skeleton className='h-4 w-full' />
+                      <Skeleton className='h-4 w-2/3' />
+                      {i < 2 && <Separator className='mt-4' />}
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Sidebar skeleton */}
+            <div className='lg:col-span-1'>
+              <Card className='sticky top-24 border-2 shadow-lg pt-0'>
+                <CardContent className='p-0'>
+                  <div className='p-6 border-b-2 space-y-3'>
+                    <Skeleton className='h-4 w-32' />
+                    <Skeleton className='h-10 w-48' />
+                    <Skeleton className='h-7 w-36 rounded-full' />
+                  </div>
+                  <div className='p-6 space-y-5'>
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
+                      <div key={i} className='flex items-center gap-3'>
+                        <Skeleton className='w-8 h-8 rounded-full shrink-0' />
+                        <Skeleton className='h-4 w-48' />
+                      </div>
+                    ))}
+                    <Separator />
+                    <Skeleton className='h-12 w-full rounded-md' />
+                    <div className='bg-secondary/20 p-4 rounded-lg space-y-3'>
+                      <Skeleton className='h-5 w-36' />
+                      {Array.from({ length: 2 }).map((_, i) => (
+                        // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
+                        <div key={i} className='flex items-center gap-3'>
+                          <Skeleton className='w-8 h-8 rounded-full shrink-0' />
+                          <Skeleton className='h-4 w-40' />
+                        </div>
+                      ))}
+                      <Skeleton className='h-9 w-full rounded-md' />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (isError) {
     return (
-      <div className='flex items-center justify-center min-h-screen'>
-        <p className='text-lg text-destructive'>
-          Failed to load package details. Please try again.
-        </p>
+      <div className='min-h-screen flex items-center justify-center px-4'>
+        <div className='text-center space-y-5 max-w-md'>
+          <div className='w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center mx-auto'>
+            <AlertTriangle className='w-7 h-7 text-destructive' />
+          </div>
+          <div className='space-y-2'>
+            <h2 className='text-xl font-semibold'>Failed to load package</h2>
+            <p className='text-sm text-muted-foreground'>
+              We couldn't fetch the details for this tour. This might be a
+              temporary issue — please try again.
+            </p>
+          </div>
+          <div className='flex items-center justify-center gap-3'>
+            <Button
+              variant='outline'
+              onClick={() => window.location.reload()}
+              className='gap-2'
+            >
+              <RefreshCcw className='w-4 h-4' />
+              Try again
+            </Button>
+
+            <Button asChild variant='ghost'>
+              <Link href='/packages'>All destinations</Link>
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }

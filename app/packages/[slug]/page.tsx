@@ -1,10 +1,12 @@
 'use client';
 import {
+  AlertTriangle,
   ArrowLeft,
   Clock,
   Info,
   MapPin,
   Package,
+  RefreshCcw,
   Star,
   TrendingUp,
   Users,
@@ -15,6 +17,7 @@ import { use } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useDestinationWisePackages } from '@/services/packages';
 
 export default function DestinationPackagesPage({
@@ -28,22 +31,111 @@ export default function DestinationPackagesPage({
     isPending,
     data: destination,
     isError,
+    refetch,
   } = useDestinationWisePackages(slug);
 
   if (isPending) {
     return (
-      <div className='flex items-center justify-center min-h-screen'>
-        <p className='text-lg text-muted-foreground'>Loading packages...</p>
+      <div className='min-h-screen'>
+        {/* Hero skeleton */}
+        <section className='relative h-[50vh] md:h-[60vh]'>
+          <Skeleton className='w-full h-full rounded-none' />
+          <div className='absolute bottom-0 left-0 right-0 p-6 md:p-8 lg:p-12'>
+            <div className='max-w-7xl mx-auto space-y-4'>
+              <div className='flex gap-3'>
+                <Skeleton className='h-6 w-32' />
+                <Skeleton className='h-6 w-36' />
+              </div>
+              <Skeleton className='h-14 w-2/3' />
+              <Skeleton className='h-5 w-full max-w-2xl' />
+              <Skeleton className='h-5 w-3/4 max-w-xl' />
+            </div>
+          </div>
+        </section>
+
+        {/* Tags bar skeleton */}
+        <section className='border-b border-border bg-secondary/10 py-6'>
+          <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap gap-2'>
+            {Array.from({ length: 5 }).map((_, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
+              <Skeleton key={i} className='h-7 w-20 rounded-full' />
+            ))}
+          </div>
+        </section>
+
+        {/* Results header skeleton */}
+        <section className='py-4 border-b border-border'>
+          <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
+            <Skeleton className='h-4 w-64' />
+          </div>
+        </section>
+
+        {/* Cards grid skeleton */}
+        <section className='py-12 md:py-16'>
+          <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
+            <div className='grid sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8'>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
+                  key={i}
+                  className='rounded-xl border-2 overflow-hidden flex flex-col'
+                >
+                  <Skeleton className='h-48 w-full rounded-none' />
+                  <div className='p-5 space-y-3 flex-1'>
+                    <Skeleton className='h-6 w-3/4' />
+                    <Skeleton className='h-4 w-full' />
+                    <Skeleton className='h-4 w-2/3' />
+                    <div className='flex gap-2 pt-1'>
+                      <Skeleton className='h-5 w-16 rounded-full' />
+                      <Skeleton className='h-5 w-16 rounded-full' />
+                      <Skeleton className='h-5 w-16 rounded-full' />
+                    </div>
+                    <div className='flex gap-4 pt-1'>
+                      <Skeleton className='h-4 w-20' />
+                      <Skeleton className='h-4 w-24' />
+                    </div>
+                  </div>
+                  <div className='px-5 pb-5'>
+                    <Skeleton className='h-3 w-16 mb-2' />
+                    <Skeleton className='h-7 w-32' />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
       </div>
     );
   }
 
   if (isError || !destination) {
     return (
-      <div className='flex items-center justify-center min-h-screen'>
-        <p className='text-lg text-destructive'>
-          Failed to load packages. Please try again.
-        </p>
+      <div className='min-h-screen flex items-center justify-center px-4'>
+        <div className='text-center space-y-5 max-w-md'>
+          <div className='w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center mx-auto'>
+            <AlertTriangle className='w-7 h-7 text-destructive' />
+          </div>
+          <div className='space-y-2'>
+            <h2 className='text-xl font-semibold'>Failed to load packages</h2>
+            <p className='text-sm text-muted-foreground'>
+              We couldn't fetch the packages for this destination. This might be
+              a temporary issue — please try again.
+            </p>
+          </div>
+          <div className='flex items-center justify-center gap-3'>
+            <Button
+              variant='outline'
+              onClick={() => refetch()}
+              className='gap-2'
+            >
+              <RefreshCcw className='w-4 h-4' />
+              Try again
+            </Button>
+            <Button asChild variant='ghost'>
+              <Link href='/packages'>Back to destinations</Link>
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
