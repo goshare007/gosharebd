@@ -361,22 +361,24 @@ export default function PackageDetailPage({
             </section>
 
             {/* Image Section After Highlights */}
-            <section className='grid sm:grid-cols-2 gap-4'>
-              {/* {packageData.images.slice(1, 3).map((img, idx) => (
-                <div
-                  // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
-                  key={idx}
-                  className='relative h-64 rounded-xl overflow-hidden group cursor-pointer'
-                >
-                  <Image
-                    src={img}
-                    alt={`${packageData.title} ${idx + 2}`}
-                    fill
-                    className='object-cover group-hover:scale-105 transition-transform duration-500'
-                  />
-                </div>
-              ))} */}
-            </section>
+            {packageData.gallery.length > 1 && (
+              <section className='grid sm:grid-cols-2 gap-4'>
+                {packageData.gallery.slice(0, 3).map((img, idx) => (
+                  <div
+                    // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
+                    key={idx}
+                    className='relative h-64 rounded-xl overflow-hidden group cursor-pointer'
+                  >
+                    <Image
+                      src={img.url}
+                      alt={`${packageData.name} ${idx + 2}`}
+                      fill
+                      className='object-cover group-hover:scale-105 transition-transform duration-500'
+                    />
+                  </div>
+                ))}
+              </section>
+            )}
 
             {/* Itinerary */}
             <section>
@@ -490,21 +492,21 @@ export default function PackageDetailPage({
               </div>
 
               <div className='grid grid-cols-2 md:grid-cols-3 gap-4'>
-                {/* {packageData.images.map((img, idx) => (
+                {packageData.gallery.map((img, idx) => (
                   <div
                     // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
                     key={idx}
                     className='relative h-48 rounded-lg overflow-hidden cursor-pointer group'
                   >
                     <Image
-                      src={img}
-                      alt={`${packageData.title} ${idx + 1}`}
+                      src={img.url}
+                      alt={`${packageData.name} ${idx + 1}`}
                       fill
                       className='object-cover group-hover:scale-105 transition-transform duration-300'
                     />
                     <div className='absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors' />
                   </div>
-                ))} */}
+                ))}
               </div>
             </section>
           </div>

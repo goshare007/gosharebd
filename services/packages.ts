@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
+import axios, { type AxiosError } from 'axios';
 import { toast } from 'sonner';
 import { QUERY_KEYS } from '@/constants/query-keys';
 import type { SingleDestinationType } from '@/types/destination';
@@ -69,3 +69,70 @@ export const useAllPackages = () => {
     },
   });
 };
+
+async function deletePackage(packageId: string): Promise<void> {
+  await axios.delete(`/api/packages/single-package?packageId=${packageId}`);
+}
+
+export function useDeletePackage(destinationId?: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deletePackage,
+    onSuccess: () => {
+      toast.success('Package deleted successfully');
+      if (destinationId) {
+        queryClient.invalidateQueries({
+          queryKey: [QUERY_KEYS.SINGLE_DESTINATION_PACKAGES, destinationId],
+        });
+      } else {
+        queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ALL_PACKAGES] });
+      }
+    },
+    onError: (error: AxiosError<{ message?: string }>) => {
+      const message =
+        error.response?.data?.message ??
+        error.message ??
+        'Something went wrong';
+      toast.error(message);
+    },
+  });
+}
+
+async function updatePackage({
+  packageId,
+  formData,
+}: {
+  packageId: string;
+  formData: FormData;
+}): Promise<void> {
+  await axios.patch(
+    `/api/packages/single-package?packageId=${packageId}`,
+    formData,
+  );
+}
+
+export function useUpdatePackage(packageId: string | null) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updatePackage,
+    onSuccess: () => {
+      toast.success('Package updated successfully');
+      // Invalidate the single package query so it refetches fresh data
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.SINGLE_PACKAGES, packageId],
+      });
+      // Also invalidate destination-wise packages list
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.All_DESTINATION] });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ALL_PACKAGES] });
+    },
+    onError: (error: AxiosError<{ message?: string }>) => {
+      const message =
+        error.response?.data?.message ??
+        error.message ??
+        'Something went wrong';
+      toast.error(message);
+    },
+  });
+}

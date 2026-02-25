@@ -4,9 +4,25 @@ import { Image as ImageIcon, MapPin } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
-import { GalleriesData } from '@/constants/galleries';
+import { useGalleryImages } from '@/services/gallery';
 
 export default function GalleryIndexPage() {
+  const { isPending, data, error } = useGalleryImages();
+  if (isPending) {
+    return (
+      <div className='min-h-screen flex items-center justify-center'>
+        <p className='text-lg text-muted-foreground'>Loading gallery...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className='min-h-screen flex items-center justify-center'>
+        <p className='text-lg text-muted-foreground'>Error</p>
+      </div>
+    );
+  }
   return (
     <div className='min-h-screen bg-background'>
       {/* Header Section */}
@@ -41,20 +57,17 @@ export default function GalleryIndexPage() {
       {/* Masonry Grid */}
       <section className='py-12'>
         <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
-          {/* CSS Columns: The "magic" for Masonry. 
-              The space-y-4 and break-inside-avoid ensure items don't split across columns.
-          */}
           <div className='columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4'>
-            {GalleriesData.map((gallery) => (
+            {data.map((gallery) => (
               <Link
-                key={gallery.slug}
-                href={`/gallery/${gallery.slug}`}
+                key={gallery.packageId}
+                href={`/gallery/${gallery.packageId}`}
                 className='group block break-inside-avoid mb-4'
               >
                 <Card className='relative overflow-hidden p-0 border-none rounded-xl bg-muted'>
                   <Image
-                    src={gallery.coverImage}
-                    alt={gallery.title}
+                    src={gallery.thumbnail.url}
+                    alt={gallery.packageName}
                     width={800}
                     height={1200} // Set a large height; object-cover will handle the crop naturally
                     className='w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500'
@@ -63,11 +76,11 @@ export default function GalleryIndexPage() {
                   {/* Overlay Info */}
                   <div className='absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-5'>
                     <h3 className='text-white font-bold text-xl'>
-                      {gallery.title}
+                      {gallery.packageName}
                     </h3>
                     <div className='flex items-center gap-2 text-white/80 text-sm mt-1'>
                       <MapPin className='w-3 h-3' />
-                      <span>{gallery.location}</span>
+                      <span>{gallery.Location}</span>
                     </div>
                   </div>
 

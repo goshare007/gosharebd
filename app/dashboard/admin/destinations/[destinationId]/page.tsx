@@ -3,6 +3,7 @@ import {
   AlertCircle,
   ArrowLeft,
   Clock,
+  Edit2,
   Info,
   MapPin,
   Package,
@@ -10,17 +11,34 @@ import {
   RefreshCcw,
   SearchX,
   Star,
+  Trash2,
   TrendingUp,
   Users,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { use } from 'react';
+import { use, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useDestinationWisePackages } from '@/services/packages';
+import {
+  useDeletePackage,
+  useDestinationWisePackages,
+} from '@/services/packages';
+
+interface PackageToDelete {
+  id: string;
+  name: string;
+}
 
 export default function BlogPostPage({
   params,
@@ -30,6 +48,19 @@ export default function BlogPostPage({
   const { destinationId } = use(params);
   const { isPending, data, isError, refetch } =
     useDestinationWisePackages(destinationId);
+
+  const [packageToDelete, setPackageToDelete] =
+    useState<PackageToDelete | null>(null);
+
+  const { mutate: deletePackage, isPending: isDeleting } =
+    useDeletePackage(destinationId);
+
+  function handleDeleteConfirm() {
+    if (!packageToDelete) return;
+    deletePackage(packageToDelete.id, {
+      onSuccess: () => setPackageToDelete(null),
+    });
+  }
 
   if (isPending) {
     return (
@@ -107,6 +138,41 @@ export default function BlogPostPage({
 
   return (
     <div className='min-h-screen'>
+      {/* Confirm Delete Dialog */}
+      <Dialog
+        open={!!packageToDelete}
+        onOpenChange={(open) => !open && setPackageToDelete(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Package</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete{' '}
+              <span className='font-semibold text-foreground'>
+                {packageToDelete?.name}
+              </span>
+              ? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant='outline'
+              onClick={() => setPackageToDelete(null)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant='destructive'
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Hero Section with Destination Cover */}
       <section className='relative h-[50vh] md:h-[60vh] overflow-hidden'>
         <Image
@@ -126,7 +192,7 @@ export default function BlogPostPage({
             asChild
             className='gap-2 bg-background/80 backdrop-blur-sm'
           >
-            <Link href='/packages'>
+            <Link href='/dashboard/admin/destinations'>
               <ArrowLeft className='w-4 h-4' />
               All Destinations
             </Link>
@@ -194,121 +260,154 @@ export default function BlogPostPage({
         </div>
       </section>
 
-      {/* Packages Grid */}
       <section className='py-12 md:py-16'>
         <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
           <div className='grid sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8'>
             {data.packages.map((pkg, idx) => (
-              <Link
+              /* The Card is now the outer relative container */
+              <Card
                 key={pkg.id}
-                href={`/dashboard/admin/packages/single-package?packageId=${pkg.id}`}
-                className='group'
+                className='group relative overflow-hidden pt-0 border-2 hover:border-primary/50 hover:shadow-xl transition-all hover:-translate-y-1 h-full flex flex-col animate-in fade-in duration-700'
+                style={{ animationDelay: `${idx * 100}ms` }}
               >
-                <Card
-                  className='overflow-hidden pt-0 border-2 hover:border-primary/50 hover:shadow-xl transition-all hover:-translate-y-1 h-full flex flex-col animate-in fade-in duration-700'
-                  style={{ animationDelay: `${idx * 100}ms` }}
-                >
-                  <div className='relative h-48 overflow-hidden'>
-                    <Image
-                      src={pkg.coverImage}
-                      alt={pkg.name}
-                      fill
-                      className='object-cover group-hover:scale-110 transition-transform duration-700'
-                    />
-                    <div className='absolute inset-0 bg-linear-to-t from-black/60 to-transparent' />
+                {/* 1. THE MAIN LINK (Stretched) 
+              Covers the whole card for navigation to single package view. */}
+                <Link
+                  href={`/dashboard/admin/packages/single-package?packageId=${pkg.id}`}
+                  className='absolute inset-0 z-10'
+                  aria-label={`View ${pkg.name}`}
+                />
 
-                    <div className='absolute top-3 left-3 flex gap-2'>
-                      {pkg.isBestseller && (
-                        <Badge className='bg-primary/90 backdrop-blur-sm text-xs'>
-                          <TrendingUp className='w-3 h-3 mr-1' />
-                          Bestseller
-                        </Badge>
-                      )}
-                    </div>
+                {/* Image Section */}
+                <div className='relative h-48 overflow-hidden'>
+                  <Image
+                    src={pkg.coverImage}
+                    alt={pkg.name}
+                    fill
+                    className='object-cover group-hover:scale-110 transition-transform duration-700'
+                  />
+                  <div className='absolute inset-0 bg-linear-to-t from-black/60 to-transparent' />
+
+                  {/* Bestseller Badge (Left) */}
+                  <div className='absolute top-3 left-3 flex gap-2 z-0'>
+                    {pkg.isBestseller && (
+                      <Badge className='bg-primary/90 backdrop-blur-sm text-xs'>
+                        <TrendingUp className='w-3 h-3 mr-1' />
+                        Bestseller
+                      </Badge>
+                    )}
                   </div>
 
-                  <CardContent className='p-5 space-y-3 flex-1 flex flex-col'>
-                    <div className='flex-1'>
-                      <h3 className='font-bold text-lg mb-2 line-clamp-2 group-hover:text-primary transition-colors'>
-                        {pkg.name}
-                      </h3>
-                      <p className='text-sm text-muted-foreground line-clamp-2'>
-                        {pkg.summary}
-                      </p>
+                  {/* 2. ACTION BUTTONS (Right) 
+                Higher z-index (z-20) to sit above the stretched link. */}
+                  <div className='absolute top-3 right-3 flex gap-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200'>
+                    <Link
+                      href={`/dashboard/admin/packages/edit?packageId=${pkg.id}`}
+                    >
+                      <Button
+                        size='icon'
+                        variant='secondary'
+                        className='h-8 w-8 pointer-events-auto shadow-sm'
+                      >
+                        <Edit2 className='w-4 h-4' />
+                      </Button>
+                    </Link>
+                    <Button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setPackageToDelete({ id: pkg.id, name: pkg.name });
+                      }}
+                      size='icon'
+                      variant='destructive'
+                      className='h-8 w-8 pointer-events-auto shadow-sm'
+                    >
+                      <Trash2 className='w-4 h-4' />
+                    </Button>
+                  </div>
+                </div>
+
+                <CardContent className='p-5 space-y-3 flex-1 flex flex-col'>
+                  <div className='flex-1'>
+                    <h3 className='font-bold text-lg mb-2 line-clamp-2 group-hover:text-primary transition-colors'>
+                      {pkg.name}
+                    </h3>
+                    <p className='text-sm text-muted-foreground line-clamp-2'>
+                      {pkg.summary}
+                    </p>
+                  </div>
+
+                  <div className='space-y-3'>
+                    <div className='flex flex-wrap gap-1.5'>
+                      {pkg.tags.slice(0, 3).map((tag, i) => (
+                        <Badge
+                          // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
+                          key={i}
+                          variant='secondary'
+                          className='text-xs px-2 py-0.5'
+                        >
+                          {tag}
+                        </Badge>
+                      ))}
                     </div>
 
-                    <div className='space-y-3'>
-                      <div className='flex flex-wrap gap-1.5'>
-                        {pkg.tags.slice(0, 3).map((tag, i) => (
-                          <Badge
-                            // biome-ignore lint/suspicious/noArrayIndexKey: valid static rendering
-                            key={i}
-                            variant='secondary'
-                            className='text-xs px-2 py-0.5'
-                          >
-                            {tag}
-                          </Badge>
-                        ))}
+                    <div className='flex items-center gap-4 text-sm text-muted-foreground'>
+                      <div className='flex items-center gap-1'>
+                        <Clock className='w-4 h-4 text-primary' />
+                        <span>{pkg.durationDays} days</span>
                       </div>
+                      <div className='flex items-center gap-1'>
+                        <Users className='w-4 h-4 text-primary' />
+                        <span className='text-xs'>
+                          {pkg.minGroupSize} - {pkg.maxGroupSize} people
+                        </span>
+                      </div>
+                    </div>
 
-                      <div className='flex items-center gap-4 text-sm text-muted-foreground'>
-                        <div className='flex items-center gap-1'>
-                          <Clock className='w-4 h-4 text-primary' />
-                          <span>{pkg.durationDays} days</span>
-                        </div>
-                        <div className='flex items-center gap-1'>
-                          <Users className='w-4 h-4 text-primary' />
-                          <span className='text-xs'>
-                            {pkg.minGroupSize} - {pkg.maxGroupSize} people
+                    <div className='flex items-center gap-2'>
+                      <Star className='w-4 h-4 fill-yellow-400 text-yellow-400' />
+                      <span className='font-semibold text-sm'>
+                        {pkg.avgRating
+                          ? pkg.avgRating.toFixed(1)
+                          : 'No ratings'}
+                      </span>
+                      <span className='text-xs text-muted-foreground'>
+                        ({pkg.reviewCount} reviews)
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+
+                <CardFooter>
+                  <div className='w-full'>
+                    <div className='flex items-center justify-between'>
+                      <div>
+                        <p className='text-xs text-muted-foreground mb-1'>
+                          Per Person
+                        </p>
+                        <div className='flex items-baseline gap-2'>
+                          <span className='text-xl font-bold text-primary'>
+                            ৳{pkg.pricePerPerson.toLocaleString()}
+                          </span>
+                          <span className='text-xs text-muted-foreground line-through'>
+                            ৳{pkg.originalPrice?.toLocaleString()}
                           </span>
                         </div>
                       </div>
-
-                      <div className='flex items-center gap-2'>
-                        <Star className='w-4 h-4 fill-yellow-400 text-yellow-400' />
-                        <span className='font-semibold text-sm'>
-                          {pkg.avgRating
-                            ? pkg.avgRating.toFixed(1)
-                            : 'No ratings'}
-                        </span>
-                        <span className='text-xs text-muted-foreground'>
-                          ({pkg.reviewCount} reviews)
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-
-                  <CardFooter>
-                    <div className='w-full'>
-                      <div className='flex items-center justify-between'>
-                        <div>
+                      {pkg.couplePrice && (
+                        <div className='text-right'>
                           <p className='text-xs text-muted-foreground mb-1'>
-                            Per Person
+                            For Couple
                           </p>
-                          <div className='flex items-baseline gap-2'>
-                            <span className='text-xl font-bold text-primary'>
-                              ৳{pkg.pricePerPerson.toLocaleString()}
-                            </span>
-                            <span className='text-xs text-muted-foreground line-through'>
-                              ৳{pkg.originalPrice?.toLocaleString()}
-                            </span>
-                          </div>
+                          <span className='text-lg font-bold text-pink-600 dark:text-pink-400'>
+                            ৳{pkg.couplePrice.toLocaleString()}
+                          </span>
                         </div>
-                        {pkg.couplePrice && (
-                          <div>
-                            <p className='text-xs text-muted-foreground mb-1'>
-                              For Couple
-                            </p>
-                            <span className='text-lg font-bold text-pink-600 dark:text-pink-400'>
-                              ৳{pkg.couplePrice.toLocaleString()}
-                            </span>
-                          </div>
-                        )}
-                      </div>
+                      )}
                     </div>
-                  </CardFooter>
-                </Card>
-              </Link>
+                  </div>
+                </CardFooter>
+              </Card>
             ))}
           </div>
         </div>

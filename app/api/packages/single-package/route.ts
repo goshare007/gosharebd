@@ -1,30 +1,29 @@
+import { headers } from 'next/headers';
 import { type NextRequest, NextResponse } from 'next/server';
+import { DeleteImage, UploadImage } from '@/cloudinary';
+import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
+// ─── GET ──────────────────────────────────────────────────────────────────────
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const packageId = searchParams.get('packageId');
-
     if (!packageId) {
-      return NextResponse.json(
-        { error: 'Package ID is required' },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: 'Missing packageId' }, { status: 400 });
     }
 
     const pkg = await prisma.package.findUnique({
       where: { id: packageId },
       include: {
-        itinerary: {
-          orderBy: { order: 'asc' },
+        gallery: {
+          select: {
+            id: true,
+            url: true,
+            publicId: true,
+          },
         },
-        _count: {
-          select: { reviews: true },
-        },
-        reviews: {
-          select: { rating: true },
-        },
+        itinerary: { orderBy: { order: 'asc' } },
       },
     });
 
@@ -32,20 +31,281 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Package not found' }, { status: 404 });
     }
 
-    const { reviews, _count, ...rest } = pkg;
-
-    const reviewCount = _count.reviews;
-    const avgRating =
-      reviewCount > 0
-        ? Math.round(
-            (reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount) * 10,
-          ) / 10
-        : null;
-
-    return NextResponse.json({ ...rest, reviewCount, avgRating });
+    return NextResponse.json(pkg);
   } catch (_error) {
     return NextResponse.json(
-      { error: 'Failed to fetch package details' },
+      { error: 'Failed to fetch package' },
+      { status: 500 },
+    );
+  }
+}
+
+// ─── PATCH ────────────────────────────────────────────────────────────────────
+export async function PATCH(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const packageId = searchParams.get('packageId');
+    if (!packageId) {
+      return NextResponse.json({ error: 'Missing packageId' }, { status: 400 });
+    }
+
+    // ── Auth ─────────────────────────────────────────────────────────────────
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session || session.user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // ── Verify package exists ────────────────────────────────────────────────
+    const existing = await prisma.package.findUnique({
+      where: { id: packageId },
+      include: { gallery: true },
+    });
+
+    if (!existing) {
+      return NextResponse.json({ error: 'Package not found' }, { status: 404 });
+    }
+
+    // ── Parse FormData ───────────────────────────────────────────────────────
+    const formData = await req.formData();
+
+    const name = formData.get('name') as string | null;
+    const summary = formData.get('summary') as string | null;
+    const location = formData.get('location') as string | null;
+    const durationDaysRaw = formData.get('durationDays') as string | null;
+    const minGroupSizeRaw = formData.get('minGroupSize') as string | null;
+    const maxGroupSizeRaw = formData.get('maxGroupSize') as string | null;
+    const pricePerPersonRaw = formData.get('pricePerPerson') as string | null;
+    const originalPriceRaw = formData.get('originalPrice') as string | null;
+    const isCoupleRaw = formData.get('isCouple') as string | null;
+    const couplePriceRaw = formData.get('couplePrice') as string | null;
+    const originalCouplePriceRaw = formData.get('originalCouplePrice') as
+      | string
+      | null;
+    const coverImageFile = formData.get('coverImage') as File | null;
+    const keepCoverImage = formData.get('keepCoverImage') === 'true';
+    const newGalleryFiles = formData.getAll('gallery') as File[];
+    const removedGalleryIdsRaw = formData.get('removedGalleryIds') as
+      | string
+      | null;
+    const tagsRaw = formData.get('tags') as string | null;
+    const highlightsRaw = formData.get('highlights') as string | null;
+    const includesRaw = formData.get('includes') as string | null;
+    const excludesRaw = formData.get('excludes') as string | null;
+    const itineraryRaw = formData.get('itinerary') as string | null;
+    const cancellationPolicy = formData.get('cancellationPolicy') as
+      | string
+      | null;
+    const weatherPolicy = formData.get('weatherPolicy') as string | null;
+    const ageRestriction = formData.get('ageRestriction') as string | null;
+    const isBestsellerRaw = formData.get('isBestseller') as string | null;
+    const isActiveRaw = formData.get('isActive') as string | null;
+
+    // ── Required field validation ────────────────────────────────────────────
+    if (
+      !name ||
+      !summary ||
+      !location ||
+      !durationDaysRaw ||
+      !minGroupSizeRaw ||
+      !maxGroupSizeRaw ||
+      !pricePerPersonRaw ||
+      !itineraryRaw ||
+      (!coverImageFile && !keepCoverImage)
+    ) {
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 },
+      );
+    }
+
+    // ── Parse primitives ─────────────────────────────────────────────────────
+    const durationDays = parseInt(durationDaysRaw, 10);
+    const minGroupSize = parseInt(minGroupSizeRaw, 10);
+    const maxGroupSize = parseInt(maxGroupSizeRaw, 10);
+    const pricePerPerson = parseFloat(pricePerPersonRaw);
+    const originalPrice = originalPriceRaw
+      ? parseFloat(originalPriceRaw)
+      : null;
+    const isCouple = isCoupleRaw === 'true';
+    const couplePrice = couplePriceRaw ? parseFloat(couplePriceRaw) : null;
+    const originalCouplePrice = originalCouplePriceRaw
+      ? parseFloat(originalCouplePriceRaw)
+      : null;
+    const isBestseller = isBestsellerRaw === 'true';
+    const isActive = isActiveRaw !== 'false';
+
+    // ── Parse JSON arrays ────────────────────────────────────────────────────
+    let tags: string[] = [];
+    let highlights: string[] = [];
+    let includes: string[] = [];
+    let excludes: string[] = [];
+    let removedGalleryIds: string[] = [];
+    let itinerary: {
+      time: string;
+      title: string;
+      description: string;
+      order: number;
+    }[] = [];
+
+    try {
+      if (tagsRaw) tags = JSON.parse(tagsRaw);
+      if (highlightsRaw) highlights = JSON.parse(highlightsRaw);
+      if (includesRaw) includes = JSON.parse(includesRaw);
+      if (excludesRaw) excludes = JSON.parse(excludesRaw);
+      if (removedGalleryIdsRaw)
+        removedGalleryIds = JSON.parse(removedGalleryIdsRaw);
+      itinerary = JSON.parse(itineraryRaw);
+    } catch {
+      return NextResponse.json(
+        { error: 'Invalid JSON in array fields' },
+        { status: 400 },
+      );
+    }
+
+    // ── ALL image operations in parallel ─────────────────────────────────────
+    // Run cover upload, cover delete, all gallery uploads, all gallery deletes
+    // at the same time — this is the main source of latency if done sequentially.
+    const removedGalleryItems = existing.gallery.filter((img) =>
+      removedGalleryIds.includes(img.id),
+    );
+
+    const [coverResult, ...galleryUploadResults] = await Promise.all([
+      // 1. New cover upload (or null if keeping existing)
+      coverImageFile && !keepCoverImage
+        ? UploadImage(coverImageFile, 'packages/covers')
+        : Promise.resolve(null),
+
+      // 2. All new gallery uploads
+      ...newGalleryFiles.map((file) => UploadImage(file, 'packages/gallery')),
+
+      // 3. Delete old cover (fire-and-forget style via allSettled — don't let
+      //    a CDN miss block the whole update)
+      coverImageFile && !keepCoverImage
+        ? // biome-ignore lint/suspicious/noConsole: this is fine
+          DeleteImage(existing.coverImageId).catch(console.error)
+        : Promise.resolve(null),
+
+      // 4. Delete removed gallery images from Cloudinary
+      ...removedGalleryItems.map((img) =>
+        // biome-ignore lint/suspicious/noConsole: this is fine
+        DeleteImage(img.publicId).catch(console.error),
+      ),
+    ]);
+
+    // Resolve final cover values
+    const coverImage = coverResult
+      ? coverResult.secure_url
+      : existing.coverImage;
+    const coverImageId = coverResult
+      ? coverResult.public_id
+      : existing.coverImageId;
+
+    // galleryUploadResults only contains the actual upload results (not the deletes)
+    const newGalleryUploads = galleryUploadResults.slice(
+      0,
+      newGalleryFiles.length,
+    ) as { secure_url: string; public_id: string }[];
+
+    // ── DB update in a transaction ────────────────────────────────────────────
+    // Using $transaction so itinerary delete+create and gallery deletes are atomic.
+    const updatedPackage = await prisma.$transaction(async (tx) => {
+      // Remove gallery DB records for deleted images
+      if (removedGalleryIds.length > 0) {
+        await tx.galleryImage.deleteMany({
+          where: { id: { in: removedGalleryIds } },
+        });
+      }
+
+      return tx.package.update({
+        where: { id: packageId },
+        data: {
+          name,
+          summary,
+          Location: location,
+          durationDays,
+          minGroupSize,
+          maxGroupSize,
+          pricePerPerson,
+          originalPrice,
+          isCouple,
+          couplePrice,
+          originalCouplePrice,
+          coverImage,
+          coverImageId,
+          tags,
+          highlights,
+          includes,
+          excludes,
+          cancellationPolicy: cancellationPolicy || null,
+          weatherPolicy: weatherPolicy || null,
+          ageRestriction: ageRestriction || null,
+          isBestseller,
+          isActive,
+          // Replace all itinerary items — avoids complex diffing
+          itinerary: {
+            deleteMany: {},
+            create: itinerary.map((item) => ({
+              time: item.time,
+              title: item.title,
+              description: item.description,
+              order: item.order,
+            })),
+          },
+          // Append newly uploaded gallery images
+          ...(newGalleryUploads.length > 0 && {
+            gallery: {
+              create: newGalleryUploads.map(({ secure_url, public_id }) => ({
+                url: secure_url,
+                publicId: public_id,
+              })),
+            },
+          }),
+        },
+        include: {
+          itinerary: { orderBy: { order: 'asc' } },
+          gallery: true,
+        },
+      });
+    });
+
+    return NextResponse.json(updatedPackage, { status: 200 });
+  } catch (_error) {
+    return NextResponse.json(
+      { error: 'Failed to update package' },
+      { status: 500 },
+    );
+  }
+}
+
+// ─── DELETE ───────────────────────────────────────────────────────────────────
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const packageId = searchParams.get('packageId');
+    if (!packageId) {
+      return NextResponse.json({ error: 'Missing packageId' }, { status: 400 });
+    }
+
+    const existing = await prisma.package.findUnique({
+      where: { id: packageId },
+      include: { gallery: true },
+    });
+
+    if (!existing) {
+      return NextResponse.json({ error: 'Package not found' }, { status: 404 });
+    }
+
+    await Promise.allSettled([
+      DeleteImage(existing.coverImageId),
+      ...existing.gallery.map((img) => DeleteImage(img.publicId)),
+    ]);
+
+    await prisma.package.delete({ where: { id: packageId } });
+
+    return NextResponse.json({ message: 'Package deleted successfully' });
+  } catch (_error) {
+    return NextResponse.json(
+      { error: 'Failed to delete package' },
       { status: 500 },
     );
   }

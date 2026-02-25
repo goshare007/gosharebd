@@ -23,6 +23,8 @@ export interface SinglePackageType {
   isBestseller: boolean;
   reviewCount: number;
   averageRating: number | null;
+  isActive: boolean;
+  gallery: { id: string; url: string; publicId: string }[];
   itinerary: [
     {
       id: string;
