@@ -5,4 +5,5 @@ export const QUERY_KEYS = {
   ALL_PACKAGES: 'all-packages',
   NEW_BOOKING: 'new-booking',
   MY_BOOKINGS: 'my-bookings',
+  SINGLE_DESTINATION: 'single-destination',
 };
