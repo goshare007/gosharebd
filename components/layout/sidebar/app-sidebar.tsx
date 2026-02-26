@@ -83,7 +83,7 @@ export const data: { navMain: NavItem[]; navSecondary: NavItem[] } = {
     },
     {
       title: 'All Bookings',
-      url: '/admin/bookings',
+      url: '/dashboard/admin/bookings',
       icon: FileText,
       role: ['ADMIN'],
     },

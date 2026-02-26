@@ -261,7 +261,7 @@ export default function GalleryDetailPage({
             {data.images.map((image, idx) => (
               <Card
                 key={image.id}
-                className='break-inside-avoid p-0 overflow-hidden border-2 border-transparent hover:border-primary/40 transition-all duration-300 group animate-in fade-in duration-700'
+                className='break-inside-avoid p-0 overflow-hidden border-2 border-transparent hover:border-primary/40 transition-all group animate-in fade-in duration-700'
                 style={{ animationDelay: `${Math.min(idx * 50, 600)}ms` }}
               >
                 <div className='relative overflow-hidden'>

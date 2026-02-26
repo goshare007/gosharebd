@@ -7,4 +7,6 @@ export const QUERY_KEYS = {
   MY_BOOKINGS: 'my-bookings',
   SINGLE_DESTINATION: 'single-destination',
   GALLERY_IMAGES: 'gallery-images',
+  ADMIN_BOOKINGS_LIST: 'admin-bookings-list',
+  SINGLE_BOOKING: 'single-booking',
 };
