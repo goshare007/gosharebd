@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { DeleteImage } from '@/cloudinary';
 import { auth } from '@/lib/auth';
+import { isAdmin } from '@/lib/auth-utils';
 import { prisma } from '@/lib/prisma';
 
 const schema = z.object({
@@ -15,7 +16,7 @@ export async function DELETE(req: NextRequest) {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!isAdmin(session)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

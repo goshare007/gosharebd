@@ -1,6 +1,7 @@
 import { headers } from 'next/headers';
 import { type NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
+import { isAdmin } from '@/lib/auth-utils';
 import { prisma } from '@/lib/prisma';
 import type { BookingStatus } from '@/prisma/generated/prisma/client/enums';
 
@@ -10,7 +11,7 @@ export async function GET(req: NextRequest) {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!isAdmin(session)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -89,17 +90,22 @@ export async function PATCH(req: NextRequest) {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!isAdmin(session)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // 2. Query params
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
-    const status = searchParams.get('status') as BookingStatus;
-    if (!id || !status) {
+    const status = searchParams.get('status');
+    const validStatuses: BookingStatus[] = [
+      'PENDING',
+      'CONFIRMED',
+      'CANCELLED',
+    ];
+    if (!id || !status || !validStatuses.includes(status as BookingStatus)) {
       return NextResponse.json(
-        { error: 'Missing booking ID or status' },
+        { error: 'Missing booking ID or invalid status' },
         { status: 400 },
       );
     }
@@ -111,7 +117,7 @@ export async function PATCH(req: NextRequest) {
 
     await prisma.booking.update({
       where: { id },
-      data: { status: status },
+      data: { status: status as BookingStatus },
     });
 
     return NextResponse.json({ message: 'Booking status updated' });
@@ -129,7 +135,7 @@ export async function DELETE(req: NextRequest) {
     const session = await auth.api.getSession({
       headers: await headers(),
     });
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!isAdmin(session)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

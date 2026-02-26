@@ -17,13 +17,14 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const packageId = formData.get('packageId') as string;
     const travelDate = formData.get('travelDate') as string;
-    const group = JSON.parse(formData.get('group') as string) as {
+
+    let group: {
       adult: number;
       preteen: number;
       child: number;
       infant: number;
     };
-    const members = JSON.parse(formData.get('members') as string) as {
+    let members: {
       type: 'adult' | 'preteen';
       fullName: string;
       gender: 'male' | 'female' | 'other';
@@ -31,6 +32,17 @@ export async function POST(req: NextRequest) {
       email: string;
       phone: string;
     }[];
+
+    try {
+      group = JSON.parse(formData.get('group') as string);
+      members = JSON.parse(formData.get('members') as string);
+    } catch {
+      return NextResponse.json(
+        { error: 'Invalid JSON format in group or members' },
+        { status: 400 },
+      );
+    }
+
     const notes = formData.get('notes') as string | null;
 
     // Validate required fields

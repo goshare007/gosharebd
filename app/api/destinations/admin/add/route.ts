@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { UploadImage } from '@/cloudinary';
 import { auth } from '@/lib/auth';
+import { isAdmin } from '@/lib/auth-utils';
 import { prisma } from '@/lib/prisma';
 
 // 1. Define a schema to validate the incoming data
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
       headers: await headers(),
     });
 
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!isAdmin(session)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

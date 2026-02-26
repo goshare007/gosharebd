@@ -26,8 +26,68 @@ const philosopher = Philosopher({
 });
 
 export const metadata: Metadata = {
-  title: 'GoShareBD | See Bangladesh Like Never Before',
-  description: 'Where every discovery is a story worth sharing.',
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_API_URL || 'https://gosharebd.com',
+  ),
+  title: {
+    default: 'GoShareBD | See Bangladesh Like Never Before',
+    template: '%s | GoShareBD',
+  },
+  description:
+    'Where every discovery is a story worth sharing. Explore the beautiful destinations of Bangladesh with curated travel packages.',
+  keywords: [
+    'travel',
+    'Bangladesh',
+    'tourism',
+    'vacation',
+    'holiday',
+    'destinations',
+    'packages',
+    'booking',
+  ],
+  authors: [{ name: 'GoShareBD' }],
+  creator: 'GoShareBD',
+  publisher: 'GoShareBD',
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://gosharebd.com',
+    siteName: 'GoShareBD',
+    title: 'GoShareBD | See Bangladesh Like Never Before',
+    description:
+      'Where every discovery is a story worth sharing. Explore the beautiful destinations of Bangladesh with curated travel packages.',
+    images: [
+      {
+        url: '/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'GoShareBD - Travel Bangladesh',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'GoShareBD | See Bangladesh Like Never Before',
+    description:
+      'Where every discovery is a story worth sharing. Explore the beautiful destinations of Bangladesh.',
+    images: ['/og-image.jpg'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
 };
 
 export default function RootLayout({
