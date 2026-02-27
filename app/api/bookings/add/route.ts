@@ -1,3 +1,5 @@
+// app/api/bookings/add/route.ts
+
 import { headers } from 'next/headers';
 import { type NextRequest, NextResponse } from 'next/server';
 import { TIERS, VAT_RATE } from '@/constants/vat-rate';
@@ -16,7 +18,8 @@ export async function POST(req: NextRequest) {
 
     const formData = await req.formData();
     const packageId = formData.get('packageId') as string;
-    const travelDate = formData.get('travelDate') as string;
+    const departureId = formData.get('departureId') as string;
+    const notes = formData.get('notes') as string | null;
 
     let group: {
       adult: number;
@@ -24,6 +27,7 @@ export async function POST(req: NextRequest) {
       child: number;
       infant: number;
     };
+
     let members: {
       type: 'adult' | 'preteen';
       fullName: string;
@@ -43,12 +47,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const notes = formData.get('notes') as string | null;
-
     // Validate required fields
-    if (!packageId || !travelDate || !group || !members) {
+    if (!packageId || !departureId || !group || !members) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        {
+          error:
+            'Missing required fields: packageId, departureId, group, members',
+        },
         { status: 400 },
       );
     }
@@ -81,8 +86,42 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Calculate subtotal using tier multipliers
-    const pricePerPerson = Number(pkg.pricePerPerson);
+    // Validate departure exists, belongs to this package, and has seats
+    const departure = await prisma.departure.findFirst({
+      where: { id: departureId, packageId },
+    });
+
+    if (!departure) {
+      return NextResponse.json(
+        { error: 'Departure not found for this package' },
+        { status: 404 },
+      );
+    }
+
+    if (departure.status !== 'ACTIVE') {
+      return NextResponse.json(
+        {
+          error: `This departure is ${departure.status.toLowerCase()} and cannot be booked`,
+        },
+        { status: 400 },
+      );
+    }
+
+    const seatsLeft = departure.totalSeats - departure.bookedSeats;
+
+    if (totalPax > seatsLeft) {
+      return NextResponse.json(
+        {
+          error: `Not enough seats. Only ${seatsLeft} seat${seatsLeft !== 1 ? 's' : ''} remaining on this departure`,
+        },
+        { status: 409 },
+      );
+    }
+
+    // Calculate pricing — use departure price override if set, else fall back to package
+    const pricePerPerson = departure.pricePerPerson
+      ? Number(departure.pricePerPerson)
+      : Number(pkg.pricePerPerson);
 
     const subtotal = (Object.keys(group) as Array<keyof typeof group>).reduce(
       (sum, tier) =>
@@ -93,13 +132,46 @@ export async function POST(req: NextRequest) {
     const vat = subtotal * VAT_RATE;
     const total = subtotal + vat;
 
-    // Create booking + members in a transaction
+    // Atomic transaction:
+    // 1. Re-check seat availability with a row lock (select for update via updateMany)
+    // 2. Increment bookedSeats
+    // 3. Flip status to FULL if no seats remain after this booking
+    // 4. Create booking + members
     const booking = await prisma.$transaction(async (tx) => {
+      // Atomically increment bookedSeats only if enough remain
+      const updated = await tx.departure.updateMany({
+        where: {
+          id: departureId,
+          status: 'ACTIVE',
+          // Ensure seats are still available at the moment of commit
+          bookedSeats: { lte: departure.totalSeats - totalPax },
+        },
+        data: {
+          bookedSeats: { increment: totalPax },
+        },
+      });
+
+      // If 0 rows updated → seats were grabbed by a concurrent request
+      if (updated.count === 0) {
+        throw new Error('SEATS_UNAVAILABLE');
+      }
+
+      // Flip to FULL if now at capacity
+      const newBookedSeats = departure.bookedSeats + totalPax;
+      if (newBookedSeats >= departure.totalSeats) {
+        await tx.departure.update({
+          where: { id: departureId },
+          data: { status: 'FULL' },
+        });
+      }
+
+      // Create booking — travelDate is frozen snapshot of departure.startDate
       return tx.booking.create({
         data: {
           userId: session.user.id,
           packageId,
-          travelDate: new Date(travelDate),
+          departureId,
+          travelDate: departure.startDate,
           notes: notes ?? undefined,
           adultCount: group.adult,
           preteenCount: group.preteen,
@@ -120,9 +192,7 @@ export async function POST(req: NextRequest) {
             })),
           },
         },
-        include: {
-          members: true,
-        },
+        include: { members: true },
       });
     });
 
@@ -130,9 +200,19 @@ export async function POST(req: NextRequest) {
       { message: 'Booking added successfully', bookingId: booking.id },
       { status: 201 },
     );
-  } catch (_error) {
+  } catch (error) {
+    if (error instanceof Error && error.message === 'SEATS_UNAVAILABLE') {
+      return NextResponse.json(
+        {
+          error:
+            'Sorry, this departure just became fully booked. Please choose another date.',
+        },
+        { status: 409 },
+      );
+    }
+
     return NextResponse.json(
-      { message: 'Failed to add booking' },
+      { error: 'Failed to add booking' },
       { status: 500 },
     );
   }

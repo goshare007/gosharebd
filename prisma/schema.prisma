@@ -106,7 +106,7 @@ model Package {
   coverImageId String
   gallery      GalleryImage[]
 
-  // Pricing
+  // Pricing (base defaults — can be overridden per departure)
   pricePerPerson      Decimal  @db.Decimal(10, 2)
   originalPrice       Decimal? @db.Decimal(10, 2)
   couplePrice         Decimal? @db.Decimal(10, 2)
@@ -114,7 +114,7 @@ model Package {
   isCouple            Boolean  @default(false)
 
   // Details
-  durationDays Int // number of days
+  durationDays Int
   maxGroupSize Int
   minGroupSize Int
   Location     String
@@ -125,7 +125,7 @@ model Package {
   includes String[]
   excludes String[]
 
-  // Policies (structured as JSON or separate model)
+  // Policies
   cancellationPolicy String?
   weatherPolicy      String?
   ageRestriction     String?
@@ -135,15 +135,65 @@ model Package {
   isActive     Boolean @default(true)
 
   // Relations
-  itinerary Itinerary[]
-  reviews   Review[]
+  itinerary  Itinerary[]
+  reviews    Review[]
+  departures Departure[]
+  bookings   Booking[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([destinationId])
+  @@map("package")
+}
+
+model Departure {
+  id        String  @id @default(cuid())
+  packageId String
+  package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  // Schedule
+  // endDate is frozen at creation time (startDate + package.durationDays).
+  // Stored explicitly so it remains accurate even if durationDays is later
+  // changed on the package.
+  startDate DateTime
+  endDate   DateTime
+
+  // Status
+  status DepartureStatus @default(ACTIVE)
+
+  // Capacity
+  // bookedSeats is a denormalized counter incremented atomically inside a
+  // transaction when a booking is confirmed. Avoids a COUNT() on every
+  // availability check.
+  totalSeats  Int
+  bookedSeats Int @default(0)
+
+  // Guaranteed flag
+  // true  → this departure is confirmed to run regardless of current seat count
+  // false → tentative; may be cancelled if minGroupSize is not reached
+  isGuaranteed Boolean @default(false)
+
+  // Per-departure pricing overrides (all nullable).
+  // When null the booking logic falls back to the parent package prices.
+  // Use this for seasonal or promotional pricing without touching the package.
+  pricePerPerson      Decimal? @db.Decimal(10, 2)
+  originalPrice       Decimal? @db.Decimal(10, 2)
+  couplePrice         Decimal? @db.Decimal(10, 2)
+  originalCouplePrice Decimal? @db.Decimal(10, 2)
+
+  // Optional human-readable label shown to users on the departure picker,
+  // e.g. "Eid Special", "Monsoon Tour", "Long Weekend Package"
+  note String?
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   bookings  Booking[]
 
-  @@index([destinationId])
-  @@map("package")
+  @@index([packageId])
+  @@index([startDate])
+  @@index([packageId, status]) // fast lookup: active departures for a package
+  @@map("departure")
 }
 
 model Itinerary {
@@ -151,10 +201,10 @@ model Itinerary {
   packageId String
   package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
 
-  time        String // e.g. "8:30 AM" or "Day 1: 2:00 PM"
+  time        String
   title       String
   description String
-  order       Int // for explicit ordering
+  order       Int
 
   @@index([packageId])
   @@map("itinerary")
@@ -180,10 +230,9 @@ model Review {
 
 model GalleryImage {
   id       String @id @default(cuid())
-  url      String // The secure_url
-  publicId String // The Cloudinary public_id
+  url      String
+  publicId String
 
-  // Relation to Destination
   packageId String
   package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
 
@@ -194,12 +243,16 @@ model Booking {
   id String @id @default(cuid())
 
   // Relations
-  userId    String
-  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  packageId String
-  package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  packageId   String
+  package     Package   @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  departureId String
+  departure   Departure @relation(fields: [departureId], references: [id])
 
-  // Trip details
+  // travelDate is a frozen snapshot of departure.startDate captured at the
+  // moment of booking. Kept denormalized so receipts and history remain
+  // accurate even if the departure is later edited or cancelled.
   travelDate DateTime
   notes      String?
 
@@ -209,7 +262,8 @@ model Booking {
   childCount   Int
   infantCount  Int
 
-  // Pricing snapshot (frozen at booking time)
+  // Pricing snapshot — all values frozen at booking time so the receipt is
+  // never affected by future price changes on the package or departure.
   subtotal Decimal @db.Decimal(10, 2)
   vat      Decimal @db.Decimal(10, 2)
   total    Decimal @db.Decimal(10, 2)
@@ -224,6 +278,7 @@ model Booking {
 
   @@index([userId])
   @@index([packageId])
+  @@index([departureId])
   @@map("booking")
 }
 
@@ -243,10 +298,19 @@ model BookingMember {
   @@map("booking_member")
 }
 
+// ─── enums ────────────────────────────────────────────────────────────────────
+
 enum BookingStatus {
   PENDING
   CONFIRMED
   CANCELLED
+}
+
+enum DepartureStatus {
+  ACTIVE    // open for booking
+  FULL      // no seats remaining (auto-set when bookedSeats >= totalSeats)
+  CANCELLED // admin cancelled this run
+  COMPLETED // trip has taken place
 }
 
 enum BookingMemberType {
