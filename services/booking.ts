@@ -5,6 +5,8 @@ import { QUERY_KEYS } from '@/constants/query-keys';
 import type {
   AdminBookingListType,
   BookingDetailsType,
+  BookingsParams,
+  BookingsResponse,
 } from '@/types/bookings';
 
 export const useBooking = () => {
@@ -103,3 +105,31 @@ export const useSingleBooking = (id: string) => {
     },
   });
 };
+
+// ─── fetcher ──────────────────────────────────────────────────────────────────
+
+async function fetchBookings(
+  params: BookingsParams,
+): Promise<BookingsResponse> {
+  const { data } = await axios.get<BookingsResponse>(
+    '/api/bookings/my-bookings',
+    {
+      params: {
+        status: params.status ?? 'ALL',
+        page: params.page ?? 1,
+        limit: params.limit ?? 10,
+      },
+    },
+  );
+  return data;
+}
+
+// ─── hook ─────────────────────────────────────────────────────────────────────
+
+export function useMyBookings(params: BookingsParams = {}) {
+  return useQuery<BookingsResponse>({
+    queryKey: ['bookings', params.status ?? 'ALL', params.page ?? 1],
+    queryFn: () => fetchBookings(params),
+    placeholderData: (prev) => prev, // keep previous data while fetching next page
+  });
+}

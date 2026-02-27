@@ -75,3 +75,60 @@ export interface BookingDetailsType {
     },
   ];
 }
+
+export type BookingStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED';
+
+export type BookingMember = {
+  id: string;
+  type: 'adult' | 'preteen';
+  fullName: string;
+  gender: 'male' | 'female' | 'other';
+  idNumber: string;
+  email: string;
+  phone: string;
+};
+
+export type Booking = {
+  id: string;
+  status: BookingStatus;
+  travelDate: string;
+  notes?: string;
+  adultCount: number;
+  preteenCount: number;
+  childCount: number;
+  infantCount: number;
+  subtotal: string;
+  vat: string;
+  total: string;
+  createdAt: string;
+  updatedAt: string;
+  package: {
+    id: string;
+    name: string;
+    coverImage: string;
+    durationDays: number;
+    Location: string;
+    destination: { id: string; name: string };
+  };
+  members: BookingMember[];
+};
+
+export type BookingsPagination = {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+};
+
+export type BookingsResponse = {
+  bookings: Booking[];
+  pagination: BookingsPagination;
+};
+
+export type BookingsParams = {
+  status?: BookingStatus | 'ALL';
+  page?: number;
+  limit?: number;
+};

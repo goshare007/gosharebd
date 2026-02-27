@@ -57,7 +57,7 @@ export const data: { navMain: NavItem[]; navSecondary: NavItem[] } = {
     },
     {
       title: 'My Bookings',
-      url: '/my-bookings',
+      url: '/dashboard/my-bookings',
       icon: Calendar,
       role: ['ADMIN', 'USER'],
     },
