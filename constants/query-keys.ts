@@ -9,4 +9,6 @@ export const QUERY_KEYS = {
   GALLERY_IMAGES: 'gallery-images',
   ADMIN_BOOKINGS_LIST: 'admin-bookings-list',
   SINGLE_BOOKING: 'single-booking',
+  ADMIN_DASHBOARD_STATS: 'admin-dashboard-stats',
+  USER_DASHBOARD_STATS: 'user-dashboard-stats',
 };
