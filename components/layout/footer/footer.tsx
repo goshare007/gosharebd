@@ -6,41 +6,16 @@ import {
   Mail,
   MapPin,
   Phone,
-  Send,
   Twitter,
   Youtube,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import Newsletter from './newsletter';
 
 export default function Footer() {
   return (
     <footer className='bg-linear-to-b from-background to-secondary/20 border-t border-border'>
       {/* Newsletter Section */}
-      <div className='border-b border-border'>
-        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12'>
-          <div className='grid md:grid-cols-2 gap-8 items-center'>
-            <div className='space-y-2'>
-              <h3 className='text-2xl md:text-3xl font-bold'>Stay Updated</h3>
-              <p className='text-muted-foreground'>
-                Subscribe to get special offers, free giveaways, and travel
-                inspiration.
-              </p>
-            </div>
-            <div className='flex flex-col sm:flex-row gap-3'>
-              <Input
-                type='email'
-                placeholder='Enter your email'
-                className='h-12'
-              />
-              <Button className='h-12 px-6 gap-2 whitespace-nowrap'>
-                Subscribe
-                <Send className='w-4 h-4' />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Newsletter />
 
       {/* Main Footer Content */}
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12'>

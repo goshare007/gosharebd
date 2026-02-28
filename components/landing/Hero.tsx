@@ -1,6 +1,12 @@
 'use client';
 
-import { ArrowRight, CheckCircle2, Play, Sparkles, Star } from 'lucide-react';
+import {
+  ArrowRight,
+  CheckCircle2,
+  Headset,
+  Sparkles,
+  Star,
+} from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -155,22 +161,24 @@ export default function Hero() {
             >
               <Button
                 size='lg'
-                className='text-base h-14 px-8 gap-2 w-full sm:w-auto shadow-2xl hover:shadow-primary/50 transition-all hover:scale-105 group relative overflow-hidden'
+                className='text-base h-14 px-8 gap-2 w-full sm:w-auto  transition-all hover:scale-105'
                 asChild
               >
                 <Link href='/packages'>
-                  <span className='relative z-10'>Explore All Tours</span>
-                  <ArrowRight className='w-5 h-5 relative z-10 group-hover:translate-x-1 transition-transform' />
-                  <div className='absolute inset-0 bg-linear-to-r from-primary to-primary/80 opacity-0 group-hover:opacity-100 transition-opacity' />
+                  Explore All Tours
+                  <ArrowRight />
                 </Link>
               </Button>
               <Button
                 size='lg'
                 variant='outline'
-                className='text-base h-14 px-8 gap-2 w-full sm:w-auto border-2 hover:bg-secondary/50 transition-all hover:scale-105'
+                asChild
+                className='text-base h-14 px-8 gap-2 w-full sm:w-auto  transition-all hover:scale-105'
               >
-                <Play className='w-5 h-5' />
-                How It Works
+                <Link href='/contact'>
+                  <Headset className='w-5 h-5 text-base' />
+                  Contact Us
+                </Link>
               </Button>
             </div>
 

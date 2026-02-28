@@ -324,3 +324,26 @@ enum Gender {
   female
   other
 }
+
+model Subscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?  // Optional — pre-fill if they subscribe while logged in
+
+  status    SubscriberStatus @default(ACTIVE)
+
+  // Track where the subscription came from
+  // e.g. "blog_footer", "homepage_hero", "package_page"
+  source    String?
+
+  subscribedAt   DateTime  @default(now())
+  unsubscribedAt DateTime? // Set when they opt out — never delete rows
+
+  @@index([status])
+  @@map("subscriber")
+}
+
+enum SubscriberStatus {
+  ACTIVE
+  UNSUBSCRIBED
+}
