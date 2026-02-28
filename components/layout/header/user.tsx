@@ -2,13 +2,11 @@
 import {
   Bell,
   Calendar,
-  CreditCard,
   Headphones,
   Heart,
   LayoutDashboard,
   MapPin,
   Plus,
-  Settings,
   Star,
   UserCog,
 } from 'lucide-react';
@@ -194,16 +192,6 @@ export default function UserDropDown() {
 
             <DropdownMenuItem asChild>
               <Link
-                href='/payments'
-                className='flex w-full cursor-pointer items-center gap-3 py-2.5'
-              >
-                <CreditCard className='h-4 w-4 text-primary' />
-                <span className='font-medium'>Payment Methods</span>
-              </Link>
-            </DropdownMenuItem>
-
-            <DropdownMenuItem asChild>
-              <Link
                 href='/notifications'
                 className='flex w-full cursor-pointer items-center justify-between py-2.5'
               >
@@ -231,16 +219,6 @@ export default function UserDropDown() {
               >
                 <Headphones className='h-4 w-4 text-primary' />
                 <span className='font-medium'>Customer Support</span>
-              </Link>
-            </DropdownMenuItem>
-
-            <DropdownMenuItem asChild>
-              <Link
-                href='/preferences'
-                className='flex w-full cursor-pointer items-center gap-3 py-2.5'
-              >
-                <Settings className='h-4 w-4 text-primary' />
-                <span className='font-medium'>Preferences</span>
               </Link>
             </DropdownMenuItem>
           </DropdownMenuGroup>

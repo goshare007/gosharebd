@@ -6,6 +6,7 @@ const authClient = createAuthClient({
   plugins: [adminClient()],
 });
 
-export const { signIn, useSession, signOut, updateUser } = authClient;
+export const { signIn, useSession, signOut, updateUser, revokeOtherSessions } =
+  authClient;
 
 export type Session = typeof authClient.$Infer.Session;
