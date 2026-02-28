@@ -89,7 +89,7 @@ export const data: { navMain: NavItem[]; navSecondary: NavItem[] } = {
     },
     {
       title: 'All Users',
-      url: '/admin/users',
+      url: '/dashboard/admin/users',
       icon: Users,
       role: ['ADMIN'],
     },

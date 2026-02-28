@@ -71,23 +71,11 @@
   - Rich text editor
   - Featured images
 
-### 10. Newsletter Subscription
-- **Why**: Newsletter signup UI exists but no backend
-- **Implementation**:
-  - Email collection API
-  - Integration with email service
-
-### 11. WhatsApp Integration
+### 10. WhatsApp Integration
 - **Why**: Popular in Bangladesh for customer communication
 - **Implementation**:
   - WhatsApp floating button
   - Booking inquiry via WhatsApp
-
-### 12. Multi-language Support
-- **Why**: Reach Bengali-speaking audience
-- **Implementation**:
-  - i18n setup
-  - Bengali translations for key pages
 
 ---
 
@@ -103,6 +91,8 @@
 8. **Gallery Management** - Full CRUD
 9. **Static Pages** - About, Contact, FAQ, Help, Privacy, Terms, etc.
 10. **User Authentication** - Login with Better Auth
+11. **Newsletter Subscription** - Full backend with subscribe/unsubscribe, source tracking
+12. **Departure Management** - Per-package departures with capacity tracking, guaranteed flag, pricing overrides
 
 ---
 

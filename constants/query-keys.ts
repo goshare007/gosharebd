@@ -11,4 +11,5 @@ export const QUERY_KEYS = {
   SINGLE_BOOKING: 'single-booking',
   ADMIN_DASHBOARD_STATS: 'admin-dashboard-stats',
   USER_DASHBOARD_STATS: 'user-dashboard-stats',
+  ADMIN_USER_LIST: 'admin-user-list',
 };
