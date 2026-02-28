@@ -23,6 +23,7 @@ const navItems = [
   { name: 'Festivals', href: '/festivals' },
   { name: 'Gallery', href: '/gallery' },
   { name: 'Blog', href: '/blog' },
+  { name: 'Contact', href: '/contact' },
 ];
 
 export default function Header() {

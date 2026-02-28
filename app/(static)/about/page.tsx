@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import img1 from '@/assets/about/about-1.webp';
+import img2 from '@/assets/about/about-2.webp';
 import { Cta } from '@/components/landing';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -102,7 +104,7 @@ export default function AboutPage() {
       <section className='relative min-h-[70vh] flex items-center overflow-hidden'>
         <div className='absolute inset-0 z-0'>
           <Image
-            src='https://images.unsplash.com/photo-1502082553048-f009c37129b9?auto=format&fit=crop&w=800&q=80'
+            src={img1}
             alt='Bangladesh landscape'
             fill
             className='object-cover'
@@ -186,7 +188,7 @@ export default function AboutPage() {
             {/* Image */}
             <div className='relative h-100 md:h-125 rounded-2xl overflow-hidden shadow-2xl animate-in fade-in slide-in-from-left duration-700'>
               <Image
-                src='https://images.unsplash.com/photo-1667120205301-a2a3a886886e?w=800&h=600&fit=crop'
+                src={img2}
                 alt='Bangladesh tea gardens'
                 fill
                 className='object-cover'

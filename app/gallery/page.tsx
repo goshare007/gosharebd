@@ -18,6 +18,41 @@ const SKELETON_HEIGHTS = [
   290,
 ];
 
+function GalleryHeader({ animated = false }: { animated?: boolean }) {
+  return (
+    <section className='relative pt-16 pb-12 bg-primary/5 overflow-hidden'>
+      <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative'>
+        <div
+          className={
+            animated
+              ? 'max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-700'
+              : 'max-w-3xl'
+          }
+        >
+          <div className='flex items-center gap-3 mb-6'>
+            <div className='h-px w-12 bg-primary' />
+            <span className='text-xs font-semibold tracking-[0.2em] uppercase text-primary'>
+              Explore Bangladesh
+            </span>
+          </div>
+          <h1 className='text-5xl sm:text-6xl md:text-7xl font-display font-bold leading-[1.05] tracking-tight mb-6'>
+            Visual
+            <br />
+            <span className='font-light italic text-muted-foreground'>
+              Stories
+            </span>
+            <span className='text-primary'>.</span>
+          </h1>
+          <p className='text-base md:text-lg text-muted-foreground max-w-xl leading-relaxed'>
+            A collection of moments captured across the green delta — rivers,
+            forests, and faces of Bangladesh.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function GallerySkeleton() {
   return (
     <div className='min-h-screen bg-background'>
@@ -25,17 +60,14 @@ function GallerySkeleton() {
       <section className='relative pt-16 pb-12 bg-primary/5 overflow-hidden'>
         <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative'>
           <div className='max-w-3xl'>
-            {/* Eyebrow */}
             <div className='flex items-center gap-3 mb-6'>
               <div className='h-px w-12 bg-primary/30' />
               <Skeleton className='h-3 w-32' />
             </div>
-            {/* Title */}
             <div className='mb-6 space-y-2'>
               <Skeleton className='h-14 w-40' />
               <Skeleton className='h-14 w-56' />
             </div>
-            {/* Description */}
             <div className='space-y-2 max-w-xl'>
               <Skeleton className='h-4 w-full' />
               <Skeleton className='h-4 w-5/6' />
@@ -53,12 +85,10 @@ function GallerySkeleton() {
               // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
               <div key={i} className='break-inside-avoid mb-4'>
                 <div className='relative overflow-hidden rounded-xl bg-muted'>
-                  {/* Image area */}
                   <Skeleton
                     className='w-full rounded-xl'
                     style={{ height: `${height}px` }}
                   />
-                  {/* Badge top-right */}
                   <div className='absolute top-3 right-3 bg-background/80 backdrop-blur-sm px-2 py-1 rounded-md flex items-center gap-1.5'>
                     <Skeleton className='h-3 w-3 rounded-sm' />
                     <Skeleton className='h-3 w-5' />
@@ -82,29 +112,8 @@ function GalleryError({
 }) {
   return (
     <div className='min-h-screen bg-background'>
-      {/* Keep the header visible even on error so the page doesn't feel broken */}
-      <section className='relative pt-16 pb-12 bg-primary/5 overflow-hidden'>
-        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative'>
-          <div className='max-w-3xl'>
-            <div className='flex items-center gap-3 mb-6'>
-              <div className='h-px w-12 bg-primary' />
-              <span className='text-xs font-semibold tracking-[0.2em] uppercase text-primary'>
-                Explore Bangladesh
-              </span>
-            </div>
-            <h1 className='text-5xl sm:text-6xl md:text-7xl font-display font-bold leading-[1.05] tracking-tight mb-6'>
-              Visual
-              <br />
-              <span className='font-light italic text-muted-foreground'>
-                Stories
-              </span>
-              <span className='text-primary'>.</span>
-            </h1>
-          </div>
-        </div>
-      </section>
+      <GalleryHeader />
 
-      {/* Error state */}
       <section className='py-24'>
         <div className='max-w-md mx-auto px-4 text-center'>
           <div className='inline-flex items-center justify-center w-14 h-14 rounded-full bg-destructive/10 mb-5'>
@@ -129,6 +138,50 @@ function GalleryError({
   );
 }
 
+function GalleryEmpty() {
+  return (
+    <div className='min-h-screen bg-background'>
+      <GalleryHeader animated />
+
+      <section className='py-24'>
+        <div className='max-w-md mx-auto px-4 text-center'>
+          {/* Decorative icon */}
+          <div className='relative inline-flex items-center justify-center w-20 h-20 mb-6'>
+            <div className='absolute inset-0 rounded-full bg-primary/10' />
+            <div className='absolute inset-2 rounded-full bg-primary/5' />
+            <ImageIcon className='w-8 h-8 text-primary/60 relative' />
+          </div>
+
+          <div className='flex items-center justify-center gap-3 mb-4'>
+            <div className='h-px w-8 bg-primary/40' />
+            <span className='text-xs font-semibold tracking-[0.2em] uppercase text-primary/60'>
+              Coming Soon
+            </span>
+            <div className='h-px w-8 bg-primary/40' />
+          </div>
+
+          <h2 className='font-display text-2xl font-bold mb-3'>
+            No photos{' '}
+            <span className='font-light italic text-muted-foreground'>yet</span>
+            <span className='text-primary'>.</span>
+          </h2>
+          <p className='text-sm text-muted-foreground leading-relaxed mb-8'>
+            Our gallery is being curated. Check back soon — beautiful moments
+            from across Bangladesh are on their way.
+          </p>
+
+          <Button asChild variant='outline' className='gap-2 border-2'>
+            <Link href='/packages'>
+              <MapPin className='w-4 h-4' />
+              Explore our packages
+            </Link>
+          </Button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 export default function GalleryIndexPage() {
   const { isPending, data, error, refetch } = useGalleryImages();
 
@@ -142,34 +195,11 @@ export default function GalleryIndexPage() {
       />
     );
 
+  if (!data || data.length === 0) return <GalleryEmpty />;
+
   return (
     <div className='min-h-screen bg-background'>
-      {/* Header Section */}
-      <section className='relative pt-16 pb-12 bg-primary/5 overflow-hidden'>
-        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative'>
-          <div className='max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-700'>
-            {/* Eyebrow */}
-            <div className='flex items-center gap-3 mb-6'>
-              <div className='h-px w-12 bg-primary' />
-              <span className='text-xs font-semibold tracking-[0.2em] uppercase text-primary'>
-                Explore Bangladesh
-              </span>
-            </div>
-            <h1 className='text-5xl sm:text-6xl md:text-7xl font-display font-bold leading-[1.05] tracking-tight mb-6'>
-              Visual
-              <br />
-              <span className='font-light italic text-muted-foreground'>
-                Stories
-              </span>
-              <span className='text-primary'>.</span>
-            </h1>
-            <p className='text-base md:text-lg text-muted-foreground max-w-xl leading-relaxed'>
-              A collection of moments captured across the green delta — rivers,
-              forests, and faces of Bangladesh.
-            </p>
-          </div>
-        </div>
-      </section>
+      <GalleryHeader animated />
 
       {/* Masonry Grid */}
       <section className='py-12'>

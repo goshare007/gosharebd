@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowRight, Clock, Tag } from 'lucide-react';
+import { Clock, Tag } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -327,36 +327,6 @@ export default function BlogPage() {
             {filtered.map((article, i) => (
               <ArticleCard key={article.slug} article={article} index={i} />
             ))}
-          </div>
-
-          {/* Newsletter CTA */}
-          <div className='rounded-2xl border-2 border-dashed border-border p-10 text-center space-y-4'>
-            <div className='space-y-2'>
-              <h2 className='font-display text-xl font-bold'>
-                Never miss a story
-              </h2>
-              <p className='text-sm text-muted-foreground'>
-                New articles every week. No spam — just good writing about
-                Bangladesh travel.
-              </p>
-            </div>
-            <div className='flex flex-col sm:flex-row gap-2 max-w-sm mx-auto'>
-              <input
-                type='email'
-                placeholder='your@email.com'
-                className='flex-1 h-10 px-4 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/30'
-              />
-              <button
-                type='button'
-                className='h-10 px-5 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors inline-flex items-center gap-2 shrink-0'
-              >
-                Subscribe
-                <ArrowRight className='w-3.5 h-3.5' />
-              </button>
-            </div>
-            <p className='text-xs text-muted-foreground'>
-              Unsubscribe anytime. We respect your privacy.
-            </p>
           </div>
         </div>
       </section>
