@@ -43,8 +43,14 @@ export function NavMain({
       <SidebarMenu>
         {items.map((item) => {
           const Icon = item.icon;
-          const isActive =
-            pathname === item.url || pathname.startsWith(`${item.url}/`);
+
+          // Fix: Logic to prevent double-highlighting
+          // isExactActive: Only true if the URL is an exact match
+          const isExactActive = pathname === item.url;
+
+          // isParentOfActive: True if the current path is a sub-route of this item
+          const isParentOfActive = pathname.startsWith(`${item.url}/`);
+
           const hasSubItems = item.items && item.items.length > 0;
 
           // If item has sub-items, render as collapsible
@@ -53,12 +59,18 @@ export function NavMain({
               <Collapsible
                 key={item.title}
                 asChild
-                defaultOpen={isActive}
+                // Open the menu if we are on the main page OR a sub-page
+                defaultOpen={isExactActive || isParentOfActive}
                 className='group/collapsible'
               >
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuButton tooltip={item.title} className='w-full'>
+                    <SidebarMenuButton
+                      tooltip={item.title}
+                      className='w-full'
+                      // Only highlight the parent if we are exactly on its URL
+                      isActive={isExactActive}
+                    >
                       {Icon && <Icon className='w-4 h-4' />}
                       <span className='flex-1'>{item.title}</span>
                       {item.badge && item.badge > 0 && (
@@ -75,6 +87,7 @@ export function NavMain({
                   <CollapsibleContent>
                     <SidebarMenuSub>
                       {item.items?.map((subItem) => {
+                        // Sub-items usually only highlight on exact match
                         const isSubActive = pathname === subItem.url;
                         return (
                           <SidebarMenuSubItem key={subItem.title}>
@@ -102,7 +115,7 @@ export function NavMain({
               <SidebarMenuButton
                 asChild
                 tooltip={item.title}
-                isActive={isActive}
+                isActive={isExactActive}
               >
                 <Link
                   href={item.url}

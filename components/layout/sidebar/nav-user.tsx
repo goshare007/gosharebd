@@ -2,16 +2,11 @@
 
 import {
   BellIcon,
-  CalendarIcon,
   ChevronsUpDownIcon,
-  CreditCardIcon,
   HeadphonesIcon,
-  HeartIcon,
   MapPinIcon,
   PackagePlusIcon,
   SettingsIcon,
-  StarIcon,
-  UserIcon,
 } from 'lucide-react';
 import Link from 'next/link';
 import { SignOut } from '@/components/layout/header/logout';
@@ -40,6 +35,10 @@ export function NavUser() {
   const { data: session, isPending } = useSession();
 
   if (isPending) {
+    return null;
+  }
+
+  if (!session) {
     return null;
   }
 
@@ -95,79 +94,6 @@ export function NavUser() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
 
-            {/* Main Actions */}
-            <DropdownMenuGroup>
-              <DropdownMenuItem asChild>
-                <Link
-                  href='/dashboard'
-                  className='flex items-center gap-3 cursor-pointer'
-                >
-                  <div className='w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center'>
-                    <UserIcon className='size-4 text-primary' />
-                  </div>
-                  <div className='flex-1'>
-                    <div className='font-medium'>My Profile</div>
-                    <div className='text-xs text-muted-foreground'>
-                      View and edit profile
-                    </div>
-                  </div>
-                </Link>
-              </DropdownMenuItem>
-
-              <DropdownMenuItem asChild>
-                <Link
-                  href='/my-bookings'
-                  className='flex items-center gap-3 cursor-pointer'
-                >
-                  <div className='w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center'>
-                    <CalendarIcon className='size-4 text-blue-600' />
-                  </div>
-                  <div className='flex-1'>
-                    <div className='font-medium'>My Bookings</div>
-                    <div className='text-xs text-muted-foreground'>
-                      View all your trips
-                    </div>
-                  </div>
-                </Link>
-              </DropdownMenuItem>
-
-              <DropdownMenuItem asChild>
-                <Link
-                  href='/wishlist'
-                  className='flex items-center gap-3 cursor-pointer'
-                >
-                  <div className='w-8 h-8 rounded-lg bg-pink-500/10 flex items-center justify-center'>
-                    <HeartIcon className='size-4 text-pink-600' />
-                  </div>
-                  <div className='flex-1'>
-                    <div className='font-medium'>Wishlist</div>
-                    <div className='text-xs text-muted-foreground'>
-                      Saved tours & places
-                    </div>
-                  </div>
-                </Link>
-              </DropdownMenuItem>
-
-              <DropdownMenuItem asChild>
-                <Link
-                  href='/my-reviews'
-                  className='flex items-center gap-3 cursor-pointer'
-                >
-                  <div className='w-8 h-8 rounded-lg bg-yellow-500/10 flex items-center justify-center'>
-                    <StarIcon className='size-4 text-yellow-600' />
-                  </div>
-                  <div className='flex-1'>
-                    <div className='font-medium'>My Reviews</div>
-                    <div className='text-xs text-muted-foreground'>
-                      Your ratings & feedback
-                    </div>
-                  </div>
-                </Link>
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-
-            <DropdownMenuSeparator />
-
             {/* Tour Provider Section (conditional) */}
             {(user.role === 'PROVIDER' || user.role === 'ADMIN') && (
               <>
@@ -220,16 +146,6 @@ export function NavUser() {
                 >
                   <SettingsIcon className='size-4 text-muted-foreground' />
                   <span>Account Settings</span>
-                </Link>
-              </DropdownMenuItem>
-
-              <DropdownMenuItem asChild>
-                <Link
-                  href='/payments'
-                  className='flex items-center gap-3 cursor-pointer'
-                >
-                  <CreditCardIcon className='size-4 text-muted-foreground' />
-                  <span>Payment Methods</span>
                 </Link>
               </DropdownMenuItem>
 

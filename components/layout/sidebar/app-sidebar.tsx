@@ -5,7 +5,6 @@ import {
   Bell,
   Calendar,
   Compass,
-  CreditCard,
   FileText,
   Headphones,
   Heart,
@@ -14,7 +13,6 @@ import {
   Package,
   Settings,
   Star,
-  User,
   Users,
 } from 'lucide-react';
 import {
@@ -49,12 +47,7 @@ export const data: { navMain: NavItem[]; navSecondary: NavItem[] } = {
       icon: LayoutDashboard,
       role: ['ADMIN', 'USER'],
     },
-    {
-      title: 'My Profile',
-      url: '/dashboard/profile',
-      icon: User,
-      role: ['ADMIN', 'USER'],
-    },
+
     {
       title: 'My Bookings',
       url: '/dashboard/my-bookings',
@@ -63,13 +56,13 @@ export const data: { navMain: NavItem[]; navSecondary: NavItem[] } = {
     },
     {
       title: 'Wishlist',
-      url: '/wishlist',
+      url: '/dashboard/wishlist',
       icon: Heart,
       role: ['ADMIN', 'USER'],
     },
     {
       title: 'My Reviews',
-      url: '/my-reviews',
+      url: '/dashboard/my-reviews',
       icon: Star,
       role: ['ADMIN', 'USER'],
     },
@@ -107,22 +100,17 @@ export const data: { navMain: NavItem[]; navSecondary: NavItem[] } = {
     },
 
     // General items
-    {
-      title: 'Payment Methods',
-      url: '/payments',
-      icon: CreditCard,
-      role: ['ADMIN', 'USER'],
-    },
+
     {
       title: 'Notifications',
-      url: '/notifications',
+      url: '/dashboard/notifications',
       icon: Bell,
       role: ['ADMIN', 'USER'],
       badge: 3, // Example badge
     },
     {
       title: 'Settings',
-      url: '/account/settings',
+      url: '/dashboard/account/settings',
       icon: Settings,
       role: ['ADMIN', 'USER'],
     },
@@ -197,8 +185,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               </div>
               <div className='flex flex-col'>
                 <h1 className='text-xl font-bold tracking-tight'>
-                  <span className='text-primary'>GoShare</span>
-                  <span className='font-semibold'>BD</span>
+                  <span>GoShare</span>
+                  <span className='font-semibold text-primary'>BD</span>
                 </h1>
                 <span className='text-xs text-muted-foreground'>
                   Tour & Travel

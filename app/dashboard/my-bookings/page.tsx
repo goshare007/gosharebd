@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -32,6 +33,7 @@ import {
 } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useSession } from '@/lib/auth-client';
 import { cn } from '@/lib/utils';
 import { useMyBookings } from '@/services/booking';
 import type { Booking, BookingStatus } from '@/types/bookings';
@@ -578,7 +580,7 @@ function Pagination({
 
 // ─── main page ────────────────────────────────────────────────────────────────
 
-export default function MyBookingsPage() {
+function MyBookingsPage() {
   const [activeTab, setActiveTab] = useState<BookingStatus | 'ALL'>('ALL');
   const [page, setPage] = useState(1);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
@@ -750,4 +752,19 @@ export default function MyBookingsPage() {
       />
     </div>
   );
+}
+
+export default function Bookings() {
+  const { isPending, data: session } = useSession();
+  const router = useRouter();
+
+  if (isPending)
+    return Array.from({ length: 4 }).map((_, i) => (
+      // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
+      <BookingCardSkeleton key={i} />
+    ));
+  if (!session) {
+    router.push('/sign-in');
+  }
+  return <MyBookingsPage />;
 }
