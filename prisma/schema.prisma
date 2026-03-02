@@ -24,6 +24,7 @@ model User {
   accounts      Account[]
   bookings      Booking[]
   reviews       Review[]
+  wishlists Wishlist[]
 
   @@unique([email])
   @@map("user")
@@ -140,6 +141,7 @@ model Package {
   reviews    Review[]
   departures Departure[]
   bookings   Booking[]
+  wishlists Wishlist[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -346,4 +348,17 @@ model Subscriber {
 enum SubscriberStatus {
   ACTIVE
   UNSUBSCRIBED
+}
+
+model Wishlist {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  packageId String
+  package   Package  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, packageId]) // prevent duplicate wishlist entries
+  @@index([userId])
+  @@map("wishlist")
 }

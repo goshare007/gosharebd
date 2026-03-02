@@ -12,4 +12,5 @@ export const QUERY_KEYS = {
   ADMIN_DASHBOARD_STATS: 'admin-dashboard-stats',
   USER_DASHBOARD_STATS: 'user-dashboard-stats',
   ADMIN_USER_LIST: 'admin-user-list',
+  USER_WISHLIST: 'user-wishlist',
 };

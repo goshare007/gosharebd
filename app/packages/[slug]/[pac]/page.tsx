@@ -6,6 +6,7 @@ import {
   Award,
   CheckCircle2,
   Clock,
+  Heart,
   Mail,
   MapPin,
   MessageCircle,
@@ -26,6 +27,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSinglePackages } from '@/services/packages';
+import { useWishlist } from '@/services/wishlist';
 
 export default function PackageDetailPage({
   params,
@@ -36,12 +38,13 @@ export default function PackageDetailPage({
 
   const [showCouple, setShowCouple] = useState(false);
 
+  // All hooks must be called before any early returns
   const { isPending, data: packageData, isError } = useSinglePackages(pac);
+  const { isWishlisted, toggleWishlist, isToggling } = useWishlist(pac);
 
   if (isPending) {
     return (
       <div className='min-h-screen bg-background'>
-        {/* Hero skeleton */}
         <section className='relative h-[50vh] md:h-[60vh]'>
           <Skeleton className='w-full h-full rounded-none' />
           <div className='absolute bottom-0 left-0 right-0 p-6 md:p-8 lg:p-12'>
@@ -61,9 +64,7 @@ export default function PackageDetailPage({
 
         <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
           <div className='grid lg:grid-cols-3 gap-8'>
-            {/* Main content skeleton */}
             <div className='lg:col-span-2 space-y-10'>
-              {/* Quick info bar */}
               <div className='grid grid-cols-3 gap-4 p-6 bg-secondary/20 rounded-xl border-2'>
                 {Array.from({ length: 3 }).map((_, i) => (
                   // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
@@ -75,7 +76,6 @@ export default function PackageDetailPage({
                 ))}
               </div>
 
-              {/* About */}
               <div className='space-y-3'>
                 <Skeleton className='h-8 w-48' />
                 <Skeleton className='h-4 w-full' />
@@ -83,7 +83,6 @@ export default function PackageDetailPage({
                 <Skeleton className='h-4 w-3/4' />
               </div>
 
-              {/* Highlights */}
               <div className='bg-primary/5 border-2 border-primary/10 rounded-xl p-6 space-y-4'>
                 <Skeleton className='h-8 w-40' />
                 <div className='grid sm:grid-cols-2 gap-4'>
@@ -97,7 +96,6 @@ export default function PackageDetailPage({
                 </div>
               </div>
 
-              {/* Itinerary */}
               <div className='space-y-6'>
                 <Skeleton className='h-8 w-48' />
                 {Array.from({ length: 4 }).map((_, i) => (
@@ -119,7 +117,6 @@ export default function PackageDetailPage({
                 ))}
               </div>
 
-              {/* Includes / Excludes */}
               <div className='grid md:grid-cols-2 gap-6'>
                 {Array.from({ length: 2 }).map((_, i) => (
                   // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
@@ -138,7 +135,6 @@ export default function PackageDetailPage({
                 ))}
               </div>
 
-              {/* Important info */}
               <Card className='border-2'>
                 <CardContent className='p-6 space-y-4'>
                   <Skeleton className='h-8 w-56' />
@@ -155,7 +151,6 @@ export default function PackageDetailPage({
               </Card>
             </div>
 
-            {/* Sidebar skeleton */}
             <div className='lg:col-span-1'>
               <Card className='sticky top-24 border-2 shadow-lg pt-0'>
                 <CardContent className='p-0'>
@@ -218,7 +213,6 @@ export default function PackageDetailPage({
               <RefreshCcw className='w-4 h-4' />
               Try again
             </Button>
-
             <Button asChild variant='ghost'>
               <Link href='/packages'>All destinations</Link>
             </Button>
@@ -230,7 +224,6 @@ export default function PackageDetailPage({
 
   return (
     <div className='min-h-screen bg-background'>
-      {/* Hero Image - Clean & Simple */}
       <section className='relative h-[50vh] md:h-[60vh]'>
         <Image
           src={packageData.coverImage}
@@ -241,7 +234,6 @@ export default function PackageDetailPage({
         />
         <div className='absolute inset-0 bg-linear-to-b from-black/40 via-black/20 to-black/60' />
 
-        {/* Top Action Buttons */}
         <div className='absolute top-6 left-4 sm:left-6 lg:left-8 z-10'>
           <Button
             variant='outline'
@@ -260,13 +252,21 @@ export default function PackageDetailPage({
           <Button
             variant='outline'
             size='icon'
-            className='bg-background/90 backdrop-blur-sm border-2 hover:bg-background'
+            onClick={toggleWishlist}
+            disabled={isToggling}
+            className={
+              isWishlisted
+                ? 'text-red-500 border-red-500 hover:bg-red-50 dark:hover:bg-red-950'
+                : ''
+            }
           >
+            <Heart className={isWishlisted ? 'fill-red-500' : ''} />
+          </Button>
+          <Button variant='outline' size='icon'>
             <Share2 className='w-4 h-4' />
           </Button>
         </div>
 
-        {/* Hero Content */}
         <div className='absolute bottom-0 left-0 right-0 p-6 md:p-8 lg:p-12'>
           <div className='max-w-7xl mx-auto'>
             <div className='flex flex-wrap gap-2 mb-4'>
@@ -292,7 +292,6 @@ export default function PackageDetailPage({
                 <MapPin className='w-5 h-5' />
                 <span className='font-medium'>{packageData.Location}</span>
               </div>
-
               <Separator orientation='vertical' className='h-6 bg-white/30' />
               <div className='flex items-center gap-2'>
                 <Star className='w-4 h-4 fill-yellow-400 text-yellow-400' />
@@ -312,9 +311,7 @@ export default function PackageDetailPage({
 
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
         <div className='grid lg:grid-cols-3 gap-8'>
-          {/* Main Content */}
           <div className='lg:col-span-2 space-y-10'>
-            {/* Quick Info Bar */}
             <div className='grid grid-cols-3 gap-4 p-6 bg-secondary/20 rounded-xl border-2'>
               <div className='text-center'>
                 <Clock className='w-6 h-6 text-primary mx-auto mb-2' />
@@ -335,7 +332,6 @@ export default function PackageDetailPage({
               </div>
             </div>
 
-            {/* About Section */}
             <section>
               <h2 className='text-2xl font-bold mb-4'>About This Tour</h2>
               <p className='text-muted-foreground leading-relaxed text-base'>
@@ -343,7 +339,6 @@ export default function PackageDetailPage({
               </p>
             </section>
 
-            {/* Highlights */}
             <section className='bg-primary/5 border-2 border-primary/10 rounded-xl p-6'>
               <h2 className='text-2xl font-bold mb-6 flex items-center gap-2'>
                 <Star className='w-6 h-6 text-primary' />
@@ -360,7 +355,6 @@ export default function PackageDetailPage({
               </div>
             </section>
 
-            {/* Image Section After Highlights */}
             {packageData.gallery.length > 1 && (
               <section className='grid sm:grid-cols-2 gap-4'>
                 {packageData.gallery.slice(0, 3).map((img, idx) => (
@@ -380,7 +374,6 @@ export default function PackageDetailPage({
               </section>
             )}
 
-            {/* Itinerary */}
             <section>
               <h2 className='text-2xl font-bold mb-6'>Detailed Itinerary</h2>
               <div className='space-y-6'>
@@ -414,7 +407,6 @@ export default function PackageDetailPage({
               </div>
             </section>
 
-            {/* What's Included/Not Included */}
             <section className='grid md:grid-cols-2 gap-6'>
               <Card className='border-2'>
                 <CardContent className='p-6'>
@@ -453,7 +445,6 @@ export default function PackageDetailPage({
               </Card>
             </section>
 
-            {/* Important Information */}
             <Card className='bg-secondary/30 border-2'>
               <CardContent className='p-6'>
                 <h2 className='text-2xl font-bold mb-6 flex items-center gap-2'>
@@ -485,12 +476,10 @@ export default function PackageDetailPage({
               </CardContent>
             </Card>
 
-            {/* Photo Gallery Section */}
             <section>
               <div className='flex items-center justify-between mb-6'>
                 <h2 className='text-2xl font-bold'>Photo Gallery</h2>
               </div>
-
               <div className='grid grid-cols-2 md:grid-cols-3 gap-4'>
                 {packageData.gallery.map((img, idx) => (
                   <div
@@ -514,7 +503,6 @@ export default function PackageDetailPage({
           <div className='lg:col-span-1'>
             <Card className='sticky top-24 pt-0 border-2 shadow-lg'>
               <CardContent className='p-0'>
-                {/* Pricing Header */}
                 <div className='bg-linear-to-br from-primary/10 to-primary/5 p-6 border-b-2'>
                   <div className='flex items-center justify-between mb-2'>
                     <h3 className='text-sm font-medium text-muted-foreground'>
@@ -567,7 +555,6 @@ export default function PackageDetailPage({
                 </div>
 
                 <div className='p-6 space-y-5'>
-                  {/* Trust Badges */}
                   <div className='space-y-2.5 pt-2'>
                     <div className='flex items-center gap-3 text-sm'>
                       <div className='w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center shrink-0'>
@@ -607,7 +594,6 @@ export default function PackageDetailPage({
                     </Link>
                   </Button>
 
-                  {/* Contact Section */}
                   <div className='space-y-3 bg-secondary/20 p-4 rounded-lg'>
                     <h4 className='font-semibold text-sm flex items-center gap-2'>
                       <MessageCircle className='w-4 h-4 text-primary' />
