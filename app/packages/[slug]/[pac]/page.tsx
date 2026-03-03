@@ -12,7 +12,6 @@ import {
   MessageCircle,
   Phone,
   RefreshCcw,
-  Share2,
   Shield,
   Star,
   Users,
@@ -21,6 +20,7 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { use, useState } from 'react';
+import Share from '@/components/common/share';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -262,9 +262,9 @@ export default function PackageDetailPage({
           >
             <Heart className={isWishlisted ? 'fill-red-500' : ''} />
           </Button>
-          <Button variant='outline' size='icon'>
-            <Share2 className='w-4 h-4' />
-          </Button>
+          <Share
+            pageurl={`/package/${packageData.destinationId}/${packageData.id}`}
+          />
         </div>
 
         <div className='absolute bottom-0 left-0 right-0 p-6 md:p-8 lg:p-12'>
