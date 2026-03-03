@@ -118,7 +118,7 @@ export default function UserDropDown() {
 
             <DropdownMenuItem asChild>
               <Link
-                href='/my-bookings'
+                href='/dashboard/my-bookings'
                 className='flex w-full cursor-pointer items-center gap-3 py-2.5'
               >
                 <Calendar className='h-4 w-4 text-primary' />
@@ -128,7 +128,7 @@ export default function UserDropDown() {
 
             <DropdownMenuItem asChild>
               <Link
-                href='/wishlist'
+                href='/dashboard/wishlist'
                 className='flex w-full cursor-pointer items-center gap-3 py-2.5'
               >
                 <Heart className='h-4 w-4 text-primary' />
@@ -138,7 +138,7 @@ export default function UserDropDown() {
 
             <DropdownMenuItem asChild>
               <Link
-                href='/my-reviews'
+                href='/dashboard/my-reviews'
                 className='flex w-full cursor-pointer items-center gap-3 py-2.5'
               >
                 <Star className='h-4 w-4 text-primary' />
@@ -182,7 +182,7 @@ export default function UserDropDown() {
           <DropdownMenuGroup>
             <DropdownMenuItem asChild>
               <Link
-                href='/account/settings'
+                href='/dashboard/account/settings'
                 className='flex w-full cursor-pointer items-center gap-3 py-2.5'
               >
                 <UserCog className='h-4 w-4 text-primary' />
@@ -192,7 +192,7 @@ export default function UserDropDown() {
 
             <DropdownMenuItem asChild>
               <Link
-                href='/notifications'
+                href='/dashboard/notifications'
                 className='flex w-full cursor-pointer items-center justify-between py-2.5'
               >
                 <div className='flex items-center gap-3'>
@@ -213,12 +213,12 @@ export default function UserDropDown() {
             <DropdownMenuItem asChild>
               <Link
                 href={
-                  session.user.role === 'ADMIN' ? '/support/agent' : '/support'
+                  session.user.role === 'ADMIN' ? '/support/agent' : '/help'
                 }
                 className='flex w-full cursor-pointer items-center gap-3 py-2.5'
               >
                 <Headphones className='h-4 w-4 text-primary' />
-                <span className='font-medium'>Customer Support</span>
+                <span className='font-medium'>Help Center</span>
               </Link>
             </DropdownMenuItem>
           </DropdownMenuGroup>

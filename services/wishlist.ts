@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { QUERY_KEYS } from '@/constants/query-keys';
+import type { WishlistType } from '@/types/wishlist';
 
 export const useToggleWishlist = () => {
   const queryClient = useQueryClient();
@@ -39,4 +40,14 @@ export const useWishlist = (packageId: string) => {
     toggleWishlist: () => toggleWishlist(packageId),
     isToggling,
   };
+};
+
+export const useWishlistPackages = () => {
+  return useQuery<WishlistType[]>({
+    queryKey: [QUERY_KEYS.USER_WISHLIST],
+    queryFn: async () => {
+      const res = await axios.get<WishlistType[]>('/api/user/wishlist/all');
+      return res.data;
+    },
+  });
 };
