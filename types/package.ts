@@ -41,4 +41,12 @@ export interface AllPackagesType {
   name: string;
   Location: string;
   pricePerPerson: number;
+  originalPrice?: number | null;
+  coverImage?: string;
+  durationDays?: number;
+  isActive: boolean;
+  _count?: {
+    departures: number;
+    bookings: number;
+  };
 }

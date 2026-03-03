@@ -9,6 +9,16 @@ export async function GET() {
         name: true,
         Location: true,
         pricePerPerson: true,
+        originalPrice: true,
+        coverImage: true,
+        durationDays: true,
+        isActive: true,
+        _count: {
+          select: {
+            departures: true,
+            bookings: true,
+          },
+        },
       },
     });
     return NextResponse.json(response);
