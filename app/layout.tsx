@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono, Philosopher } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { LenisProvider } from '@/context/lenis-provider';
 import TanstackQueryProvider from '@/context/tanstack-query-provider';
 import { ThemeProvider } from '@/context/theme-provider';
 import './globals.css';
@@ -101,16 +102,18 @@ export default function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} ${philosopher.variable} font-sans antialiased`}
         >
-          <ThemeProvider
-            attribute='class'
-            defaultTheme='light'
-            enableSystem
-            disableTransitionOnChange
-          >
-            <TooltipProvider>{children}</TooltipProvider>
-            <Toaster richColors />
-            <ReactQueryDevtools initialIsOpen={false} />
-          </ThemeProvider>
+          <LenisProvider>
+            <ThemeProvider
+              attribute='class'
+              defaultTheme='light'
+              enableSystem
+              disableTransitionOnChange
+            >
+              <TooltipProvider>{children}</TooltipProvider>
+              <Toaster richColors />
+              <ReactQueryDevtools initialIsOpen={false} />
+            </ThemeProvider>
+          </LenisProvider>
         </body>
       </html>
     </TanstackQueryProvider>
