@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  BarChart3,
   Bell,
   Calendar,
   Compass,
@@ -9,7 +8,6 @@ import {
   Headphones,
   Heart,
   LayoutDashboard,
-  MapPin,
   Package,
   Settings,
   Star,
@@ -69,8 +67,8 @@ export const data: { navMain: NavItem[]; navSecondary: NavItem[] } = {
 
     // Admin-specific items
     {
-      title: 'Manage Tours',
-      url: '/admin/tours',
+      title: 'Manage Packages',
+      url: '/dashboard/admin/packages',
       icon: Package,
       role: ['ADMIN'],
     },
@@ -84,18 +82,6 @@ export const data: { navMain: NavItem[]; navSecondary: NavItem[] } = {
       title: 'All Users',
       url: '/dashboard/admin/users',
       icon: Users,
-      role: ['ADMIN'],
-    },
-    {
-      title: 'Destinations',
-      url: '/dashboard/admin/destinations',
-      icon: MapPin,
-      role: ['ADMIN'],
-    },
-    {
-      title: 'Analytics',
-      url: '/admin/analytics',
-      icon: BarChart3,
       role: ['ADMIN'],
     },
 

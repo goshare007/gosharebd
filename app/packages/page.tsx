@@ -1,73 +1,78 @@
 'use client';
-import { AlertCircle, Compass, MapPin, Package, RefreshCw } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Award,
+  Clock,
+  MapPin,
+  Package,
+  RefreshCcw,
+  Star,
+  Users,
+} from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAllDestinations } from '@/services/destinations';
+import { useAllPackages } from '@/services/packages';
+import type { AllPackagesType } from '@/types/package';
 
 // ─── Static Header ────────────────────────────────────────────────────────────
 function Header() {
   return (
-    <section className='relative pt-16 pb-12 bg-primary/5 overflow-hidden'>
-      <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative'>
-        <div className='max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-700'>
-          {/* Eyebrow */}
-          <div className='flex items-center gap-3 mb-6'>
-            <div className='h-px w-12 bg-primary' />
+    <section className='relative pt-16 pb-12 bg-primary/5 border-b border-border overflow-hidden'>
+      <div className='absolute right-8 top-4 font-display text-[8rem] font-bold text-primary/5 leading-none select-none pointer-events-none hidden lg:block'>
+        TOURS
+      </div>
+      <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
+        <div className='max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-700'>
+          <div className='flex items-center gap-3 mb-4'>
+            <div className='h-px w-10 bg-primary' />
             <span className='text-xs font-semibold tracking-[0.2em] uppercase text-primary'>
-              Explore Bangladesh
+              Tour Packages
             </span>
           </div>
-
-          <h1 className='text-5xl sm:text-6xl font-display md:text-7xl font-bold leading-[1.05] tracking-tight mb-6'>
-            Where do you
-            <br />
+          <h1 className='font-display text-4xl sm:text-5xl font-bold leading-tight mb-4'>
+            Find your next{' '}
             <span className='italic font-light text-muted-foreground'>
-              want to go
+              adventure
             </span>
-            <span className='text-primary'>?</span>
+            <span className='text-primary'>.</span>
           </h1>
-
-          <p className='text-base md:text-lg text-muted-foreground max-w-xl leading-relaxed'>
-            Handpicked destinations with curated packages — from the misty hills
-            of Bandarban to the mangroves of the Sundarbans.
+          <p className='text-muted-foreground text-base leading-relaxed'>
+            Browse all our curated tour packages across Bangladesh — from the
+            misty hills of Bandarban to the mangroves of the Sundarbans.
           </p>
         </div>
       </div>
     </section>
   );
 }
+
 // ─── Skeleton Card ────────────────────────────────────────────────────────────
-function DestinationCardSkeleton() {
+function PackageCardSkeleton() {
   return (
-    <Card className='overflow-hidden pt-0 border-2 h-full flex flex-col'>
+    <div className='rounded-xl border-2 overflow-hidden flex flex-col'>
       <Skeleton className='h-48 w-full rounded-none' />
-
-      <CardContent className='p-4 space-y-3 flex-1 flex flex-col'>
-        <div className='space-y-2 flex-1'>
-          <Skeleton className='h-3 w-full' />
-          <Skeleton className='h-3 w-4/5' />
+      <div className='p-5 space-y-3 flex-1'>
+        <Skeleton className='h-6 w-3/4' />
+        <Skeleton className='h-4 w-full' />
+        <Skeleton className='h-4 w-2/3' />
+        <div className='flex gap-4 pt-1'>
+          <Skeleton className='h-4 w-20' />
+          <Skeleton className='h-4 w-24' />
         </div>
-
-        <div className='flex gap-1.5'>
-          <Skeleton className='h-5 w-14 rounded-full' />
-          <Skeleton className='h-5 w-16 rounded-full' />
-          <Skeleton className='h-5 w-12 rounded-full' />
-        </div>
-
-        <div className='flex items-center justify-between pt-2 border-t'>
-          <Skeleton className='h-4 w-16' />
-          <Skeleton className='h-5 w-20' />
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+      <div className='px-5 pb-5'>
+        <Skeleton className='h-3 w-16 mb-2' />
+        <Skeleton className='h-7 w-32' />
+      </div>
+    </div>
   );
 }
 
-// ─── Loading State (grid only) ────────────────────────────────────────────────
+// ─── Loading State ────────────────────────────────────────────────────────────
 function LoadingState() {
   return (
     <section className='py-12 md:py-16'>
@@ -76,11 +81,10 @@ function LoadingState() {
           <Skeleton className='h-7 w-40' />
           <Skeleton className='h-4 w-24' />
         </div>
-
-        <div className='grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'>
-          {Array.from({ length: 8 }).map((_, i) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton list
-            <DestinationCardSkeleton key={i} />
+        <div className='grid sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8'>
+          {Array.from({ length: 6 }).map((_, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
+            <PackageCardSkeleton key={i} />
           ))}
         </div>
       </div>
@@ -91,26 +95,30 @@ function LoadingState() {
 // ─── Error State ──────────────────────────────────────────────────────────────
 function ErrorState({ onRetry }: { onRetry: () => void }) {
   return (
-    <div className='py-24 flex items-center justify-center px-4'>
+    <div className='min-h-[40vh] flex items-center justify-center px-4'>
       <div className='text-center space-y-5 max-w-md'>
-        <div className='flex justify-center'>
-          <div className='rounded-full bg-destructive/10 p-4'>
-            <AlertCircle className='w-10 h-10 text-destructive' />
-          </div>
+        <div className='w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center mx-auto'>
+          <AlertTriangle className='w-7 h-7 text-destructive' />
         </div>
-
         <div className='space-y-2'>
-          <h2 className='text-xl font-semibold'>Failed to load destinations</h2>
+          <h2 className='text-xl font-semibold'>Failed to load packages</h2>
           <p className='text-sm text-muted-foreground'>
-            Something went wrong while fetching the destinations. Check your
-            connection and try again.
+            We couldn't fetch the packages. This might be a temporary issue —
+            please try again.
           </p>
         </div>
-
-        <Button onClick={onRetry} variant='outline' className='gap-2'>
-          <RefreshCw className='w-4 h-4' />
-          Try again
-        </Button>
+        <div className='flex items-center justify-center gap-3'>
+          <Button variant='outline' onClick={onRetry} className='gap-2'>
+            <RefreshCcw className='w-4 h-4' />
+            Try again
+          </Button>
+          <Button asChild variant='ghost'>
+            <Link href='/'>
+              <ArrowLeft className='w-4 h-4 mr-1' />
+              Go home
+            </Link>
+          </Button>
+        </div>
       </div>
     </div>
   );
@@ -122,105 +130,167 @@ function EmptyState() {
     <div className='py-24 text-center space-y-4'>
       <div className='flex justify-center'>
         <div className='rounded-full bg-muted p-5'>
-          <Compass className='w-10 h-10 text-muted-foreground' />
+          <Package className='w-10 h-10 text-muted-foreground' />
         </div>
       </div>
-      <h3 className='text-lg font-medium'>No destinations yet</h3>
+      <h3 className='text-lg font-medium'>No packages yet</h3>
       <p className='text-sm text-muted-foreground max-w-xs mx-auto'>
-        Destinations will appear here once they are added.
+        Packages will appear here once they are added.
       </p>
     </div>
   );
 }
 
-// ─── Destinations Grid ────────────────────────────────────────────────────────
-function DestinationsGrid({
-  data,
-}: {
-  data: NonNullable<ReturnType<typeof useAllDestinations>['data']>;
-}) {
+// ─── Packages Grid ────────────────────────────────────────────────────────────
+function PackagesGrid({ data }: { data: AllPackagesType[] }) {
   if (!data.length) return <EmptyState />;
 
   return (
     <section className='py-12 md:py-16'>
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
         <div className='flex items-center justify-between mb-6'>
-          <h2 className='text-2xl font-bold'>All Destinations</h2>
+          <h2 className='text-2xl font-bold'>All Packages</h2>
           <p className='text-sm text-muted-foreground'>
-            {data.length} {data.length === 1 ? 'destination' : 'destinations'}
+            {data.length} {data.length === 1 ? 'package' : 'packages'}
           </p>
         </div>
 
-        <div className='grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'>
-          {data.map((dest, idx) => (
-            <Link key={dest.id} href={`/packages/${dest.id}`} className='group'>
-              <Card
-                className='overflow-hidden pt-0 border-2 hover:border-primary/50 hover:shadow-xl transition-all hover:-translate-y-1 h-full flex flex-col animate-in fade-in duration-700'
-                style={{ animationDelay: `${idx * 50}ms` }}
+        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
+          <div className='grid sm:grid-cols-2 xl:grid-cols-3 gap-5'>
+            {data.map((pkg, idx) => (
+              <article
+                key={pkg.id}
+                className='group relative rounded-2xl border bg-card overflow-hidden hover:border-primary/40 hover:shadow-lg transition-all duration-300 animate-in fade-in slide-in-from-bottom-2 flex flex-col'
+                style={{
+                  animationDelay: `${idx * 60}ms`,
+                  animationFillMode: 'both',
+                }}
               >
-                <div className='relative h-48 overflow-hidden'>
-                  <Image
-                    src={dest.image}
-                    alt={dest.name}
-                    fill
-                    className='object-cover group-hover:scale-110 transition-transform duration-700'
-                  />
-                  <div className='absolute inset-0 bg-linear-to-t from-black/80 via-black/30 to-transparent' />
+                {/* Invisible full-card link */}
+                <Link
+                  href={`/packages/${pkg.slug}`}
+                  className='absolute inset-0 z-10'
+                  aria-label={`View ${pkg.name}`}
+                />
 
-                  <div className='absolute bottom-0 left-0 right-0 p-4 text-white'>
-                    <h3 className='text-lg font-bold mb-1 group-hover:text-primary transition-colors'>
-                      {dest.name}
+                {/* Image */}
+                <div className='relative h-52 overflow-hidden bg-muted shrink-0'>
+                  <Image
+                    src={pkg.coverImage}
+                    alt={pkg.name}
+                    fill
+                    className='object-cover transition-transform duration-500 group-hover:scale-105'
+                  />
+                  {/* Gradient overlay */}
+                  <div className='absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent' />
+
+                  {/* Badges — top left */}
+                  <div className='absolute top-3 left-3 flex gap-1.5 z-10'>
+                    {pkg.isBestseller && (
+                      <span className='inline-flex items-center gap-1 bg-primary text-primary-foreground text-[11px] font-semibold px-2 py-0.5 rounded-full'>
+                        <Award className='w-3 h-3' /> Bestseller
+                      </span>
+                    )}
+                    {!pkg.isActive && (
+                      <span className='inline-flex items-center bg-muted/90 text-muted-foreground text-[11px] font-medium px-2 py-0.5 rounded-full backdrop-blur-sm'>
+                        Inactive
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Name + location anchored to bottom of image */}
+                  <div className='absolute bottom-0 left-0 right-0 p-4 z-10'>
+                    <h3 className='font-semibold text-white text-base leading-tight line-clamp-2 mb-1'>
+                      <Link href={`/packages/${pkg.slug}`}>{pkg.name}</Link>
                     </h3>
-                    <div className='flex items-center gap-1.5 text-xs text-white/90'>
-                      <MapPin className='w-3 h-3' />
-                      <span>{dest.division}</span>
+                    <div className='flex items-center gap-1 text-white/70 text-xs'>
+                      <MapPin className='w-3 h-3 shrink-0' />
+                      <span className='truncate'>{pkg.location}</span>
                     </div>
                   </div>
                 </div>
 
-                <CardContent className='p-4 space-y-3 flex-1 flex flex-col'>
-                  <p className='text-sm text-muted-foreground line-clamp-3 flex-1'>
-                    {dest.summary}
-                  </p>
+                {/* Body */}
+                <div className='p-4 flex flex-col gap-4 flex-1'>
+                  {/* Stats row */}
+                  <div className='flex items-center gap-4 text-sm text-muted-foreground'>
+                    <div className='flex items-center gap-1.5'>
+                      <Clock className='w-3.5 h-3.5 text-primary' />
+                      <span>{pkg.durationDays}D</span>
+                    </div>
+                    <div className='flex items-center gap-1.5'>
+                      <Users className='w-3.5 h-3.5 text-primary' />
+                      <span>
+                        {pkg.minGroupSize}–{pkg.maxGroupSize}
+                      </span>
+                    </div>
+                    {/* Rating */}
+                    <div className='flex items-center gap-1 ml-auto'>
+                      <Star className='w-3.5 h-3.5 fill-amber-400 text-amber-400' />
+                      <span className='font-medium text-foreground text-sm'>
+                        {pkg.averageRating ? pkg.averageRating.toFixed(1) : '—'}
+                      </span>
+                      <span className='text-xs text-muted-foreground'>
+                        ({pkg.reviewCount ?? 0})
+                      </span>
+                    </div>
+                  </div>
 
-                  <div className='space-y-2'>
-                    <div className='flex flex-wrap gap-1.5'>
-                      {dest.tags.slice(0, 3).map((tag, i) => (
+                  {/* Tags */}
+                  {pkg.tags && pkg.tags.length > 0 && (
+                    <div className='flex flex-wrap gap-1'>
+                      {pkg.tags.slice(0, 3).map((tag) => (
                         <Badge
-                          // biome-ignore lint/suspicious/noArrayIndexKey: valid static rendering
-                          key={i}
+                          key={tag}
                           variant='secondary'
-                          className='text-xs px-2 py-0.5'
+                          className='text-[11px] px-2 py-0 h-5 rounded-full'
                         >
                           {tag}
                         </Badge>
                       ))}
-                    </div>
-
-                    <div className='flex items-center justify-between text-sm pt-2 border-t'>
-                      <div className='flex items-center gap-1.5'>
-                        <Package className='w-4 h-4 text-primary' />
-                        <span className='font-medium'>
-                          {dest.packageCount}{' '}
-                          {dest.packageCount === 1 ? 'package' : 'packages'}
-                        </span>
-                      </div>
-                      {dest.startingPrice && (
-                        <div className='flex items-center gap-1.5'>
-                          <p className='text-xs text-muted-foreground'>
-                            Starting From
-                          </p>
-                          <p className='text-base font-bold text-primary'>
-                            ৳{dest.startingPrice.toLocaleString()}
-                          </p>
-                        </div>
+                      {pkg.tags.length > 3 && (
+                        <Badge
+                          variant='outline'
+                          className='text-[11px] px-2 py-0 h-5 rounded-full'
+                        >
+                          +{pkg.tags.length - 3}
+                        </Badge>
                       )}
                     </div>
+                  )}
+
+                  {/* Pricing — pinned to bottom */}
+                  <div className='mt-auto pt-3 border-t border-border flex items-end justify-between'>
+                    <div>
+                      <p className='text-[11px] text-muted-foreground uppercase tracking-wide mb-0.5'>
+                        Per person
+                      </p>
+                      <div className='flex items-baseline gap-1.5'>
+                        <span className='text-lg font-bold text-primary'>
+                          ৳{Number(pkg.pricePerPerson).toLocaleString()}
+                        </span>
+                        {pkg.originalPrice && (
+                          <span className='text-xs text-muted-foreground line-through'>
+                            ৳{Number(pkg.originalPrice).toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {pkg.couplePrice && (
+                      <div className='text-right'>
+                        <p className='text-[11px] text-muted-foreground uppercase tracking-wide mb-0.5'>
+                          Couple
+                        </p>
+                        <span className='text-base font-bold text-pink-500 dark:text-pink-400'>
+                          ৳{Number(pkg.couplePrice).toLocaleString()}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
       </div>
     </section>
@@ -229,7 +299,7 @@ function DestinationsGrid({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function PackagesIndexPage() {
-  const { isPending, data, isError, refetch } = useAllDestinations();
+  const { isPending, data, isError, refetch } = useAllPackages();
 
   return (
     <div className='min-h-screen bg-background'>
@@ -240,7 +310,7 @@ export default function PackagesIndexPage() {
       ) : isPending ? (
         <LoadingState />
       ) : (
-        <DestinationsGrid data={data} />
+        <PackagesGrid data={data} />
       )}
     </div>
   );

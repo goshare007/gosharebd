@@ -8,15 +8,16 @@ export async function GET(req: NextRequest) {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return NextResponse.json({ wishlisted: false });
 
-    const packageId = req.nextUrl.searchParams.get('packageId');
-    if (!packageId)
-      return NextResponse.json(
-        { error: 'packageId is required' },
-        { status: 400 },
-      );
+    const slug = req.nextUrl.searchParams.get('slug');
+    if (!slug)
+      return NextResponse.json({ error: 'Slug is required' }, { status: 400 });
 
-    const wishlist = await prisma.wishlist.findUnique({
-      where: { userId_packageId: { userId: session.user.id, packageId } },
+    const wishlist = await prisma.wishlist.findFirst({
+      where: {
+        userId: session.user.id,
+        package: { slug },
+      },
+      select: { id: true },
     });
 
     return NextResponse.json({ wishlisted: !!wishlist });

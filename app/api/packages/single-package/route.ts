@@ -4,18 +4,19 @@ import { DeleteImage, UploadImage } from '@/cloudinary';
 import { auth } from '@/lib/auth';
 import { isAdmin } from '@/lib/auth-utils';
 import { prisma } from '@/lib/prisma';
+import type { Division } from '@/prisma/generated/prisma/client/enums';
 
 // ─── GET ──────────────────────────────────────────────────────────────────────
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const packageId = searchParams.get('packageId');
-    if (!packageId) {
-      return NextResponse.json({ error: 'Missing packageId' }, { status: 400 });
+    const slug = searchParams.get('slug');
+    if (!slug) {
+      return NextResponse.json({ error: 'Missing slug' }, { status: 400 });
     }
 
     const pkg = await prisma.package.findUnique({
-      where: { id: packageId },
+      where: { slug },
       include: {
         gallery: {
           select: {
@@ -58,7 +59,7 @@ export async function PATCH(req: NextRequest) {
 
     // ── Verify package exists ────────────────────────────────────────────────
     const existing = await prisma.package.findUnique({
-      where: { id: packageId },
+      where: { slug: packageId },
       include: { gallery: true },
     });
 
@@ -70,6 +71,8 @@ export async function PATCH(req: NextRequest) {
     const formData = await req.formData();
 
     const name = formData.get('name') as string | null;
+    const slug = formData.get('slug') as string | null;
+    const division = formData.get('division') as Division;
     const summary = formData.get('summary') as string | null;
     const location = formData.get('location') as string | null;
     const durationDaysRaw = formData.get('durationDays') as string | null;
@@ -84,10 +87,6 @@ export async function PATCH(req: NextRequest) {
       | null;
     const coverImageFile = formData.get('coverImage') as File | null;
     const keepCoverImage = formData.get('keepCoverImage') === 'true';
-    const newGalleryFiles = formData.getAll('gallery') as File[];
-    const removedGalleryIdsRaw = formData.get('removedGalleryIds') as
-      | string
-      | null;
     const tagsRaw = formData.get('tags') as string | null;
     const highlightsRaw = formData.get('highlights') as string | null;
     const includesRaw = formData.get('includes') as string | null;
@@ -103,6 +102,8 @@ export async function PATCH(req: NextRequest) {
 
     // ── Required field validation ────────────────────────────────────────────
     if (
+      !slug ||
+      !division ||
       !name ||
       !summary ||
       !location ||
@@ -140,7 +141,7 @@ export async function PATCH(req: NextRequest) {
     let highlights: string[] = [];
     let includes: string[] = [];
     let excludes: string[] = [];
-    let removedGalleryIds: string[] = [];
+    const removedGalleryIds: string[] = [];
     let itinerary: {
       time: string;
       title: string;
@@ -153,8 +154,6 @@ export async function PATCH(req: NextRequest) {
       if (highlightsRaw) highlights = JSON.parse(highlightsRaw);
       if (includesRaw) includes = JSON.parse(includesRaw);
       if (excludesRaw) excludes = JSON.parse(excludesRaw);
-      if (removedGalleryIdsRaw)
-        removedGalleryIds = JSON.parse(removedGalleryIdsRaw);
       itinerary = JSON.parse(itineraryRaw);
     } catch {
       return NextResponse.json(
@@ -163,21 +162,11 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    // ── ALL image operations in parallel ─────────────────────────────────────
-    // Run cover upload, cover delete, all gallery uploads, all gallery deletes
-    // at the same time — this is the main source of latency if done sequentially.
-    const removedGalleryItems = existing.gallery.filter((img) =>
-      removedGalleryIds.includes(img.id),
-    );
-
-    const [coverResult, ...galleryUploadResults] = await Promise.all([
+    const [coverResult] = await Promise.all([
       // 1. New cover upload (or null if keeping existing)
       coverImageFile && !keepCoverImage
         ? UploadImage(coverImageFile, 'packages/covers')
         : Promise.resolve(null),
-
-      // 2. All new gallery uploads
-      ...newGalleryFiles.map((file) => UploadImage(file, 'packages/gallery')),
 
       // 3. Delete old cover (fire-and-forget style via allSettled — don't let
       //    a CDN miss block the whole update)
@@ -185,12 +174,6 @@ export async function PATCH(req: NextRequest) {
         ? // biome-ignore lint/suspicious/noConsole: this is fine
           DeleteImage(existing.coverImageId).catch(console.error)
         : Promise.resolve(null),
-
-      // 4. Delete removed gallery images from Cloudinary
-      ...removedGalleryItems.map((img) =>
-        // biome-ignore lint/suspicious/noConsole: this is fine
-        DeleteImage(img.publicId).catch(console.error),
-      ),
     ]);
 
     // Resolve final cover values
@@ -200,12 +183,6 @@ export async function PATCH(req: NextRequest) {
     const coverImageId = coverResult
       ? coverResult.public_id
       : existing.coverImageId;
-
-    // galleryUploadResults only contains the actual upload results (not the deletes)
-    const newGalleryUploads = galleryUploadResults.slice(
-      0,
-      newGalleryFiles.length,
-    ) as { secure_url: string; public_id: string }[];
 
     // ── DB update in a transaction ────────────────────────────────────────────
     // Using $transaction so itinerary delete+create and gallery deletes are atomic.
@@ -218,11 +195,13 @@ export async function PATCH(req: NextRequest) {
       }
 
       return tx.package.update({
-        where: { id: packageId },
+        where: { slug: packageId },
         data: {
           name,
           summary,
-          Location: location,
+          location,
+          slug,
+          division,
           durationDays,
           minGroupSize,
           maxGroupSize,
@@ -252,15 +231,6 @@ export async function PATCH(req: NextRequest) {
               order: item.order,
             })),
           },
-          // Append newly uploaded gallery images
-          ...(newGalleryUploads.length > 0 && {
-            gallery: {
-              create: newGalleryUploads.map(({ secure_url, public_id }) => ({
-                url: secure_url,
-                publicId: public_id,
-              })),
-            },
-          }),
         },
         include: {
           itinerary: { orderBy: { order: 'asc' } },

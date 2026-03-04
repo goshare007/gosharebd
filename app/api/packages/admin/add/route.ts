@@ -4,6 +4,18 @@ import { UploadImage } from '@/cloudinary';
 import { auth } from '@/lib/auth';
 import { isAdmin } from '@/lib/auth-utils';
 import { prisma } from '@/lib/prisma';
+import type { Division } from '@/prisma/generated/prisma/client/enums';
+
+const VALID_DIVISIONS: Division[] = [
+  'DHAKA',
+  'CHITTAGONG',
+  'SYLHET',
+  'RAJSHAHI',
+  'KHULNA',
+  'BARISAL',
+  'RANGPUR',
+  'MYMENSINGH',
+];
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,10 +27,9 @@ export async function POST(req: NextRequest) {
 
     // ── Parse FormData ────────────────────────────────────────────────────
     const formData = await req.formData();
-
-    const destinationId = formData.get('destinationId') as string | null;
     const name = formData.get('name') as string | null;
     const summary = formData.get('summary') as string | null;
+    const division = formData.get('division') as string | null;
     const location = formData.get('location') as string | null;
     const durationDaysRaw = formData.get('durationDays') as string | null;
     const minGroupSizeRaw = formData.get('minGroupSize') as string | null;
@@ -31,7 +42,6 @@ export async function POST(req: NextRequest) {
       | string
       | null;
     const coverImageFile = formData.get('coverImage') as File | null;
-    const galleryFiles = formData.getAll('gallery') as File[];
     const tagsRaw = formData.get('tags') as string | null;
     const highlightsRaw = formData.get('highlights') as string | null;
     const includesRaw = formData.get('includes') as string | null;
@@ -47,9 +57,9 @@ export async function POST(req: NextRequest) {
 
     // ── Required field validation ─────────────────────────────────────────
     if (
-      !destinationId ||
       !name ||
       !summary ||
+      !division ||
       !location ||
       !durationDaysRaw ||
       !minGroupSizeRaw ||
@@ -60,6 +70,16 @@ export async function POST(req: NextRequest) {
     ) {
       return NextResponse.json(
         { error: 'Missing required fields' },
+        { status: 400 },
+      );
+    }
+
+    // ── Validate division enum ────────────────────────────────────────────
+    if (!VALID_DIVISIONS.includes(division as Division)) {
+      return NextResponse.json(
+        {
+          error: `Invalid division. Must be one of: ${VALID_DIVISIONS.join(', ')}`,
+        },
         { status: 400 },
       );
     }
@@ -105,30 +125,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ── Validate destination exists ───────────────────────────────────────
-    const destination = await prisma.destination.findUnique({
-      where: { id: destinationId },
-    });
-    if (!destination) {
-      return NextResponse.json(
-        { error: 'Destination not found' },
-        { status: 404 },
-      );
-    }
-
-    // ── Upload images in parallel ─────────────────────────────────────────
-    const [cover, ...galleryUploads] = await Promise.all([
-      UploadImage(coverImageFile, 'packages/covers'),
-      ...galleryFiles.map((file) => UploadImage(file, 'packages/gallery')),
-    ]);
+    // ── Upload cover image ────────────────────────────────────────────────
+    const cover = await UploadImage(coverImageFile, 'packages/covers');
 
     // ── Create package with nested writes ─────────────────────────────────
     const newPackage = await prisma.package.create({
       data: {
-        destinationId,
         name,
         summary,
-        Location: location,
+        division: division as Division,
+        location,
         durationDays,
         minGroupSize,
         maxGroupSize,
@@ -156,16 +162,9 @@ export async function POST(req: NextRequest) {
             order: item.order,
           })),
         },
-        gallery: {
-          create: galleryUploads.map(({ secure_url, public_id }) => ({
-            url: secure_url,
-            publicId: public_id,
-          })),
-        },
       },
       include: {
         itinerary: true,
-        gallery: true,
       },
     });
 

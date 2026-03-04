@@ -2,23 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios, { type AxiosError } from 'axios';
 import { toast } from 'sonner';
 import { QUERY_KEYS } from '@/constants/query-keys';
-import type { SingleDestinationType } from '@/types/destination';
 import type { AllPackagesType, SinglePackageType } from '@/types/package';
-
-export const useDestinationWisePackages = (id: string) => {
-  return useQuery<SingleDestinationType>({
-    queryKey: [QUERY_KEYS.SINGLE_DESTINATION_PACKAGES, id],
-    queryFn: async () => {
-      const response = await axios.get<SingleDestinationType>(
-        '/api/packages/destination',
-        {
-          params: { id },
-        },
-      );
-      return response.data;
-    },
-  });
-};
 
 export const useAddPackage = () => {
   const queryClient = useQueryClient();
@@ -45,14 +29,14 @@ export const useAddPackage = () => {
   });
 };
 
-export const useSinglePackages = (PackageId: string) => {
+export const useSinglePackages = (slug: string) => {
   return useQuery<SinglePackageType>({
-    queryKey: [QUERY_KEYS.SINGLE_PACKAGES, PackageId],
+    queryKey: [QUERY_KEYS.SINGLE_PACKAGES, slug],
     queryFn: async () => {
       const response = await axios.get<SinglePackageType>(
         '/api/packages/single-package',
         {
-          params: { packageId: PackageId },
+          params: { slug },
         },
       );
       return response.data;
@@ -65,6 +49,18 @@ export const useAllPackages = () => {
     queryKey: [QUERY_KEYS.ALL_PACKAGES],
     queryFn: async () => {
       const response = await axios.get<AllPackagesType[]>('/api/packages/all');
+      return response.data;
+    },
+  });
+};
+
+export const usePopularPackages = () => {
+  return useQuery<AllPackagesType[]>({
+    queryKey: [QUERY_KEYS.ALL_PACKAGES],
+    queryFn: async () => {
+      const response = await axios.get<AllPackagesType[]>(
+        '/api/packages/popular',
+      );
       return response.data;
     },
   });

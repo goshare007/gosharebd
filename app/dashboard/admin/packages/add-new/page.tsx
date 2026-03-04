@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   CalendarDays,
   GripVertical,
-  ImagePlus,
   Info,
   Layers,
   MapPin,
@@ -22,7 +21,7 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Suspense, useRef, useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -44,9 +43,37 @@ import {
   FieldSet,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useAddPackage } from '@/services/packages';
+
+// ---------------------------------------------------------------------------
+// Division options
+// ---------------------------------------------------------------------------
+const DIVISIONS = [
+  { value: 'DHAKA', label: 'Dhaka' },
+  { value: 'CHITTAGONG', label: 'Chittagong' },
+  { value: 'SYLHET', label: 'Sylhet' },
+  { value: 'RAJSHAHI', label: 'Rajshahi' },
+  { value: 'KHULNA', label: 'Khulna' },
+  { value: 'BARISAL', label: 'Barisal' },
+  { value: 'RANGPUR', label: 'Rangpur' },
+  { value: 'MYMENSINGH', label: 'Mymensingh' },
+] as const;
+
+type DivisionValue = (typeof DIVISIONS)[number]['value'];
+
+const DIVISION_VALUES = DIVISIONS.map((d) => d.value) as [
+  DivisionValue,
+  ...DivisionValue[],
+];
 
 // ---------------------------------------------------------------------------
 // Zod Schema
@@ -58,8 +85,6 @@ const itineraryItemSchema = z.object({
   order: z.number(),
 });
 
-// Optional positive number — defined as a plain optional so Zod infers
-// `number | undefined` cleanly without z.preprocess polluting the output type.
 const optionalPositiveNumber = z.number().positive().optional();
 
 const packageSchema = z.object({
@@ -71,6 +96,7 @@ const packageSchema = z.object({
     .string()
     .min(20, 'Summary must be at least 20 characters')
     .max(1000, 'Summary must not exceed 1000 characters'),
+  division: z.enum(DIVISION_VALUES, { message: 'Division is required' }),
   location: z.string().min(1, 'Location is required'),
   durationDays: z.number().int().min(1, 'At least 1 day'),
   minGroupSize: z.number().int().min(1, 'At least 1 person'),
@@ -189,24 +215,16 @@ function AddNewPackageContent() {
   const searchParams = useSearchParams();
   const destinationId = searchParams.get('destinationId');
 
-  // String array states
   const [tags, setTags] = useState<string[]>([]);
   const [highlights, setHighlights] = useState<string[]>([]);
   const [includes, setIncludes] = useState<string[]>([]);
   const [excludes, setExcludes] = useState<string[]>([]);
   const { mutate: addPackage, isPending } = useAddPackage();
 
-  // Cover image
   const [coverImagePreview, setCoverImagePreview] = useState<string | null>(
     null,
   );
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
-
-  // Gallery
-  const [galleryFiles, setGalleryFiles] = useState<
-    { file: File; preview: string }[]
-  >([]);
-  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   const {
     register,
@@ -221,6 +239,7 @@ function AddNewPackageContent() {
     defaultValues: {
       name: '',
       summary: '',
+      division: undefined,
       location: '',
       durationDays: 1,
       minGroupSize: 1,
@@ -246,12 +265,11 @@ function AddNewPackageContent() {
   });
   const isCouple = watch('isCouple');
 
-  // Cover image
   const handleCoverImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) {
-      toast.info('Max 2MB');
+      toast.error('Cover image must be under 2MB');
       return;
     }
     setCoverImageFile(file);
@@ -269,21 +287,6 @@ function AddNewPackageContent() {
     setValue('coverImage', '', { shouldValidate: true });
   };
 
-  // Gallery
-  const handleGalleryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []).filter(
-      (f) => f.type.startsWith('image/') && f.size <= 2 * 1024 * 1024,
-      toast.info('Max 2MB'),
-    );
-    setGalleryFiles((prev) =>
-      [
-        ...prev,
-        ...files.map((file) => ({ file, preview: URL.createObjectURL(file) })),
-      ].slice(0, 10),
-    );
-    e.target.value = '';
-  };
-
   const resetForm = () => {
     reset();
     setTags([]);
@@ -292,16 +295,14 @@ function AddNewPackageContent() {
     setExcludes([]);
     setCoverImagePreview(null);
     setCoverImageFile(null);
-    setGalleryFiles([]);
   };
 
   const onSubmit = (data: PackageFormData) => {
-    if (!coverImageFile || !destinationId) return;
-
+    if (!coverImageFile) return;
     const formData = new FormData();
-    formData.append('destinationId', destinationId);
     formData.append('name', data.name);
     formData.append('summary', data.summary);
+    formData.append('division', data.division);
     formData.append('location', data.location);
     formData.append('durationDays', String(data.durationDays));
     formData.append('minGroupSize', String(data.minGroupSize));
@@ -315,8 +316,6 @@ function AddNewPackageContent() {
     if (data.originalCouplePrice)
       formData.append('originalCouplePrice', String(data.originalCouplePrice));
     formData.append('coverImage', coverImageFile);
-    // biome-ignore lint/suspicious/useIterableCallbackReturn: this is fine
-    galleryFiles.forEach((g) => formData.append('gallery', g.file));
     formData.append('tags', JSON.stringify(tags));
     formData.append('highlights', JSON.stringify(highlights));
     formData.append('includes', JSON.stringify(includes));
@@ -331,7 +330,6 @@ function AddNewPackageContent() {
     formData.append('isBestseller', String(data.isBestseller));
     formData.append('isActive', String(data.isActive));
 
-    // Submit via mutation
     addPackage(formData, {
       onSuccess: () => {
         resetForm();
@@ -402,28 +400,67 @@ function AddNewPackageContent() {
                       )}
                     </Field>
 
-                    <Field data-invalid={!!errors.location}>
-                      <FieldLabel htmlFor='location'>
-                        Location <span className='text-red-500'>*</span>
-                      </FieldLabel>
-                      <div className='relative'>
-                        <MapPin className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground' />
-                        <Input
-                          id='location'
-                          placeholder="e.g., Cox's Bazar, Chittagong Division"
-                          className='h-11 pl-9'
-                          aria-invalid={!!errors.location}
-                          {...register('location')}
-                        />
-                      </div>
-                      {errors.location ? (
-                        <FieldError>{errors.location.message}</FieldError>
-                      ) : (
-                        <FieldDescription>
-                          Specific location within the destination
-                        </FieldDescription>
-                      )}
-                    </Field>
+                    {/* Division + Location side by side */}
+                    <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+                      <Field data-invalid={!!errors.division}>
+                        <FieldLabel htmlFor='division'>
+                          Division <span className='text-red-500'>*</span>
+                        </FieldLabel>
+                        <Select
+                          value={watch('division')}
+                          onValueChange={(val) =>
+                            setValue('division', val as DivisionValue, {
+                              shouldValidate: true,
+                            })
+                          }
+                        >
+                          <SelectTrigger
+                            id='division'
+                            className='h-11'
+                            aria-invalid={!!errors.division}
+                          >
+                            <SelectValue placeholder='Select a division' />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {DIVISIONS.map(({ value, label }) => (
+                              <SelectItem key={value} value={value}>
+                                {label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {errors.division ? (
+                          <FieldError>{errors.division.message}</FieldError>
+                        ) : (
+                          <FieldDescription>
+                            Administrative division
+                          </FieldDescription>
+                        )}
+                      </Field>
+
+                      <Field data-invalid={!!errors.location}>
+                        <FieldLabel htmlFor='location'>
+                          Location <span className='text-red-500'>*</span>
+                        </FieldLabel>
+                        <div className='relative'>
+                          <MapPin className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground' />
+                          <Input
+                            id='location'
+                            placeholder="e.g., Cox's Bazar"
+                            className='h-11 pl-9'
+                            aria-invalid={!!errors.location}
+                            {...register('location')}
+                          />
+                        </div>
+                        {errors.location ? (
+                          <FieldError>{errors.location.message}</FieldError>
+                        ) : (
+                          <FieldDescription>
+                            Specific location within the division
+                          </FieldDescription>
+                        )}
+                      </Field>
+                    </div>
 
                     <Field data-invalid={!!errors.summary}>
                       <FieldLabel htmlFor='summary'>
@@ -611,7 +648,6 @@ function AddNewPackageContent() {
                       </Field>
                     </div>
 
-                    {/* Couple toggle */}
                     <div className='flex items-center justify-between rounded-lg border p-4'>
                       <div>
                         <p className='text-sm font-medium'>Couple Pricing</p>
@@ -862,7 +898,7 @@ function AddNewPackageContent() {
                       Click to upload cover image
                     </p>
                     <p className='text-xs text-muted-foreground mt-1'>
-                      PNG, JPG or WEBP — max 5MB
+                      PNG, JPG or WEBP — max 2MB
                     </p>
                     <input
                       id='cover-image'
@@ -899,88 +935,6 @@ function AddNewPackageContent() {
                     {errors.coverImage.message}
                   </p>
                 )}
-              </CardContent>
-            </Card>
-
-            {/* ── 7. Gallery ── */}
-            <Card>
-              <CardHeader>
-                <div className='flex items-center gap-2'>
-                  <ImagePlus className='w-4 h-4 text-muted-foreground' />
-                  <CardTitle>Gallery Images</CardTitle>
-                </div>
-                <CardDescription>
-                  Additional photos shown in the package detail page (max 10)
-                </CardDescription>
-              </CardHeader>
-              <CardContent className='space-y-4'>
-                {galleryFiles.length > 0 ? (
-                  <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3'>
-                    {galleryFiles.map((item, index) => (
-                      <div
-                        // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
-                        key={index}
-                        className='relative aspect-square rounded-lg overflow-hidden border group'
-                      >
-                        <Image
-                          src={item.preview}
-                          alt={`Gallery ${index + 1}`}
-                          fill
-                          className='object-cover'
-                        />
-                        <div className='absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center'>
-                          <Button
-                            type='button'
-                            variant='destructive'
-                            size='icon'
-                            className='h-7 w-7'
-                            onClick={() =>
-                              setGalleryFiles((p) =>
-                                p.filter((_, i) => i !== index),
-                              )
-                            }
-                          >
-                            <Trash2 className='w-3.5 h-3.5' />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                    {galleryFiles.length < 10 && (
-                      <button
-                        type='button'
-                        onClick={() => galleryInputRef.current?.click()}
-                        className='aspect-square rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-1 text-muted-foreground hover:bg-secondary/50 transition-colors'
-                      >
-                        <Plus className='w-5 h-5' />
-                        <span className='text-xs'>Add more</span>
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <label
-                    htmlFor='gallery-images'
-                    className='flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-xl cursor-pointer hover:bg-secondary/50 transition-colors'
-                  >
-                    <ImagePlus className='w-8 h-8 text-muted-foreground mb-2' />
-                    <p className='text-sm font-medium'>Upload gallery images</p>
-                    <p className='text-xs text-muted-foreground mt-1'>
-                      Select multiple — PNG, JPG, WEBP — max 5MB each
-                    </p>
-                  </label>
-                )}
-
-                <input
-                  id='gallery-images'
-                  ref={galleryInputRef}
-                  type='file'
-                  multiple
-                  className='hidden'
-                  accept='image/png,image/jpeg,image/webp'
-                  onChange={handleGalleryUpload}
-                />
-                <p className='text-xs text-muted-foreground'>
-                  {galleryFiles.length}/10 images uploaded
-                </p>
               </CardContent>
             </Card>
 

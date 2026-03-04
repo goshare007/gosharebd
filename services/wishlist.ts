@@ -8,8 +8,8 @@ export const useToggleWishlist = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (packageId: string) => {
-      const p = axios.post('/api/user/wishlist/toggle', { packageId });
+    mutationFn: async (slug: string) => {
+      const p = axios.post('/api/user/wishlist/toggle', { slug });
       toast.promise(p, {
         loading: 'Updating…',
         success: 'Wishlist updated',
@@ -24,20 +24,20 @@ export const useToggleWishlist = () => {
   });
 };
 
-export const useWishlist = (packageId: string) => {
+export const useWishlist = (slug: string) => {
   const { mutate: toggleWishlist, isPending: isToggling } = useToggleWishlist();
 
   const { data: wishlistData } = useQuery({
-    queryKey: [QUERY_KEYS.USER_WISHLIST, packageId],
+    queryKey: [QUERY_KEYS.USER_WISHLIST, slug],
     queryFn: async () => {
-      const res = await axios.get(`/api/user/wishlist?packageId=${packageId}`);
+      const res = await axios.get(`/api/user/wishlist?slug=${slug}`);
       return res.data;
     },
   });
 
   return {
     isWishlisted: wishlistData?.wishlisted ?? false,
-    toggleWishlist: () => toggleWishlist(packageId),
+    toggleWishlist: () => toggleWishlist(slug),
     isToggling,
   };
 };

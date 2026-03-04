@@ -2,6 +2,8 @@ export interface SinglePackageType {
   id: string;
   destinationId: string;
   name: string;
+  slug: string;
+  division: string;
   tags: string[];
   coverImage: string;
   pricePerPerson: number;
@@ -12,7 +14,7 @@ export interface SinglePackageType {
   durationDays: number;
   maxGroupSize: number;
   minGroupSize: number;
-  Location: string;
+  location: string;
   summary: string;
   highlights: string[];
   includes: string[];
@@ -39,14 +41,20 @@ export interface SinglePackageType {
 export interface AllPackagesType {
   id: string;
   name: string;
-  Location: string;
+  slug: string;
+  location: string;
   pricePerPerson: number;
   originalPrice?: number | null;
-  coverImage?: string;
+  coverImage: string;
   durationDays?: number;
   isActive: boolean;
-  _count?: {
-    departures: number;
-    bookings: number;
-  };
+  isBestseller: boolean;
+  minGroupSize: number;
+  maxGroupSize: number;
+  couplePrice?: number;
+  originalCouplePrice?: number;
+  isCouple: boolean;
+  tags: string[];
+  reviewCount: number;
+  averageRating: number | null;
 }

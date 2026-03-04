@@ -4,10 +4,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   ArrowLeft,
   CalendarDays,
+  CheckCircle2,
   GripVertical,
-  ImagePlus,
   Info,
   Layers,
+  Link2,
   Loader2,
   MapPin,
   Package,
@@ -19,13 +20,15 @@ import {
   Upload,
   Users,
   X,
+  XCircle,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useRef, useState } from 'react';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { useDebounce } from 'use-debounce';
 import { z } from 'zod';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -45,13 +48,44 @@ import {
   FieldSet,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { toSlug } from '@/lib/slugify';
 import { useSinglePackages, useUpdatePackage } from '@/services/packages';
+// ✅ FIX: import from the correct dedicated slug service (not @/services/packages)
+import { useCheckSlugUniqueness } from '@/services/slug';
 
 // ---------------------------------------------------------------------------
-// Zod Schema (mirrors add-new page)
+// Division options
+// ---------------------------------------------------------------------------
+const DIVISIONS = [
+  { value: 'DHAKA', label: 'Dhaka' },
+  { value: 'CHITTAGONG', label: 'Chittagong' },
+  { value: 'SYLHET', label: 'Sylhet' },
+  { value: 'RAJSHAHI', label: 'Rajshahi' },
+  { value: 'KHULNA', label: 'Khulna' },
+  { value: 'BARISAL', label: 'Barisal' },
+  { value: 'RANGPUR', label: 'Rangpur' },
+  { value: 'MYMENSINGH', label: 'Mymensingh' },
+] as const;
+
+type DivisionValue = (typeof DIVISIONS)[number]['value'];
+
+const DIVISION_VALUES = DIVISIONS.map((d) => d.value) as [
+  DivisionValue,
+  ...DivisionValue[],
+];
+
+// ---------------------------------------------------------------------------
+// Zod Schema
 // ---------------------------------------------------------------------------
 const itineraryItemSchema = z.object({
   time: z.string().min(1, 'Time is required'),
@@ -67,6 +101,15 @@ const packageSchema = z.object({
     .string()
     .min(2, 'Name must be at least 2 characters')
     .max(100, 'Name must not exceed 100 characters'),
+  slug: z
+    .string()
+    .min(2, 'Slug must be at least 2 characters')
+    .max(120, 'Slug must not exceed 120 characters')
+    .regex(
+      /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+      'Slug may only contain lowercase letters, numbers, and hyphens',
+    ),
+  division: z.enum(DIVISION_VALUES, { message: 'Division is required' }),
   summary: z
     .string()
     .min(20, 'Summary must be at least 20 characters')
@@ -80,7 +123,6 @@ const packageSchema = z.object({
   isCouple: z.boolean(),
   couplePrice: optionalPositiveNumber,
   originalCouplePrice: optionalPositiveNumber,
-  // In edit mode coverImage can be an existing URL or a new file name
   coverImage: z.string().min(1, 'Cover image is required'),
   cancellationPolicy: z.string().optional(),
   weatherPolicy: z.string().optional(),
@@ -210,34 +252,50 @@ function EditPageSkeleton() {
 }
 
 // ---------------------------------------------------------------------------
-// Main edit form (receives pre-fetched package data)
+// Type for the fetched package
 // ---------------------------------------------------------------------------
-function EditPackageForm({ packageId }: { packageId: string }) {
-  const { data: pkg, isPending, isError } = useSinglePackages(packageId);
+type PackageData = NonNullable<ReturnType<typeof useSinglePackages>['data']>;
+
+// ---------------------------------------------------------------------------
+// Main edit form — only mounted after pkg is loaded (via EditPackageLoader),
+// so defaultValues are real data. No reset() needed → division renders fine.
+// The dataLoaded ref guards the slug auto-generation from firing on mount.
+// ---------------------------------------------------------------------------
+function EditPackageForm({
+  pkg,
+  packageId,
+}: {
+  pkg: PackageData;
+  packageId: string;
+}) {
   const { mutate: updatePackage, isPending: isUpdating } =
     useUpdatePackage(packageId);
 
-  // String array states — initialised from fetched data in useEffect
-  const [tags, setTags] = useState<string[]>([]);
-  const [highlights, setHighlights] = useState<string[]>([]);
-  const [includes, setIncludes] = useState<string[]>([]);
-  const [excludes, setExcludes] = useState<string[]>([]);
+  // String arrays initialised directly from pkg (no useEffect needed)
+  const [tags, setTags] = useState<string[]>(pkg.tags);
+  const [highlights, setHighlights] = useState<string[]>(pkg.highlights);
+  const [includes, setIncludes] = useState<string[]>(pkg.includes);
+  const [excludes, setExcludes] = useState<string[]>(pkg.excludes);
 
-  // Cover image — null means "keep existing URL", File means "replace"
   const [coverImagePreview, setCoverImagePreview] = useState<string | null>(
-    null,
+    pkg.coverImage,
   );
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
 
-  // Gallery — existing items from DB + new files to upload
-  const [existingGallery, setExistingGallery] = useState<
-    { id: string; url: string; publicId: string }[]
-  >([]);
-  const [removedGalleryIds, setRemovedGalleryIds] = useState<string[]>([]);
-  const [newGalleryFiles, setNewGalleryFiles] = useState<
-    { file: File; preview: string }[]
-  >([]);
-  const galleryInputRef = useRef<HTMLInputElement>(null);
+  // ✅ FIX: track original slug to skip uniqueness check when slug is unchanged
+  const originalSlug = useRef<string>(pkg.slug);
+  const slugManuallyEdited = useRef(false);
+
+  // ✅ FIX: block auto-slug generation on the initial render cycle so the
+  //    existing slug isn't immediately overwritten by watchedName changes.
+  const dataLoaded = useRef(false);
+  useEffect(() => {
+    // Allow auto-slug only after the first render has committed
+    const id = setTimeout(() => {
+      dataLoaded.current = true;
+    }, 0);
+    return () => clearTimeout(id);
+  }, []);
 
   const {
     register,
@@ -246,46 +304,17 @@ function EditPackageForm({ packageId }: { packageId: string }) {
     formState: { errors },
     setValue,
     watch,
-    reset,
   } = useForm<PackageFormData>({
     resolver: zodResolver(packageSchema),
+    // ✅ FIX: defaultValues are real pkg data because this component is only
+    //    mounted after pkg is available → Controller <Select> renders with the
+    //    correct division value immediately, no reset() race condition.
     defaultValues: {
-      name: '',
-      summary: '',
-      location: '',
-      durationDays: 1,
-      minGroupSize: 1,
-      maxGroupSize: 10,
-      pricePerPerson: 0,
-      originalPrice: undefined,
-      isCouple: false,
-      couplePrice: undefined,
-      originalCouplePrice: undefined,
-      coverImage: '',
-      cancellationPolicy: '',
-      weatherPolicy: '',
-      ageRestriction: '',
-      isBestseller: false,
-      isActive: true,
-      itinerary: [{ time: '', title: '', description: '', order: 0 }],
-    },
-  });
-
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: 'itinerary',
-  });
-  const isCouple = watch('isCouple');
-
-  // Populate form once data arrives
-  // biome-ignore lint/correctness/useExhaustiveDependencies: reset is stable
-  useEffect(() => {
-    if (!pkg) return;
-
-    reset({
       name: pkg.name,
+      slug: pkg.slug,
+      division: pkg.division as DivisionValue,
       summary: pkg.summary,
-      location: pkg.Location,
+      location: pkg.location,
       durationDays: pkg.durationDays,
       minGroupSize: pkg.minGroupSize,
       maxGroupSize: pkg.maxGroupSize,
@@ -310,22 +339,54 @@ function EditPackageForm({ packageId }: { packageId: string }) {
           description: item.description,
           order: item.order,
         })),
-    });
+    },
+  });
 
-    setTags(pkg.tags);
-    setHighlights(pkg.highlights);
-    setIncludes(pkg.includes);
-    setExcludes(pkg.excludes);
-    setCoverImagePreview(pkg.coverImage);
-    setExistingGallery(pkg.gallery);
-  }, [pkg]);
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'itinerary',
+  });
 
-  // Cover image handlers
+  const isCouple = watch('isCouple');
+  const watchedName = watch('name');
+  const watchedSlug = watch('slug');
+  const [debouncedSlug] = useDebounce(watchedSlug, 500);
+
+  const slugChanged = watchedSlug !== originalSlug.current;
+  const {
+    data: slugAvailable,
+    isFetching: slugChecking,
+    isError: slugError,
+  } = useCheckSlugUniqueness(slugChanged ? debouncedSlug : '');
+
+  const slugStatus = !watchedSlug
+    ? 'idle'
+    : !slugChanged
+      ? 'unchanged'
+      : slugChecking
+        ? 'checking'
+        : slugError
+          ? 'error'
+          : slugAvailable
+            ? 'available'
+            : 'taken';
+
+  // ✅ FIX: auto-generate slug from name only after initial load AND only if
+  //    the user hasn't manually edited the slug field.
+  useEffect(() => {
+    if (!dataLoaded.current) return;
+    if (!slugManuallyEdited.current) {
+      setValue('slug', toSlug(watchedName), { shouldValidate: !!watchedName });
+    }
+  }, [watchedName, setValue]);
+
+  // ── Image handlers ──────────────────────────────────────────────────────
+
   const handleCoverImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast.info('Max 5MB');
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Cover image must be under 2MB');
       return;
     }
     setCoverImageFile(file);
@@ -343,37 +404,22 @@ function EditPackageForm({ packageId }: { packageId: string }) {
     setValue('coverImage', '', { shouldValidate: true });
   };
 
-  // Gallery handlers
-  const handleGalleryUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []).filter(
-      (f) => f.type.startsWith('image/') && f.size <= 5 * 1024 * 1024,
-    );
-    const totalCount =
-      existingGallery.length + newGalleryFiles.length + files.length;
-    const allowed = Math.min(files.length, 10 - totalCount + files.length);
-    setNewGalleryFiles((prev) =>
-      [
-        ...prev,
-        ...files.slice(0, allowed).map((file) => ({
-          file,
-          preview: URL.createObjectURL(file),
-        })),
-      ].slice(0, 10),
-    );
-    e.target.value = '';
-  };
-
-  const handleRemoveExistingGallery = (id: string) => {
-    setExistingGallery((prev) => prev.filter((img) => img.id !== id));
-    setRemovedGalleryIds((prev) => [...prev, id]);
-  };
-
-  const totalGalleryCount = existingGallery.length + newGalleryFiles.length;
+  // ── Submit ───────────────────────────────────────────────────────────────
 
   const onSubmit = (data: PackageFormData) => {
-    const formData = new FormData();
+    if (slugStatus === 'taken') {
+      toast.error('Please choose a unique slug before submitting');
+      return;
+    }
+    if (slugStatus === 'checking') {
+      toast.info('Please wait while we check slug availability');
+      return;
+    }
 
+    const formData = new FormData();
     formData.append('name', data.name);
+    formData.append('slug', data.slug);
+    formData.append('division', data.division);
     formData.append('summary', data.summary);
     formData.append('location', data.location);
     formData.append('durationDays', String(data.durationDays));
@@ -388,18 +434,11 @@ function EditPackageForm({ packageId }: { packageId: string }) {
     if (data.originalCouplePrice)
       formData.append('originalCouplePrice', String(data.originalCouplePrice));
 
-    // Cover image: send new file OR signal to keep existing
     if (coverImageFile) {
       formData.append('coverImage', coverImageFile);
     } else {
       formData.append('keepCoverImage', 'true');
     }
-
-    // Gallery: new files to upload
-    // biome-ignore lint/suspicious/useIterableCallbackReturn: this is fine
-    newGalleryFiles.forEach((g) => formData.append('gallery', g.file));
-    // Gallery: IDs to delete from Cloudinary + DB
-    formData.append('removedGalleryIds', JSON.stringify(removedGalleryIds));
 
     formData.append('tags', JSON.stringify(tags));
     formData.append('highlights', JSON.stringify(highlights));
@@ -417,22 +456,6 @@ function EditPackageForm({ packageId }: { packageId: string }) {
 
     updatePackage({ packageId, formData });
   };
-
-  if (isPending) return <EditPageSkeleton />;
-
-  if (isError || !pkg) {
-    return (
-      <div className='flex flex-col items-center justify-center min-h-[60vh] space-y-4'>
-        <p className='text-lg font-semibold'>Failed to load package</p>
-        <Button asChild variant='outline'>
-          <Link href='/dashboard/admin/destinations'>
-            <ArrowLeft className='w-4 h-4 mr-2' />
-            Back to Destinations
-          </Link>
-        </Button>
-      </div>
-    );
-  }
 
   return (
     <div className='min-h-screen bg-background'>
@@ -477,6 +500,7 @@ function EditPackageForm({ packageId }: { packageId: string }) {
               <CardContent>
                 <FieldSet>
                   <FieldGroup className='gap-6'>
+                    {/* Name */}
                     <Field data-invalid={!!errors.name}>
                       <FieldLabel htmlFor='name'>
                         Package Name <span className='text-red-500'>*</span>
@@ -495,29 +519,122 @@ function EditPackageForm({ packageId }: { packageId: string }) {
                       )}
                     </Field>
 
-                    <Field data-invalid={!!errors.location}>
-                      <FieldLabel htmlFor='location'>
-                        Location <span className='text-red-500'>*</span>
+                    {/* Slug */}
+                    <Field
+                      data-invalid={!!errors.slug || slugStatus === 'taken'}
+                    >
+                      <FieldLabel htmlFor='slug'>
+                        Slug <span className='text-red-500'>*</span>
                       </FieldLabel>
                       <div className='relative'>
-                        <MapPin className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground' />
+                        <Link2 className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground' />
                         <Input
-                          id='location'
-                          placeholder="e.g., Cox's Bazar, Chittagong Division"
-                          className='h-11 pl-9'
-                          aria-invalid={!!errors.location}
-                          {...register('location')}
+                          id='slug'
+                          placeholder='e.g., coxs-bazar-sunrise-trek'
+                          className='h-11 pl-9 pr-9'
+                          aria-invalid={!!errors.slug || slugStatus === 'taken'}
+                          {...register('slug', {
+                            onChange: () => {
+                              slugManuallyEdited.current = true;
+                            },
+                          })}
                         />
+                        <div className='absolute right-3 top-1/2 -translate-y-1/2'>
+                          {slugStatus === 'checking' && (
+                            <Loader2 className='w-4 h-4 text-muted-foreground animate-spin' />
+                          )}
+                          {slugStatus === 'available' && (
+                            <CheckCircle2 className='w-4 h-4 text-green-500' />
+                          )}
+                          {slugStatus === 'taken' && (
+                            <XCircle className='w-4 h-4 text-destructive' />
+                          )}
+                        </div>
                       </div>
-                      {errors.location ? (
-                        <FieldError>{errors.location.message}</FieldError>
+                      {errors.slug ? (
+                        <FieldError>{errors.slug.message}</FieldError>
+                      ) : slugStatus === 'taken' ? (
+                        <FieldError>This slug is already taken</FieldError>
+                      ) : slugStatus === 'available' ? (
+                        <FieldDescription className='text-green-600'>
+                          Slug is available
+                        </FieldDescription>
+                      ) : slugStatus === 'unchanged' ? (
+                        <FieldDescription>
+                          Current slug — edit to change the package URL.
+                        </FieldDescription>
                       ) : (
                         <FieldDescription>
-                          Specific location within the destination
+                          Used in the package URL — edit carefully.
                         </FieldDescription>
                       )}
                     </Field>
 
+                    {/* Division + Location */}
+                    <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+                      <Field data-invalid={!!errors.division}>
+                        <FieldLabel htmlFor='division'>
+                          Division <span className='text-red-500'>*</span>
+                        </FieldLabel>
+                        <Controller
+                          control={control}
+                          name='division'
+                          render={({ field }) => (
+                            <Select
+                              value={field.value}
+                              onValueChange={field.onChange}
+                            >
+                              <SelectTrigger
+                                id='division'
+                                className='h-11'
+                                aria-invalid={!!errors.division}
+                              >
+                                <SelectValue placeholder='Select a division' />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {DIVISIONS.map(({ value, label }) => (
+                                  <SelectItem key={value} value={value}>
+                                    {label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                        {errors.division ? (
+                          <FieldError>{errors.division.message}</FieldError>
+                        ) : (
+                          <FieldDescription>
+                            Administrative division
+                          </FieldDescription>
+                        )}
+                      </Field>
+
+                      <Field data-invalid={!!errors.location}>
+                        <FieldLabel htmlFor='location'>
+                          Location <span className='text-red-500'>*</span>
+                        </FieldLabel>
+                        <div className='relative'>
+                          <MapPin className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground' />
+                          <Input
+                            id='location'
+                            placeholder="e.g., Cox's Bazar"
+                            className='h-11 pl-9'
+                            aria-invalid={!!errors.location}
+                            {...register('location')}
+                          />
+                        </div>
+                        {errors.location ? (
+                          <FieldError>{errors.location.message}</FieldError>
+                        ) : (
+                          <FieldDescription>
+                            Specific location within the division
+                          </FieldDescription>
+                        )}
+                      </Field>
+                    </div>
+
+                    {/* Summary */}
                     <Field data-invalid={!!errors.summary}>
                       <FieldLabel htmlFor='summary'>
                         Summary <span className='text-red-500'>*</span>
@@ -537,6 +654,7 @@ function EditPackageForm({ packageId }: { packageId: string }) {
                       )}
                     </Field>
 
+                    {/* Duration / Group sizes */}
                     <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
                       <Field data-invalid={!!errors.durationDays}>
                         <FieldLabel htmlFor='durationDays'>
@@ -704,7 +822,6 @@ function EditPackageForm({ packageId }: { packageId: string }) {
                       </Field>
                     </div>
 
-                    {/* Couple toggle */}
                     <div className='flex items-center justify-between rounded-lg border p-4'>
                       <div>
                         <p className='text-sm font-medium'>Couple Pricing</p>
@@ -956,7 +1073,7 @@ function EditPackageForm({ packageId }: { packageId: string }) {
                       Click to upload cover image
                     </p>
                     <p className='text-xs text-muted-foreground mt-1'>
-                      PNG, JPG or WEBP — max 5MB
+                      PNG, JPG or WEBP — max 2MB
                     </p>
                     <input
                       id='cover-image'
@@ -974,7 +1091,6 @@ function EditPackageForm({ packageId }: { packageId: string }) {
                       fill
                       className='object-cover'
                     />
-                    {/* Overlay shows "Replace" if it's the existing image, "Remove" if newly selected */}
                     <div className='absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2'>
                       <label
                         htmlFor='cover-image-replace'
@@ -1015,127 +1131,6 @@ function EditPackageForm({ packageId }: { packageId: string }) {
                     {errors.coverImage.message}
                   </p>
                 )}
-              </CardContent>
-            </Card>
-
-            {/* ── 7. Gallery ── */}
-            <Card>
-              <CardHeader>
-                <div className='flex items-center gap-2'>
-                  <ImagePlus className='w-4 h-4 text-muted-foreground' />
-                  <CardTitle>Gallery Images</CardTitle>
-                </div>
-                <CardDescription>
-                  Additional photos shown on the package detail page (max 10).
-                  Remove existing or add new ones.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className='space-y-4'>
-                {totalGalleryCount > 0 ? (
-                  <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3'>
-                    {/* Existing gallery images */}
-                    {existingGallery.map((img) => (
-                      <div
-                        key={img.id}
-                        className='relative aspect-square rounded-lg overflow-hidden border group'
-                      >
-                        <Image
-                          src={img.url}
-                          alt='Gallery image'
-                          fill
-                          className='object-cover'
-                        />
-                        <div className='absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center'>
-                          <Button
-                            type='button'
-                            variant='destructive'
-                            size='icon'
-                            className='h-7 w-7'
-                            onClick={() => handleRemoveExistingGallery(img.id)}
-                          >
-                            <Trash2 className='w-3.5 h-3.5' />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-
-                    {/* Newly added gallery images */}
-                    {newGalleryFiles.map((item, index) => (
-                      <div
-                        // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
-                        key={`new-${index}`}
-                        className='relative aspect-square rounded-lg overflow-hidden border-2 border-primary/40 group'
-                      >
-                        <Image
-                          src={item.preview}
-                          alt={`New gallery ${index + 1}`}
-                          fill
-                          className='object-cover'
-                        />
-                        {/* "New" indicator */}
-                        <div className='absolute top-1 left-1 bg-primary text-primary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded'>
-                          NEW
-                        </div>
-                        <div className='absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center'>
-                          <Button
-                            type='button'
-                            variant='destructive'
-                            size='icon'
-                            className='h-7 w-7'
-                            onClick={() =>
-                              setNewGalleryFiles((p) =>
-                                p.filter((_, i) => i !== index),
-                              )
-                            }
-                          >
-                            <Trash2 className='w-3.5 h-3.5' />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-
-                    {/* Add more button */}
-                    {totalGalleryCount < 10 && (
-                      <button
-                        type='button'
-                        onClick={() => galleryInputRef.current?.click()}
-                        className='aspect-square rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-1 text-muted-foreground hover:bg-secondary/50 transition-colors'
-                      >
-                        <Plus className='w-5 h-5' />
-                        <span className='text-xs'>Add more</span>
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <label
-                    htmlFor='gallery-images'
-                    className='flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-xl cursor-pointer hover:bg-secondary/50 transition-colors'
-                  >
-                    <ImagePlus className='w-8 h-8 text-muted-foreground mb-2' />
-                    <p className='text-sm font-medium'>Upload gallery images</p>
-                    <p className='text-xs text-muted-foreground mt-1'>
-                      Select multiple — PNG, JPG, WEBP — max 5MB each
-                    </p>
-                  </label>
-                )}
-
-                <input
-                  id='gallery-images'
-                  ref={galleryInputRef}
-                  type='file'
-                  multiple
-                  className='hidden'
-                  accept='image/png,image/jpeg,image/webp'
-                  onChange={handleGalleryUpload}
-                />
-                <p className='text-xs text-muted-foreground'>
-                  {totalGalleryCount}/10 images
-                  {removedGalleryIds.length > 0 && (
-                    <span className='text-destructive ml-2'>
-                      · {removedGalleryIds.length} to be removed
-                    </span>
-                  )}
-                </p>
               </CardContent>
             </Card>
 
@@ -1270,7 +1265,33 @@ function EditPackageForm({ packageId }: { packageId: string }) {
 }
 
 // ---------------------------------------------------------------------------
-// Page shell — reads searchParam, wraps in Suspense
+// Loader shell — fetches pkg, shows skeleton/error, then mounts form with data
+// key={pkg.id} ensures the form remounts fresh if a different package loads
+// ---------------------------------------------------------------------------
+function EditPackageLoader({ packageId }: { packageId: string }) {
+  const { data: pkg, isPending, isError } = useSinglePackages(packageId);
+
+  if (isPending) return <EditPageSkeleton />;
+
+  if (isError || !pkg) {
+    return (
+      <div className='flex flex-col items-center justify-center min-h-[60vh] space-y-4'>
+        <p className='text-lg font-semibold'>Failed to load package</p>
+        <Button asChild variant='outline'>
+          <Link href='/dashboard/admin/destinations'>
+            <ArrowLeft className='w-4 h-4 mr-2' />
+            Back to Destinations
+          </Link>
+        </Button>
+      </div>
+    );
+  }
+
+  return <EditPackageForm key={pkg.id} pkg={pkg} packageId={packageId} />;
+}
+
+// ---------------------------------------------------------------------------
+// Page shell
 // ---------------------------------------------------------------------------
 function EditPackageContent() {
   const searchParams = useSearchParams();
@@ -1292,7 +1313,7 @@ function EditPackageContent() {
     );
   }
 
-  return <EditPackageForm packageId={packageId} />;
+  return <EditPackageLoader packageId={packageId} />;
 }
 
 export default function EditPackagePage() {

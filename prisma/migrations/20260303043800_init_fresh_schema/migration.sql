@@ -1,5 +1,5 @@
--- CreateSchema
-CREATE SCHEMA IF NOT EXISTS "public";
+-- CreateEnum
+CREATE TYPE "Division" AS ENUM ('DHAKA', 'CHITTAGONG', 'SYLHET', 'RAJSHAHI', 'KHULNA', 'BARISAL', 'RANGPUR', 'MYMENSINGH');
 
 -- CreateEnum
 CREATE TYPE "BookingStatus" AS ENUM ('PENDING', 'CONFIRMED', 'CANCELLED');
@@ -81,25 +81,11 @@ CREATE TABLE "verification" (
 );
 
 -- CreateTable
-CREATE TABLE "destination" (
-    "id" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "division" TEXT NOT NULL,
-    "summary" TEXT NOT NULL,
-    "image" TEXT NOT NULL,
-    "imageId" TEXT NOT NULL,
-    "tags" TEXT[],
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "destination_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "package" (
     "id" TEXT NOT NULL,
-    "destinationId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
+    "division" "Division" NOT NULL,
+    "location" TEXT NOT NULL,
     "tags" TEXT[],
     "coverImage" TEXT NOT NULL,
     "coverImageId" TEXT NOT NULL,
@@ -111,7 +97,6 @@ CREATE TABLE "package" (
     "durationDays" INTEGER NOT NULL,
     "maxGroupSize" INTEGER NOT NULL,
     "minGroupSize" INTEGER NOT NULL,
-    "Location" TEXT NOT NULL,
     "summary" TEXT NOT NULL,
     "highlights" TEXT[],
     "includes" TEXT[],
@@ -235,6 +220,16 @@ CREATE TABLE "subscriber" (
     CONSTRAINT "subscriber_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "wishlist" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "packageId" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "wishlist_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "user_email_key" ON "user"("email");
 
@@ -249,9 +244,6 @@ CREATE INDEX "account_userId_idx" ON "account"("userId");
 
 -- CreateIndex
 CREATE INDEX "verification_identifier_idx" ON "verification"("identifier");
-
--- CreateIndex
-CREATE INDEX "package_destinationId_idx" ON "package"("destinationId");
 
 -- CreateIndex
 CREATE INDEX "departure_packageId_idx" ON "departure"("packageId");
@@ -286,14 +278,17 @@ CREATE UNIQUE INDEX "subscriber_email_key" ON "subscriber"("email");
 -- CreateIndex
 CREATE INDEX "subscriber_status_idx" ON "subscriber"("status");
 
+-- CreateIndex
+CREATE INDEX "wishlist_userId_idx" ON "wishlist"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "wishlist_userId_packageId_key" ON "wishlist"("userId", "packageId");
+
 -- AddForeignKey
 ALTER TABLE "session" ADD CONSTRAINT "session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "account" ADD CONSTRAINT "account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "package" ADD CONSTRAINT "package_destinationId_fkey" FOREIGN KEY ("destinationId") REFERENCES "destination"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "departure" ADD CONSTRAINT "departure_packageId_fkey" FOREIGN KEY ("packageId") REFERENCES "package"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -322,3 +317,8 @@ ALTER TABLE "booking" ADD CONSTRAINT "booking_departureId_fkey" FOREIGN KEY ("de
 -- AddForeignKey
 ALTER TABLE "booking_member" ADD CONSTRAINT "booking_member_bookingId_fkey" FOREIGN KEY ("bookingId") REFERENCES "booking"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
+-- AddForeignKey
+ALTER TABLE "wishlist" ADD CONSTRAINT "wishlist_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "wishlist" ADD CONSTRAINT "wishlist_packageId_fkey" FOREIGN KEY ("packageId") REFERENCES "package"("id") ON DELETE CASCADE ON UPDATE CASCADE;

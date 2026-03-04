@@ -7,6 +7,17 @@ datasource db {
   provider = "postgresql"
 }
 
+enum Division {
+  DHAKA
+  CHITTAGONG
+  SYLHET
+  RAJSHAHI
+  KHULNA
+  BARISAL
+  RANGPUR
+  MYMENSINGH
+}
+
 model User {
   id            String    @id
   name          String
@@ -79,36 +90,23 @@ model Verification {
   @@map("verification")
 }
 
-model Destination {
-  id        String    @id @default(cuid())
-  name      String
-  division  String
-  summary   String
-  image     String
-  imageId   String
-  tags      String[]
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  packages  Package[]
-
-  @@map("destination")
-}
 
 model Package {
-  id            String      @id @default(cuid())
-  destinationId String
-  destination   Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
 
-  // Identity
-  name String
-  tags String[]
+  // Identity & Location
+  name          String
+  slug          String   @unique
+  division      Division
+  location      String
+  tags          String[]
 
   // Media
-  coverImage   String
-  coverImageId String
-  gallery      GalleryImage[]
+  coverImage    String
+  coverImageId  String
+  gallery       GalleryImage[]
 
-  // Pricing (base defaults — can be overridden per departure)
+  // Pricing
   pricePerPerson      Decimal  @db.Decimal(10, 2)
   originalPrice       Decimal? @db.Decimal(10, 2)
   couplePrice         Decimal? @db.Decimal(10, 2)
@@ -116,40 +114,35 @@ model Package {
   isCouple            Boolean  @default(false)
 
   // Details
-  durationDays Int
-  maxGroupSize Int
-  minGroupSize Int
-  Location     String
-  summary      String
-  highlights   String[]
+  durationDays       Int
+  maxGroupSize       Int
+  minGroupSize       Int
+  summary            String
+  highlights         String[]
 
-  // Inclusions
-  includes String[]
-  excludes String[]
-
-  // Policies
+  // Inclusions/Policies
+  includes           String[]
+  excludes           String[]
   cancellationPolicy String?
   weatherPolicy      String?
   ageRestriction     String?
 
   // Flags
-  isBestseller Boolean @default(false)
-  isActive     Boolean @default(true)
+  isBestseller      Boolean @default(false)
+  isActive          Boolean @default(true)
 
   // Relations
-  itinerary  Itinerary[]
-  reviews    Review[]
-  departures Departure[]
-  bookings   Booking[]
-  wishlists Wishlist[]
+  itinerary         Itinerary[]
+  reviews           Review[]
+  departures        Departure[]
+  bookings          Booking[]
+  wishlists         Wishlist[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
-  @@index([destinationId])
   @@map("package")
 }
-
 model Departure {
   id        String  @id @default(cuid())
   packageId String
