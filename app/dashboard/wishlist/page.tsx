@@ -1,11 +1,5 @@
 'use client';
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useWishlist, useWishlistPackages } from '@/services/wishlist';
-import type { WishlistType } from '@/types/wishlist';
 import {
   AlertTriangle,
   Award,
@@ -18,11 +12,17 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useWishlist, useWishlistPackages } from '@/services/wishlist';
+import type { WishlistType } from '@/types/wishlist';
 
 // ── Wishlist Card ─────────────────────────────────────────────────────────────
 
 function WishlistCard({ pkg }: { pkg: WishlistType }) {
-  const { isWishlisted, toggleWishlist, isToggling } = useWishlist(pkg.id);
+  const { isWishlisted, toggleWishlist, isToggling } = useWishlist(pkg.slug);
 
   return (
     <Card className='group overflow-hidden border-2 hover:border-primary/40 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 p-0'>

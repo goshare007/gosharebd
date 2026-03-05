@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { addDays, format } from 'date-fns';
+import { addDays, format, isBefore, startOfDay } from 'date-fns';
 import {
   ArrowLeft,
   BadgeInfo,
@@ -30,6 +30,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
@@ -41,6 +42,11 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -64,13 +70,13 @@ import {
 // ─── constants ────────────────────────────────────────────────────────────────
 
 const WEEKDAYS = [
-  { label: 'Sun', value: 0 },
-  { label: 'Mon', value: 1 },
-  { label: 'Tue', value: 2 },
-  { label: 'Wed', value: 3 },
-  { label: 'Thu', value: 4 },
-  { label: 'Fri', value: 5 },
-  { label: 'Sat', value: 6 },
+  { label: 'Su', value: 0 },
+  { label: 'Mo', value: 1 },
+  { label: 'Tu', value: 2 },
+  { label: 'We', value: 3 },
+  { label: 'Th', value: 4 },
+  { label: 'Fr', value: 5 },
+  { label: 'Sa', value: 6 },
 ];
 
 const STATUS_CONFIG: Record<
@@ -101,12 +107,8 @@ const STATUS_CONFIG: Record<
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
-function fmtDate(d: string) {
+function fmtDate(d: string | Date) {
   return format(new Date(d), 'dd MMM yyyy');
-}
-
-function fmtDateInput(d: Date) {
-  return format(d, "yyyy-MM-dd'T'HH:mm");
 }
 
 function seatsLeft(d: Departure) {
@@ -117,10 +119,13 @@ function seatsPercent(d: Departure) {
   return Math.round((d.bookedSeats / d.totalSeats) * 100);
 }
 
+const today = startOfDay(new Date());
+
 // ─── zod schemas ──────────────────────────────────────────────────────────────
 
 const singleSchema = z.object({
-  startDate: z.string().min(1, 'Date is required'),
+  startDate: z.date('Pick a start date'),
+  startTime: z.string().min(1, 'Time is required'),
   totalSeats: z.number().int().min(1, 'At least 1 seat'),
   isGuaranteed: z.boolean(),
   note: z.string().optional(),
@@ -130,8 +135,9 @@ const singleSchema = z.object({
 
 const bulkSchema = z.object({
   recurringDays: z.array(z.number()).min(1, 'Select at least one day'),
-  rangeStart: z.string().min(1, 'Start date required'),
-  rangeEnd: z.string().min(1, 'End date required'),
+  rangeStart: z.date('Pick a start date'),
+  rangeEnd: z.date('Pick an end date'),
+  startTime: z.string().min(1, 'Time is required'),
   totalSeats: z.number().int().min(1, 'At least 1 seat'),
   isGuaranteed: z.boolean(),
   note: z.string().optional(),
@@ -140,7 +146,8 @@ const bulkSchema = z.object({
 });
 
 const editSchema = z.object({
-  startDate: z.string().min(1),
+  startDate: z.date('Pick a date'),
+  startTime: z.string().min(1),
   totalSeats: z.number().int().min(1),
   status: z.enum(['ACTIVE', 'FULL', 'CANCELLED', 'COMPLETED']),
   isGuaranteed: z.boolean(),
@@ -153,7 +160,133 @@ type SingleFormData = z.infer<typeof singleSchema>;
 type BulkFormData = z.infer<typeof bulkSchema>;
 type EditFormData = z.infer<typeof editSchema>;
 
-// ─── sub-components ───────────────────────────────────────────────────────────
+// ─── date picker ──────────────────────────────────────────────────────────────
+
+function DatePickerField({
+  value,
+  onChange,
+  placeholder = 'Pick a date',
+  disabled,
+  error,
+}: {
+  value: Date | undefined;
+  onChange: (d: Date | undefined) => void;
+  placeholder?: string;
+  disabled?: (date: Date) => boolean;
+  error?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className='space-y-1.5'>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant='outline'
+            className={cn(
+              'w-full h-9 justify-start text-sm font-normal border-2',
+              !value && 'text-muted-foreground',
+              error && 'border-destructive',
+            )}
+          >
+            <CalendarDays className='w-3.5 h-3.5 mr-2 shrink-0 text-primary' />
+            {value ? format(value, 'dd MMM yyyy') : placeholder}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className='w-auto p-0' align='start'>
+          <Calendar
+            mode='single'
+            selected={value}
+            onSelect={(d) => {
+              onChange(d);
+              setOpen(false);
+            }}
+            disabled={disabled}
+            initialFocus
+          />
+        </PopoverContent>
+      </Popover>
+      {error && <p className='text-xs text-destructive'>{error}</p>}
+    </div>
+  );
+}
+
+function DateRangePickerFields({
+  startValue,
+  endValue,
+  onStartChange,
+  onEndChange,
+  startError,
+  endError,
+}: {
+  startValue: Date | undefined;
+  endValue: Date | undefined;
+  onStartChange: (d: Date | undefined) => void;
+  onEndChange: (d: Date | undefined) => void;
+  startError?: string;
+  endError?: string;
+}) {
+  return (
+    <div className='space-y-3'>
+      {/* inline range calendar */}
+      <div className='rounded-xl border-2 overflow-hidden'>
+        <Calendar
+          mode='range'
+          selected={{
+            from: startValue,
+            to: endValue,
+          }}
+          onSelect={(range) => {
+            onStartChange(range?.from);
+            onEndChange(range?.to);
+          }}
+          disabled={(d) => isBefore(d, today)}
+          numberOfMonths={1}
+          className='w-full'
+        />
+      </div>
+
+      {/* text summary */}
+      <div className='grid grid-cols-2 gap-2'>
+        <div
+          className={cn(
+            'rounded-lg border-2 px-3 py-2 text-xs',
+            startValue ? 'border-primary/40 bg-primary/5' : 'border-dashed',
+            startError && 'border-destructive',
+          )}
+        >
+          <p className='text-muted-foreground mb-0.5 uppercase tracking-wide text-[10px] font-semibold'>
+            From
+          </p>
+          <p className='font-semibold'>
+            {startValue ? format(startValue, 'dd MMM yyyy') : '—'}
+          </p>
+          {startError && (
+            <p className='text-destructive text-[10px] mt-0.5'>{startError}</p>
+          )}
+        </div>
+        <div
+          className={cn(
+            'rounded-lg border-2 px-3 py-2 text-xs',
+            endValue ? 'border-primary/40 bg-primary/5' : 'border-dashed',
+            endError && 'border-destructive',
+          )}
+        >
+          <p className='text-muted-foreground mb-0.5 uppercase tracking-wide text-[10px] font-semibold'>
+            To
+          </p>
+          <p className='font-semibold'>
+            {endValue ? format(endValue, 'dd MMM yyyy') : '—'}
+          </p>
+          {endError && (
+            <p className='text-destructive text-[10px] mt-0.5'>{endError}</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── reusable sub-components ──────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: DepartureStatus }) {
   const cfg = STATUS_CONFIG[status];
@@ -210,6 +343,14 @@ function SeatBar({ departure }: { departure: Departure }) {
   );
 }
 
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <Label className='text-[10px] font-bold tracking-[0.12em] uppercase text-muted-foreground'>
+      {children}
+    </Label>
+  );
+}
+
 function PriceField({
   label,
   name,
@@ -218,27 +359,25 @@ function PriceField({
 }: {
   label: string;
   name: string;
-  // biome-ignore lint/suspicious/noExplicitAny: this is fine
+  // biome-ignore lint/suspicious/noExplicitAny: register type
   register: any;
   error?: string;
 }) {
   return (
     <div className='space-y-1.5'>
-      <Label className='text-xs font-semibold tracking-wide uppercase text-muted-foreground'>
-        {label}
-      </Label>
+      <FieldLabel>{label}</FieldLabel>
       <Input
         type='number'
         min={0}
         step='0.01'
         placeholder='Override (optional)'
-        className='h-9 text-sm'
+        className='h-9 text-sm border-2'
         {...register(name, {
           setValueAs: (v: string) =>
             v === '' || v === undefined ? null : Number(v) || null,
         })}
       />
-      {error && <p className='text-xs text-red-500'>{error}</p>}
+      {error && <p className='text-xs text-destructive'>{error}</p>}
     </div>
   );
 }
@@ -246,31 +385,36 @@ function PriceField({
 // ─── single departure form ────────────────────────────────────────────────────
 
 function SingleDepartureForm({
-  packageId,
+  slug,
   durationDays,
-  onSuccess,
 }: {
-  packageId: string;
+  slug: string;
   durationDays: number;
-  onSuccess: () => void;
 }) {
-  const { mutate, isPending } = useCreateDeparture(packageId);
+  const { mutate, isPending } = useCreateDeparture(slug);
   const {
     register,
     handleSubmit,
     control,
     formState: { errors },
     reset,
+    watch,
   } = useForm<SingleFormData>({
     resolver: zodResolver(singleSchema),
-    defaultValues: { isGuaranteed: false, totalSeats: 20 },
+    defaultValues: { isGuaranteed: false, totalSeats: 20, startTime: '08:00' },
   });
 
+  const startDate = watch('startDate');
+
   const onSubmit = (data: SingleFormData) => {
+    const [hours, minutes] = data.startTime.split(':').map(Number);
+    const dt = new Date(data.startDate);
+    dt.setHours(hours, minutes, 0, 0);
+
     mutate(
       {
         mode: 'single',
-        startDate: new Date(data.startDate).toISOString(),
+        startDate: dt.toISOString(),
         totalSeats: data.totalSeats,
         isGuaranteed: data.isGuaranteed,
         note: data.note || undefined,
@@ -281,7 +425,6 @@ function SingleDepartureForm({
         onSuccess: () => {
           toast.success('Departure created');
           reset();
-          onSuccess();
         },
         onError: () => toast.error('Failed to create departure'),
       },
@@ -289,61 +432,92 @@ function SingleDepartureForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className='space-y-5'>
-      <div className='grid sm:grid-cols-2 gap-4'>
-        <div className='space-y-1.5'>
-          <Label className='text-xs font-semibold tracking-wide uppercase text-muted-foreground'>
-            Start Date <span className='text-red-500'>*</span>
-          </Label>
-          <Input
-            type='datetime-local'
-            className='h-9 text-sm'
-            min={fmtDateInput(new Date())}
-            {...register('startDate')}
-          />
-          {errors.startDate && (
-            <p className='text-xs text-red-500'>{errors.startDate.message}</p>
+    <form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
+      {/* Date picker */}
+      <div className='space-y-1.5'>
+        <FieldLabel>
+          Start Date <span className='text-destructive'>*</span>
+        </FieldLabel>
+        <Controller
+          control={control}
+          name='startDate'
+          render={({ field }) => (
+            <DatePickerField
+              value={field.value}
+              onChange={field.onChange}
+              placeholder='Pick departure date'
+              disabled={(d) => isBefore(d, today)}
+              error={errors.startDate?.message}
+            />
           )}
-          {/* auto end date preview */}
-          <p className='text-xs text-muted-foreground'>
-            Ends:{' '}
-            <span className='font-medium text-foreground'>
-              {/* We can't easily watch here without useWatch, show static note */}
-              {durationDays} day{durationDays > 1 ? 's' : ''} duration
-            </span>
-          </p>
-        </div>
+        />
+      </div>
 
+      {/* Time + seats row */}
+      <div className='grid grid-cols-2 gap-3'>
         <div className='space-y-1.5'>
-          <Label className='text-xs font-semibold tracking-wide uppercase text-muted-foreground'>
-            Total Seats <span className='text-red-500'>*</span>
-          </Label>
+          <FieldLabel>
+            Departure Time <span className='text-destructive'>*</span>
+          </FieldLabel>
+          <Input
+            type='time'
+            className='h-9 text-sm border-2'
+            {...register('startTime')}
+          />
+          {errors.startTime && (
+            <p className='text-xs text-destructive'>
+              {errors.startTime.message}
+            </p>
+          )}
+        </div>
+        <div className='space-y-1.5'>
+          <FieldLabel>
+            Total Seats <span className='text-destructive'>*</span>
+          </FieldLabel>
           <Input
             type='number'
             min={1}
-            className='h-9 text-sm'
+            className='h-9 text-sm border-2'
             {...register('totalSeats', { valueAsNumber: true })}
           />
           {errors.totalSeats && (
-            <p className='text-xs text-red-500'>{errors.totalSeats.message}</p>
+            <p className='text-xs text-destructive'>
+              {errors.totalSeats.message}
+            </p>
           )}
         </div>
       </div>
 
+      {/* End date preview */}
+      {startDate && (
+        <div className='flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 border-2 border-primary/20'>
+          <CalendarRange className='w-3.5 h-3.5 text-primary shrink-0' />
+          <p className='text-xs'>
+            <span className='text-muted-foreground'>Ends on </span>
+            <span className='font-semibold text-foreground'>
+              {fmtDate(addDays(startDate, durationDays))}
+            </span>
+            <span className='text-muted-foreground ml-1'>
+              ({durationDays}d)
+            </span>
+          </p>
+        </div>
+      )}
+
+      {/* Note */}
       <div className='space-y-1.5'>
-        <Label className='text-xs font-semibold tracking-wide uppercase text-muted-foreground'>
-          Label / Note
-        </Label>
+        <FieldLabel>Label / Note</FieldLabel>
         <Input
           placeholder='e.g., Eid Special, Monsoon Tour'
-          className='h-9 text-sm'
+          className='h-9 text-sm border-2'
           {...register('note')}
         />
       </div>
 
-      <div className='grid sm:grid-cols-2 gap-4'>
+      {/* Price overrides */}
+      <div className='grid grid-cols-2 gap-3'>
         <PriceField
-          label='Price per Person (BDT)'
+          label='Price / Person (BDT)'
           name='pricePerPerson'
           register={register}
           error={errors.pricePerPerson?.message}
@@ -356,11 +530,12 @@ function SingleDepartureForm({
         />
       </div>
 
-      <div className='flex items-center justify-between p-3 rounded-xl border-2 border-border bg-primary/5'>
+      {/* Guaranteed toggle */}
+      <div className='flex items-center justify-between px-3 py-2.5 rounded-xl border-2 bg-muted/30'>
         <div>
-          <p className='text-sm font-semibold'>Guaranteed Departure</p>
+          <p className='text-sm font-semibold'>Guaranteed</p>
           <p className='text-xs text-muted-foreground'>
-            Confirmed to run regardless of seat count
+            Runs regardless of seat count
           </p>
         </div>
         <Controller
@@ -387,15 +562,13 @@ function SingleDepartureForm({
 // ─── bulk generate form ───────────────────────────────────────────────────────
 
 function BulkGenerateForm({
-  packageId,
+  slug,
   durationDays,
-  onSuccess,
 }: {
-  packageId: string;
+  slug: string;
   durationDays: number;
-  onSuccess: () => void;
 }) {
-  const { mutate, isPending } = useCreateDeparture(packageId);
+  const { mutate, isPending } = useCreateDeparture(slug);
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
 
   const {
@@ -405,10 +578,19 @@ function BulkGenerateForm({
     formState: { errors },
     reset,
     setValue,
+    watch,
   } = useForm<BulkFormData>({
     resolver: zodResolver(bulkSchema),
-    defaultValues: { isGuaranteed: false, totalSeats: 20, recurringDays: [] },
+    defaultValues: {
+      isGuaranteed: false,
+      totalSeats: 20,
+      recurringDays: [],
+      startTime: '08:00',
+    },
   });
+
+  const rangeStart = watch('rangeStart');
+  const rangeEnd = watch('rangeEnd');
 
   const toggleDay = (day: number) => {
     const next = selectedDays.includes(day)
@@ -418,13 +600,32 @@ function BulkGenerateForm({
     setValue('recurringDays', next, { shouldValidate: true });
   };
 
+  // Preview count
+  const previewCount = (() => {
+    if (!rangeStart || !rangeEnd || selectedDays.length === 0) return 0;
+    let count = 0;
+    const cursor = new Date(rangeStart);
+    while (cursor <= rangeEnd) {
+      if (selectedDays.includes(cursor.getDay())) count++;
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return count;
+  })();
+
   const onSubmit = (data: BulkFormData) => {
+    const [hours, minutes] = data.startTime.split(':').map(Number);
+
+    const rangeStartDt = new Date(data.rangeStart);
+    rangeStartDt.setHours(hours, minutes, 0, 0);
+    const rangeEndDt = new Date(data.rangeEnd);
+    rangeEndDt.setHours(23, 59, 59, 999);
+
     mutate(
       {
         mode: 'bulk',
         recurringDays: data.recurringDays,
-        rangeStart: new Date(data.rangeStart).toISOString(),
-        rangeEnd: new Date(data.rangeEnd).toISOString(),
+        rangeStart: rangeStartDt.toISOString(),
+        rangeEnd: rangeEndDt.toISOString(),
         totalSeats: data.totalSeats,
         isGuaranteed: data.isGuaranteed,
         note: data.note || undefined,
@@ -436,12 +637,11 @@ function BulkGenerateForm({
           toast.success(`${res.count} departures generated`);
           reset();
           setSelectedDays([]);
-          onSuccess();
         },
         onError: (err: unknown) => {
           const msg =
             (err as { response?: { data?: { error?: string } } })?.response
-              ?.data?.error ?? 'Failed to generate departures';
+              ?.data?.error ?? 'Failed to generate';
           toast.error(msg);
         },
       },
@@ -449,23 +649,23 @@ function BulkGenerateForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className='space-y-5'>
-      {/* day picker */}
+    <form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
+      {/* Weekday picker */}
       <div className='space-y-2'>
-        <Label className='text-xs font-semibold tracking-wide uppercase text-muted-foreground'>
-          Repeat on Days <span className='text-red-500'>*</span>
-        </Label>
-        <div className='flex gap-2 flex-wrap'>
+        <FieldLabel>
+          Repeat on <span className='text-destructive'>*</span>
+        </FieldLabel>
+        <div className='grid grid-cols-7 gap-1'>
           {WEEKDAYS.map((day) => (
             <button
               type='button'
               key={day.value}
               onClick={() => toggleDay(day.value)}
               className={cn(
-                'h-9 w-12 rounded-lg text-xs font-bold border-2 transition-all duration-200',
+                'h-8 rounded-md text-[11px] font-bold border-2 transition-all',
                 selectedDays.includes(day.value)
                   ? 'bg-primary text-primary-foreground border-primary'
-                  : 'border-border hover:border-primary/40 hover:bg-primary/5',
+                  : 'border-border hover:border-primary/50 hover:bg-primary/5',
               )}
             >
               {day.label}
@@ -473,72 +673,88 @@ function BulkGenerateForm({
           ))}
         </div>
         {errors.recurringDays && (
-          <p className='text-xs text-red-500'>{errors.recurringDays.message}</p>
+          <p className='text-xs text-destructive'>
+            {errors.recurringDays.message}
+          </p>
         )}
       </div>
 
-      {/* date range */}
-      <div className='grid sm:grid-cols-2 gap-4'>
-        <div className='space-y-1.5'>
-          <Label className='text-xs font-semibold tracking-wide uppercase text-muted-foreground'>
-            Range Start <span className='text-red-500'>*</span>
-          </Label>
-          <Input
-            type='datetime-local'
-            className='h-9 text-sm'
-            min={fmtDateInput(new Date())}
-            {...register('rangeStart')}
-          />
-          {errors.rangeStart && (
-            <p className='text-xs text-red-500'>{errors.rangeStart.message}</p>
+      {/* Range calendar */}
+      <div className='space-y-1.5'>
+        <FieldLabel>
+          Date Range <span className='text-destructive'>*</span>
+        </FieldLabel>
+        <Controller
+          control={control}
+          name='rangeStart'
+          render={({ field: startField }) => (
+            <Controller
+              control={control}
+              name='rangeEnd'
+              render={({ field: endField }) => (
+                <DateRangePickerFields
+                  startValue={startField.value}
+                  endValue={endField.value}
+                  onStartChange={startField.onChange}
+                  onEndChange={endField.onChange}
+                  startError={errors.rangeStart?.message}
+                  endError={errors.rangeEnd?.message}
+                />
+              )}
+            />
           )}
-        </div>
-        <div className='space-y-1.5'>
-          <Label className='text-xs font-semibold tracking-wide uppercase text-muted-foreground'>
-            Range End <span className='text-red-500'>*</span>
-          </Label>
-          <Input
-            type='datetime-local'
-            className='h-9 text-sm'
-            min={fmtDateInput(addDays(new Date(), 1))}
-            {...register('rangeEnd')}
-          />
-          {errors.rangeEnd && (
-            <p className='text-xs text-red-500'>{errors.rangeEnd.message}</p>
-          )}
-        </div>
+        />
       </div>
 
-      <div className='grid sm:grid-cols-2 gap-4'>
+      {/* Time + seats */}
+      <div className='grid grid-cols-2 gap-3'>
         <div className='space-y-1.5'>
-          <Label className='text-xs font-semibold tracking-wide uppercase text-muted-foreground'>
-            Seats per Departure <span className='text-red-500'>*</span>
-          </Label>
+          <FieldLabel>Departure Time</FieldLabel>
+          <Input
+            type='time'
+            className='h-9 text-sm border-2'
+            {...register('startTime')}
+          />
+        </div>
+        <div className='space-y-1.5'>
+          <FieldLabel>
+            Seats each <span className='text-destructive'>*</span>
+          </FieldLabel>
           <Input
             type='number'
             min={1}
-            className='h-9 text-sm'
+            className='h-9 text-sm border-2'
             {...register('totalSeats', { valueAsNumber: true })}
-          />
-          {errors.totalSeats && (
-            <p className='text-xs text-red-500'>{errors.totalSeats.message}</p>
-          )}
-        </div>
-        <div className='space-y-1.5'>
-          <Label className='text-xs font-semibold tracking-wide uppercase text-muted-foreground'>
-            Label / Note
-          </Label>
-          <Input
-            placeholder='e.g., Weekend Tour'
-            className='h-9 text-sm'
-            {...register('note')}
           />
         </div>
       </div>
 
-      <div className='grid sm:grid-cols-2 gap-4'>
+      {/* Preview banner */}
+      {previewCount > 0 && (
+        <div className='flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10 border-2 border-emerald-500/20'>
+          <Sparkles className='w-3.5 h-3.5 text-emerald-600 shrink-0' />
+          <p className='text-xs text-emerald-700 font-medium'>
+            Will create <strong>{previewCount}</strong> departure
+            {previewCount !== 1 ? 's' : ''}, each{' '}
+            <strong>{durationDays}d</strong> long
+          </p>
+        </div>
+      )}
+
+      {/* Note */}
+      <div className='space-y-1.5'>
+        <FieldLabel>Label / Note</FieldLabel>
+        <Input
+          placeholder='e.g., Weekend Tour'
+          className='h-9 text-sm border-2'
+          {...register('note')}
+        />
+      </div>
+
+      {/* Price overrides */}
+      <div className='grid grid-cols-2 gap-3'>
         <PriceField
-          label='Price per Person (BDT)'
+          label='Price / Person (BDT)'
           name='pricePerPerson'
           register={register}
           error={errors.pricePerPerson?.message}
@@ -551,11 +767,12 @@ function BulkGenerateForm({
         />
       </div>
 
-      <div className='flex items-center justify-between p-3 rounded-xl border-2 border-border bg-primary/5'>
+      {/* Guaranteed */}
+      <div className='flex items-center justify-between px-3 py-2.5 rounded-xl border-2 bg-muted/30'>
         <div>
-          <p className='text-sm font-semibold'>Guaranteed Departures</p>
+          <p className='text-sm font-semibold'>Guaranteed</p>
           <p className='text-xs text-muted-foreground'>
-            All generated departures confirmed to run
+            All departures confirmed
           </p>
         </div>
         <Controller
@@ -567,22 +784,13 @@ function BulkGenerateForm({
         />
       </div>
 
-      <div className='p-3 rounded-xl bg-amber-500/10 border-2 border-amber-500/20 flex gap-2.5'>
-        <BadgeInfo className='w-4 h-4 text-amber-600 shrink-0 mt-0.5' />
-        <p className='text-xs text-amber-700'>
-          This will create one departure row for every matching weekday in the
-          selected range. Each departure will be {durationDays} day
-          {durationDays > 1 ? 's' : ''} long.
-        </p>
-      </div>
-
       <Button type='submit' className='w-full gap-2' disabled={isPending}>
         {isPending ? (
           <Loader2 className='w-4 h-4 animate-spin' />
         ) : (
           <Sparkles className='w-4 h-4' />
         )}
-        Generate Departures
+        Generate {previewCount > 0 ? `${previewCount} ` : ''}Departures
       </Button>
     </form>
   );
@@ -592,54 +800,54 @@ function BulkGenerateForm({
 
 function EditDepartureDialog({
   departure,
-  packageId,
+  slug,
   open,
   onOpenChange,
 }: {
   departure: Departure | null;
-  packageId: string;
+  slug: string;
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
-  const { mutate, isPending } = useUpdateDeparture(packageId);
+  const { mutate, isPending } = useUpdateDeparture(slug);
 
   const {
     register,
     handleSubmit,
     control,
     formState: { errors },
-    reset,
   } = useForm<EditFormData>({
     resolver: zodResolver(editSchema),
-  });
-
-  // Reset form when departure changes
-  useState(() => {
-    if (departure) {
-      reset({
-        startDate: fmtDateInput(new Date(departure.startDate)),
-        totalSeats: departure.totalSeats,
-        status: departure.status,
-        isGuaranteed: departure.isGuaranteed,
-        note: departure.note ?? '',
-        pricePerPerson: departure.pricePerPerson
-          ? Number(departure.pricePerPerson)
-          : null,
-        originalPrice: departure.originalPrice
-          ? Number(departure.originalPrice)
-          : null,
-      });
-    }
+    values: departure
+      ? {
+          startDate: new Date(departure.startDate),
+          startTime: format(new Date(departure.startDate), 'HH:mm'),
+          totalSeats: departure.totalSeats,
+          status: departure.status,
+          isGuaranteed: departure.isGuaranteed,
+          note: departure.note ?? '',
+          pricePerPerson: departure.pricePerPerson
+            ? Number(departure.pricePerPerson)
+            : null,
+          originalPrice: departure.originalPrice
+            ? Number(departure.originalPrice)
+            : null,
+        }
+      : undefined,
   });
 
   if (!departure) return null;
 
   const onSubmit = (data: EditFormData) => {
+    const [hours, minutes] = data.startTime.split(':').map(Number);
+    const dt = new Date(data.startDate);
+    dt.setHours(hours, minutes, 0, 0);
+
     mutate(
       {
         departureId: departure.id,
         payload: {
-          startDate: new Date(data.startDate).toISOString(),
+          startDate: dt.toISOString(),
           totalSeats: data.totalSeats,
           status: data.status,
           isGuaranteed: data.isGuaranteed,
@@ -660,66 +868,65 @@ function EditDepartureDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='max-w-lg'>
+      <DialogContent className='max-w-md'>
         <DialogHeader>
-          <DialogTitle className='font-display text-xl font-bold'>
-            Edit{' '}
-            <span className='italic font-light text-muted-foreground'>
-              departure
-            </span>
+          <DialogTitle className='text-lg font-bold'>
+            Edit Departure
           </DialogTitle>
           <DialogDescription className='text-xs'>
             {fmtDate(departure.startDate)} · {departure._count?.bookings ?? 0}{' '}
-            booking{(departure._count?.bookings ?? 0) !== 1 ? 's' : ''}
+            booking
+            {(departure._count?.bookings ?? 0) !== 1 ? 's' : ''}
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className='space-y-4 mt-2'>
-          <div className='grid sm:grid-cols-2 gap-4'>
-            <div className='space-y-1.5'>
-              <Label className='text-xs font-semibold tracking-wide uppercase text-muted-foreground'>
-                Start Date
-              </Label>
-              <Input
-                type='datetime-local'
-                className='h-9 text-sm'
-                {...register('startDate')}
-              />
-              {errors.startDate && (
-                <p className='text-xs text-red-500'>
-                  {errors.startDate.message}
-                </p>
+        <form onSubmit={handleSubmit(onSubmit)} className='space-y-4 mt-1'>
+          {/* Date */}
+          <div className='space-y-1.5'>
+            <FieldLabel>Date</FieldLabel>
+            <Controller
+              control={control}
+              name='startDate'
+              render={({ field }) => (
+                <DatePickerField
+                  value={field.value}
+                  onChange={field.onChange}
+                  error={errors.startDate?.message}
+                />
               )}
-            </div>
+            />
+          </div>
 
+          {/* Time + seats */}
+          <div className='grid grid-cols-2 gap-3'>
             <div className='space-y-1.5'>
-              <Label className='text-xs font-semibold tracking-wide uppercase text-muted-foreground'>
-                Total Seats
-              </Label>
+              <FieldLabel>Time</FieldLabel>
+              <Input
+                type='time'
+                className='h-9 text-sm border-2'
+                {...register('startTime')}
+              />
+            </div>
+            <div className='space-y-1.5'>
+              <FieldLabel>Total Seats</FieldLabel>
               <Input
                 type='number'
                 min={departure.bookedSeats}
-                className='h-9 text-sm'
+                className='h-9 text-sm border-2'
                 {...register('totalSeats', { valueAsNumber: true })}
               />
-              {errors.totalSeats && (
-                <p className='text-xs text-red-500'>
-                  {errors.totalSeats.message}
-                </p>
-              )}
             </div>
           </div>
 
+          {/* Status */}
           <div className='space-y-1.5'>
-            <Label className='text-xs font-semibold tracking-wide uppercase text-muted-foreground'>
-              Status
-            </Label>
+            <FieldLabel>Status</FieldLabel>
             <Controller
               control={control}
               name='status'
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger className='h-9 text-sm'>
+                  <SelectTrigger className='h-9 text-sm border-2'>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -737,20 +944,20 @@ function EditDepartureDialog({
             />
           </div>
 
+          {/* Note */}
           <div className='space-y-1.5'>
-            <Label className='text-xs font-semibold tracking-wide uppercase text-muted-foreground'>
-              Label / Note
-            </Label>
+            <FieldLabel>Label / Note</FieldLabel>
             <Input
-              className='h-9 text-sm'
+              className='h-9 text-sm border-2'
               placeholder='e.g., Eid Special'
               {...register('note')}
             />
           </div>
 
-          <div className='grid sm:grid-cols-2 gap-4'>
+          {/* Prices */}
+          <div className='grid grid-cols-2 gap-3'>
             <PriceField
-              label='Price per Person'
+              label='Price / Person'
               name='pricePerPerson'
               register={register}
               error={errors.pricePerPerson?.message}
@@ -763,13 +970,9 @@ function EditDepartureDialog({
             />
           </div>
 
-          <div className='flex items-center justify-between p-3 rounded-xl border-2 border-border bg-primary/5'>
-            <div>
-              <p className='text-sm font-semibold'>Guaranteed</p>
-              <p className='text-xs text-muted-foreground'>
-                Confirmed to run regardless of seat count
-              </p>
-            </div>
+          {/* Guaranteed */}
+          <div className='flex items-center justify-between px-3 py-2.5 rounded-xl border-2 bg-muted/30'>
+            <p className='text-sm font-semibold'>Guaranteed</p>
             <Controller
               control={control}
               name='isGuaranteed'
@@ -782,7 +985,7 @@ function EditDepartureDialog({
             />
           </div>
 
-          <DialogFooter className='gap-2'>
+          <DialogFooter className='gap-2 pt-1'>
             <Button
               type='button'
               variant='outline'
@@ -802,58 +1005,49 @@ function EditDepartureDialog({
   );
 }
 
-// ─── delete confirm dialog ────────────────────────────────────────────────────
+// ─── delete dialog ────────────────────────────────────────────────────────────
 
 function DeleteConfirmDialog({
   departure,
-  packageId,
+  slug,
   open,
   onOpenChange,
 }: {
   departure: Departure | null;
-  packageId: string;
+  slug: string;
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
-  const { mutate, isPending } = useDeleteDeparture(packageId);
-
+  const { mutate, isPending } = useDeleteDeparture(slug);
   if (!departure) return null;
-
   const bookings = departure._count?.bookings ?? 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='max-w-md'>
+      <DialogContent className='max-w-sm'>
         <DialogHeader>
-          <DialogTitle className='font-display text-xl font-bold'>
-            Delete{' '}
-            <span className='italic font-light text-muted-foreground'>
-              departure
-            </span>
-            <span className='text-destructive'>?</span>
+          <DialogTitle className='text-lg font-bold'>
+            Delete Departure
           </DialogTitle>
           <DialogDescription>{fmtDate(departure.startDate)}</DialogDescription>
         </DialogHeader>
 
-        <div className='space-y-3 my-2'>
+        <div className='my-1'>
           {bookings > 0 ? (
-            <div className='p-3 rounded-xl bg-red-500/10 border-2 border-red-500/20 flex gap-2.5'>
-              <Ban className='w-4 h-4 text-red-500 shrink-0 mt-0.5' />
-              <p className='text-sm text-red-600'>
-                This departure has{' '}
+            <div className='flex gap-2.5 p-3 rounded-xl bg-destructive/10 border-2 border-destructive/20'>
+              <Ban className='w-4 h-4 text-destructive shrink-0 mt-0.5' />
+              <p className='text-sm text-destructive'>
+                Has{' '}
                 <strong>
-                  {bookings} active booking{bookings !== 1 ? 's' : ''}
+                  {bookings} booking{bookings !== 1 ? 's' : ''}
                 </strong>
-                . You cannot delete it — cancel it instead to preserve booking
-                records.
+                . Cancel it instead to preserve records.
               </p>
             </div>
           ) : (
-            <div className='p-3 rounded-xl bg-amber-500/10 border-2 border-amber-500/20 flex gap-2.5'>
+            <div className='flex gap-2.5 p-3 rounded-xl bg-amber-500/10 border-2 border-amber-500/20'>
               <BadgeInfo className='w-4 h-4 text-amber-600 shrink-0 mt-0.5' />
-              <p className='text-sm text-amber-700'>
-                This action is permanent and cannot be undone.
-              </p>
+              <p className='text-sm text-amber-700'>This cannot be undone.</p>
             </div>
           )}
         </div>
@@ -909,31 +1103,33 @@ function DepartureCard({
   return (
     <Card
       className={cn(
-        'border-2 hover:border-primary/30 hover:shadow-md transition-all duration-300 group animate-in fade-in slide-in-from-bottom',
-        isPast && 'opacity-60',
+        'border-2 hover:border-primary/40 hover:shadow-md transition-all duration-200 group animate-in fade-in slide-in-from-bottom',
+        isPast && 'opacity-55',
       )}
-      style={{ animationDelay: `${delay}ms` }}
+      style={{ animationDelay: `${delay}ms`, animationFillMode: 'both' }}
     >
       <CardContent className='p-4 space-y-3'>
         {/* top row */}
         <div className='flex items-start justify-between gap-2'>
           <div className='min-w-0'>
             <div className='flex items-center gap-2 flex-wrap'>
-              <p className='font-display font-bold text-base'>
+              <p className='font-bold text-sm tabular-nums'>
                 {fmtDate(departure.startDate)}
               </p>
+              <span className='text-xs text-muted-foreground tabular-nums'>
+                {format(new Date(departure.startDate), 'HH:mm')}
+              </span>
               {departure.isGuaranteed && (
                 <Badge
                   variant='outline'
-                  className='text-xs gap-1 bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                  className='text-[10px] gap-1 bg-emerald-500/10 text-emerald-600 border-emerald-500/20 px-1.5'
                 >
-                  <ShieldCheck className='w-3 h-3' />
-                  Guaranteed
+                  <ShieldCheck className='w-2.5 h-2.5' />G
                 </Badge>
               )}
             </div>
-            <p className='text-xs text-muted-foreground mt-0.5'>
-              Until {fmtDate(departure.endDate)}
+            <p className='text-[11px] text-muted-foreground mt-0.5'>
+              → {fmtDate(departure.endDate)}
             </p>
           </div>
           <StatusBadge status={departure.status} />
@@ -943,7 +1139,7 @@ function DepartureCard({
         {departure.note && (
           <div className='flex items-center gap-1.5'>
             <Tag className='w-3 h-3 text-primary shrink-0' />
-            <span className='text-xs font-medium text-primary'>
+            <span className='text-xs font-medium text-primary truncate'>
               {departure.note}
             </span>
           </div>
@@ -954,8 +1150,8 @@ function DepartureCard({
 
         {/* price override */}
         {departure.pricePerPerson && (
-          <div className='flex items-center gap-2 pt-1'>
-            <div className='h-px w-4 bg-primary shrink-0' />
+          <div className='flex items-center gap-2'>
+            <div className='h-px w-3 bg-primary shrink-0' />
             <span className='text-xs font-bold text-primary'>
               ৳{Number(departure.pricePerPerson).toLocaleString()}
             </span>
@@ -982,7 +1178,7 @@ function DepartureCard({
           <Button
             size='sm'
             variant='outline'
-            className='flex-1 h-7 text-xs gap-1.5 border-2 hover:border-red-500/40 hover:text-red-500 hover:bg-red-500/5'
+            className='flex-1 h-7 text-xs gap-1.5 border-2 hover:border-destructive/40 hover:text-destructive hover:bg-destructive/5'
             onClick={() => onDelete(departure)}
           >
             <Trash2 className='w-3 h-3' />
@@ -999,10 +1195,10 @@ function DepartureCard({
 export default function DepartureManagementPage({
   params,
 }: {
-  params: Promise<{ packageId: string }>;
+  params: Promise<{ slug: string }>;
 }) {
-  const { packageId } = use(params);
-  const { data, isPending, isError, refetch } = useDepartures(packageId);
+  const { slug } = use(params);
+  const { data, isPending, isError, refetch } = useDepartures(slug);
 
   const [editTarget, setEditTarget] = useState<Departure | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Departure | null>(null);
@@ -1016,7 +1212,6 @@ export default function DepartureManagementPage({
     setEditTarget(d);
     setEditOpen(true);
   }
-
   function handleDelete(d: Departure) {
     setDeleteTarget(d);
     setDeleteOpen(true);
@@ -1028,7 +1223,6 @@ export default function DepartureManagementPage({
       ? departures
       : departures.filter((d) => d.status === statusFilter);
 
-  // summary stats
   const totalSeats = departures.reduce((s, d) => s + d.totalSeats, 0);
   const totalBooked = departures.reduce((s, d) => s + d.bookedSeats, 0);
   const activeCount = departures.filter((d) => d.status === 'ACTIVE').length;
@@ -1037,9 +1231,9 @@ export default function DepartureManagementPage({
   return (
     <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
       {/* ── header ──────────────────────────────────────────────────────── */}
-      <div className='mb-10 animate-in fade-in slide-in-from-bottom-4 duration-700'>
-        <Button variant='ghost' size='sm' className='mb-4 gap-2' asChild>
-          <Link href={`/dashboard/admin/packages`}>
+      <div className='mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500'>
+        <Button variant='ghost' size='sm' className='mb-4 gap-2 -ml-2' asChild>
+          <Link href='/dashboard/admin/packages'>
             <ArrowLeft className='w-4 h-4' />
             Back to Packages
           </Link>
@@ -1047,38 +1241,32 @@ export default function DepartureManagementPage({
 
         <div className='flex items-end justify-between gap-4 flex-wrap'>
           <div>
-            <div className='flex items-center gap-3 mb-3'>
-              <div className='h-px w-12 bg-primary' />
-              <span className='text-xs font-semibold tracking-[0.2em] uppercase text-primary'>
-                Schedule Manager
-              </span>
-            </div>
-            <h1 className='font-display text-4xl font-bold leading-tight tracking-tight'>
+            <p className='text-xs font-bold tracking-[0.2em] uppercase text-primary mb-1'>
+              Schedule Manager
+            </p>
+            <h1 className='text-3xl font-bold tracking-tight'>
               {isPending ? (
-                <Skeleton className='h-10 w-64' />
+                <Skeleton className='h-9 w-56' />
               ) : (
                 <>
-                  {data?.package.name}{' '}
-                  <span className='italic font-light text-muted-foreground'>
+                  {data?.package.name}
+                  <span className='text-muted-foreground font-light italic ml-2'>
                     departures
                   </span>
-                  <span className='text-primary'>.</span>
                 </>
               )}
             </h1>
             {data && (
-              <p className='text-muted-foreground text-sm mt-1'>
-                {data.package.durationDays} day
-                {data.package.durationDays > 1 ? 's' : ''} per departure ·{' '}
-                {departures.length} total scheduled
+              <p className='text-sm text-muted-foreground mt-1'>
+                {data.package.durationDays}d per trip · {departures.length}{' '}
+                scheduled
               </p>
             )}
           </div>
-
           <Button
             variant='outline'
             size='sm'
-            className='gap-2 border-2 hover:border-primary/40'
+            className='gap-2 border-2'
             onClick={() => refetch()}
           >
             <RefreshCw className='w-3.5 h-3.5' />
@@ -1087,15 +1275,15 @@ export default function DepartureManagementPage({
         </div>
       </div>
 
-      {/* ── summary stats ────────────────────────────────────────────────── */}
+      {/* ── stats ────────────────────────────────────────────────────────── */}
       {!isPending && departures.length > 0 && (
         <div
-          className='grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8 animate-in fade-in slide-in-from-bottom duration-700'
-          style={{ animationDelay: '80ms' }}
+          className='grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8 animate-in fade-in duration-500'
+          style={{ animationDelay: '80ms', animationFillMode: 'both' }}
         >
           {[
             {
-              label: 'Active Departures',
+              label: 'Active',
               value: activeCount,
               icon: CalendarDays,
               color: 'text-primary',
@@ -1117,27 +1305,27 @@ export default function DepartureManagementPage({
             },
             {
               label: 'Booked',
-              value: `${totalBooked} / ${totalSeats}`,
+              value: `${totalBooked}/${totalSeats}`,
               icon: CheckCircle2,
               color: 'text-amber-600',
               bg: 'bg-amber-500/10',
             },
           ].map(({ label, value, icon: Icon, color, bg }) => (
             <Card key={label} className='border-2'>
-              <CardContent className='p-4 flex items-center gap-3'>
+              <CardContent className='p-3 flex items-center gap-3'>
                 <div
                   className={cn(
-                    'w-9 h-9 rounded-lg flex items-center justify-center shrink-0',
+                    'w-8 h-8 rounded-lg flex items-center justify-center shrink-0',
                     bg,
                   )}
                 >
                   <Icon className={cn('w-4 h-4', color)} />
                 </div>
                 <div className='min-w-0'>
-                  <p className='text-xs font-semibold tracking-[0.12em] uppercase text-muted-foreground truncate'>
+                  <p className='text-[10px] font-bold tracking-[0.12em] uppercase text-muted-foreground'>
                     {label}
                   </p>
-                  <p className='font-display text-xl font-bold'>{value}</p>
+                  <p className='text-lg font-bold tabular-nums'>{value}</p>
                 </div>
               </CardContent>
             </Card>
@@ -1145,75 +1333,64 @@ export default function DepartureManagementPage({
         </div>
       )}
 
-      <div className='grid gap-8 lg:grid-cols-3'>
+      <div className='grid gap-6 lg:grid-cols-[380px_1fr]'>
         {/* ── left: add forms ────────────────────────────────────────────── */}
         <div
-          className='lg:col-span-1 space-y-6 animate-in fade-in slide-in-from-bottom duration-700'
-          style={{ animationDelay: '160ms' }}
+          className='space-y-4 animate-in fade-in duration-500'
+          style={{ animationDelay: '120ms', animationFillMode: 'both' }}
         >
-          <Card className='border-2 hover:border-primary/30 transition-all duration-300'>
-            <CardHeader className='pb-4'>
-              <div className='flex items-center gap-2 mb-1'>
-                <div className='w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center'>
-                  <CalendarDays className='w-4 h-4 text-primary' />
+          <Card className='border-2'>
+            <CardHeader className='pb-3 pt-5 px-5'>
+              <div className='flex items-center gap-2'>
+                <div className='w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center'>
+                  <CalendarDays className='w-3.5 h-3.5 text-primary' />
                 </div>
-                <CardTitle className='font-display text-base font-bold'>
+                <CardTitle className='text-sm font-bold'>
                   Add Departure
                 </CardTitle>
               </div>
-              <div className='flex items-center gap-2'>
-                <div className='h-px w-6 bg-primary' />
-                <p className='text-xs font-semibold tracking-[0.15em] uppercase text-primary'>
-                  Single or bulk
-                </p>
-              </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className='px-5 pb-5'>
               <Tabs defaultValue='single'>
-                <TabsList className='w-full mb-5 h-8'>
+                <TabsList className='w-full mb-4 h-8 border-2'>
                   <TabsTrigger
                     value='single'
-                    className='flex-1 text-xs gap-1.5'
+                    className='flex-1 text-xs gap-1.5 h-6'
                   >
-                    <CalendarRange className='w-3.5 h-3.5' />
-                    Single
+                    <CalendarRange className='w-3 h-3' /> Single
                   </TabsTrigger>
-                  <TabsTrigger value='bulk' className='flex-1 text-xs gap-1.5'>
-                    <Repeat2 className='w-3.5 h-3.5' />
-                    Bulk Generate
+                  <TabsTrigger
+                    value='bulk'
+                    className='flex-1 text-xs gap-1.5 h-6'
+                  >
+                    <Repeat2 className='w-3 h-3' /> Bulk
                   </TabsTrigger>
                 </TabsList>
-
                 <TabsContent value='single'>
-                  {data && (
+                  {data ? (
                     <SingleDepartureForm
-                      packageId={packageId}
+                      slug={slug}
                       durationDays={data.package.durationDays}
-                      onSuccess={() => {}}
                     />
-                  )}
-                  {isPending && (
+                  ) : (
                     <div className='space-y-3'>
-                      {Array.from({ length: 4 }).map((_, i) => (
-                        // biome-ignore lint/suspicious/noArrayIndexKey: This is fine
+                      {[...Array(4)].map((_, i) => (
+                        // biome-ignore lint/suspicious/noArrayIndexKey: skeleton
                         <Skeleton key={i} className='h-9 w-full' />
                       ))}
                     </div>
                   )}
                 </TabsContent>
-
                 <TabsContent value='bulk'>
-                  {data && (
+                  {data ? (
                     <BulkGenerateForm
-                      packageId={packageId}
+                      slug={slug}
                       durationDays={data.package.durationDays}
-                      onSuccess={() => {}}
                     />
-                  )}
-                  {isPending && (
+                  ) : (
                     <div className='space-y-3'>
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        // biome-ignore lint/suspicious/noArrayIndexKey: This is fine
+                      {[...Array(5)].map((_, i) => (
+                        // biome-ignore lint/suspicious/noArrayIndexKey: skeleton
                         <Skeleton key={i} className='h-9 w-full' />
                       ))}
                     </div>
@@ -1224,30 +1401,25 @@ export default function DepartureManagementPage({
           </Card>
         </div>
 
-        {/* ── right: departures list ─────────────────────────────────────── */}
+        {/* ── right: list ────────────────────────────────────────────────── */}
         <div
-          className='lg:col-span-2 space-y-4 animate-in fade-in slide-in-from-bottom duration-700'
-          style={{ animationDelay: '240ms' }}
+          className='space-y-4 animate-in fade-in duration-500'
+          style={{ animationDelay: '180ms', animationFillMode: 'both' }}
         >
-          {/* filter bar */}
-          <div className='flex items-center justify-between gap-3 flex-wrap'>
-            <div className='flex items-center gap-2'>
-              <div className='h-px w-8 bg-primary' />
-              <span className='text-xs font-semibold tracking-[0.15em] uppercase text-primary'>
-                {statusFilter === 'ALL'
-                  ? 'All'
-                  : statusFilter.charAt(0) +
-                    statusFilter.slice(1).toLowerCase()}{' '}
-                departures
-              </span>
-            </div>
+          {/* filter */}
+          <div className='flex items-center justify-between gap-3'>
+            <p className='text-xs font-bold tracking-[0.15em] uppercase text-muted-foreground'>
+              {filtered.length}{' '}
+              {statusFilter !== 'ALL' ? statusFilter.toLowerCase() : ''}{' '}
+              departure{filtered.length !== 1 ? 's' : ''}
+            </p>
             <Select
               value={statusFilter}
               onValueChange={(v) =>
                 setStatusFilter(v as DepartureStatus | 'ALL')
               }
             >
-              <SelectTrigger className='w-36 h-8 text-xs border-2 hover:border-primary/40'>
+              <SelectTrigger className='w-36 h-8 text-xs border-2'>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -1264,16 +1436,16 @@ export default function DepartureManagementPage({
             </Select>
           </div>
 
-          {/* error state */}
+          {/* error */}
           {isError && (
             <Card className='border-2 border-destructive/20'>
-              <CardContent className='py-12 flex flex-col items-center gap-3 text-center'>
-                <XCircle className='w-8 h-8 text-destructive' />
+              <CardContent className='py-10 flex flex-col items-center gap-3 text-center'>
+                <XCircle className='w-7 h-7 text-destructive' />
                 <p className='text-sm font-semibold'>
                   Failed to load departures
                 </p>
                 <Button size='sm' variant='outline' onClick={() => refetch()}>
-                  Try Again
+                  Retry
                 </Button>
               </CardContent>
             </Card>
@@ -1281,18 +1453,17 @@ export default function DepartureManagementPage({
 
           {/* loading */}
           {isPending && (
-            <div className='grid sm:grid-cols-2 gap-4'>
-              {Array.from({ length: 6 }).map((_, i) => (
-                // biome-ignore lint/suspicious/noArrayIndexKey: This is fine
+            <div className='grid sm:grid-cols-2 gap-3'>
+              {[...Array(6)].map((_, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: skeleton
                 <Card key={i} className='border-2'>
                   <CardContent className='p-4 space-y-3'>
                     <div className='flex justify-between'>
-                      <Skeleton className='h-5 w-32' />
-                      <Skeleton className='h-5 w-20' />
+                      <Skeleton className='h-4 w-28' />
+                      <Skeleton className='h-4 w-16' />
                     </div>
-                    <Skeleton className='h-3 w-24' />
                     <Skeleton className='h-1.5 w-full rounded-full' />
-                    <div className='flex gap-2 pt-1'>
+                    <div className='flex gap-2'>
                       <Skeleton className='h-7 flex-1' />
                       <Skeleton className='h-7 flex-1' />
                     </div>
@@ -1302,21 +1473,15 @@ export default function DepartureManagementPage({
             </div>
           )}
 
-          {/* empty state */}
+          {/* empty */}
           {!isPending && !isError && filtered.length === 0 && (
             <Card className='border-2 border-dashed'>
-              <CardContent className='py-16 flex flex-col items-center gap-3 text-center'>
-                <div className='w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center'>
+              <CardContent className='py-14 flex flex-col items-center gap-3 text-center'>
+                <div className='w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center'>
                   <CalendarDays className='w-5 h-5 text-primary' />
                 </div>
                 <div>
-                  <p className='font-display font-bold text-base'>
-                    No{' '}
-                    <span className='italic font-light text-muted-foreground'>
-                      departures
-                    </span>{' '}
-                    found
-                  </p>
+                  <p className='font-semibold text-sm'>No departures found</p>
                   <p className='text-xs text-muted-foreground mt-1'>
                     {departures.length === 0
                       ? 'Use the form to schedule your first departure.'
@@ -1329,12 +1494,12 @@ export default function DepartureManagementPage({
 
           {/* grid */}
           {!isPending && !isError && filtered.length > 0 && (
-            <div className='grid sm:grid-cols-2 gap-4'>
+            <div className='grid sm:grid-cols-2 gap-3'>
               {filtered.map((d, i) => (
                 <DepartureCard
                   key={d.id}
                   departure={d}
-                  delay={i * 40}
+                  delay={i * 30}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
                 />
@@ -1344,16 +1509,16 @@ export default function DepartureManagementPage({
         </div>
       </div>
 
-      {/* ── dialogs ──────────────────────────────────────────────────────── */}
+      {/* dialogs */}
       <EditDepartureDialog
         departure={editTarget}
-        packageId={packageId}
+        slug={slug}
         open={editOpen}
         onOpenChange={setEditOpen}
       />
       <DeleteConfirmDialog
         departure={deleteTarget}
-        packageId={packageId}
+        slug={slug}
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
       />

@@ -1,9 +1,9 @@
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import type { SinglePackageType } from '@/types/package';
 import { format } from 'date-fns';
 import { CheckCircle2, Clock, MapPin, Shield, Star, Users } from 'lucide-react';
 import Image from 'next/image';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import type { SinglePackageType } from '@/types/package';
 import calcPricing from './helper';
 import type { BookingFormValues } from './schema';
 

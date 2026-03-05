@@ -13,4 +13,5 @@ export const QUERY_KEYS = {
   USER_DASHBOARD_STATS: 'user-dashboard-stats',
   ADMIN_USER_LIST: 'admin-user-list',
   USER_WISHLIST: 'user-wishlist',
+  SINGLE_PACKAGE_WITH_DEPARTURES: 'single-package-with-departures',
 };

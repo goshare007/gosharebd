@@ -58,3 +58,25 @@ export interface AllPackagesType {
   reviewCount: number;
   averageRating: number | null;
 }
+
+export interface SinglePackageWithDepartureType extends SinglePackageType {
+  departures: {
+    id: string;
+    startDate: string;
+    endDate: string;
+    status: string;
+    totalSeats: number;
+    bookedSeats: number;
+    availableSeats: number;
+    fillPct: number;
+    urgency: 'available' | 'low' | 'critical' | 'full';
+    isGuaranteed: boolean;
+    note: string | null;
+    effectivePricePerPerson: number;
+    effectiveOriginalPrice: number | null;
+    effectiveCouplePrice: number | null;
+    effectiveOriginalCouplePrice: number | null;
+    hasPriceOverride: boolean;
+    discountPct: number | null;
+  };
+}

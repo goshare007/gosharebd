@@ -1,5 +1,23 @@
 'use client';
 
+import { zodResolver } from '@hookform/resolvers/zod';
+import { format, isSameDay } from 'date-fns';
+import {
+  AlertCircle,
+  CalendarDays,
+  CheckCircle2,
+  MapPin,
+  Minus,
+  Plus,
+  Shield,
+  ShieldCheck,
+  Star,
+  Tag,
+  Users,
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { use, useEffect, useMemo, useState } from 'react';
+import { useFieldArray, useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent } from '@/components/ui/card';
@@ -18,32 +36,13 @@ import {
   FieldLegend,
   FieldSet,
 } from '@/components/ui/field';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { TIERS } from '@/constants/vat-rate';
 import { useSession } from '@/lib/auth-client';
 import { cn } from '@/lib/utils';
 import { useBooking } from '@/services/booking';
-import { useSinglePackages } from '@/services/packages';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { format } from 'date-fns';
-import {
-  CalendarIcon,
-  CheckCircle2,
-  MapPin,
-  Minus,
-  Plus,
-  Shield,
-  Star,
-} from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { use, useEffect, useState } from 'react';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { useSinglePackagesWithDepartures } from '@/services/departure';
 import ErrorState from './error-state';
 import { TIER_ICONS, type TierKey } from './helper';
 import LoadingSkeleton from './loading-skeleton';
@@ -57,6 +56,60 @@ import {
 import SuccessState from './success-state';
 
 const VAT_RATE = 0.15;
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type Urgency = 'available' | 'low' | 'critical' | 'full';
+
+type Departure = {
+  id: string;
+  startDate: string;
+  endDate: string;
+  status: string;
+  totalSeats: number;
+  bookedSeats: number;
+  availableSeats: number;
+  fillPct: number;
+  urgency: Urgency;
+  isGuaranteed: boolean;
+  note: string | null;
+  effectivePricePerPerson: number;
+  effectiveOriginalPrice: number | null;
+  effectiveCouplePrice: number | null;
+  effectiveOriginalCouplePrice: number | null;
+  hasPriceOverride: boolean;
+  discountPct: number | null;
+};
+
+// ─── Urgency config ───────────────────────────────────────────────────────────
+
+const URGENCY: Record<
+  Urgency,
+  { label: (n: number) => string; text: string; bar: string }
+> = {
+  available: {
+    label: (n) => `${n} spots left`,
+    text: 'text-emerald-600',
+    bar: 'bg-emerald-500',
+  },
+  low: {
+    label: (n) => `${n} spots left`,
+    text: 'text-amber-600',
+    bar: 'bg-amber-500',
+  },
+  critical: {
+    label: (n) => `Only ${n} left!`,
+    text: 'text-red-500',
+    bar: 'bg-red-500',
+  },
+  full: {
+    label: () => 'Fully booked',
+    text: 'text-muted-foreground',
+    bar: 'bg-muted-foreground',
+  },
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const emptyMember = (type: 'adult' | 'preteen'): GroupMember => ({
   type,
@@ -80,6 +133,7 @@ function calcPricing(
 }
 
 // ─── Section Label ────────────────────────────────────────────────────────────
+
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <div className='flex items-center gap-3 mb-4'>
@@ -92,6 +146,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 // ─── Stepper ──────────────────────────────────────────────────────────────────
+
 function Stepper({
   value,
   min,
@@ -132,15 +187,289 @@ function Stepper({
   );
 }
 
-// ─── Group Composition ────────────────────────────────────────────────────────
+// ─── Departure slot ───────────────────────────────────────────────────────────
+
+function DepartureSlot({
+  departure,
+  selected,
+  onSelect,
+  packageIsCouple,
+}: {
+  departure: Departure;
+  selected: boolean;
+  onSelect: () => void;
+  packageIsCouple: boolean;
+}) {
+  const u = URGENCY[departure.urgency];
+  const isFull = departure.urgency === 'full';
+
+  return (
+    <button
+      type='button'
+      disabled={isFull}
+      onClick={onSelect}
+      className={cn(
+        'w-full text-left rounded-xl border-2 p-4 transition-all duration-200',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+        selected
+          ? 'border-primary bg-primary/5 shadow-sm'
+          : isFull
+            ? 'border-border bg-muted/20 cursor-not-allowed opacity-60'
+            : 'border-border hover:border-primary/40 hover:bg-muted/20',
+      )}
+    >
+      <div className='flex items-start justify-between gap-3'>
+        {/* Left */}
+        <div className='min-w-0 flex-1'>
+          <div className='flex items-center gap-2 flex-wrap'>
+            <span className='font-bold text-sm'>
+              {format(new Date(departure.startDate), 'dd MMM yyyy')}
+            </span>
+            <span className='text-muted-foreground text-xs'>→</span>
+            <span className='text-sm text-muted-foreground'>
+              {format(new Date(departure.endDate), 'dd MMM yyyy')}
+            </span>
+          </div>
+
+          {/* Badges */}
+          <div className='flex items-center gap-1.5 flex-wrap mt-1.5'>
+            {departure.isGuaranteed && (
+              <span className='inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20'>
+                <ShieldCheck className='w-2.5 h-2.5' />
+                Guaranteed
+              </span>
+            )}
+            {departure.hasPriceOverride && (
+              <span className='inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20'>
+                <Tag className='w-2.5 h-2.5' />
+                Special Rate
+              </span>
+            )}
+            {departure.discountPct && (
+              <span className='inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 border border-amber-500/20'>
+                {departure.discountPct}% off
+              </span>
+            )}
+          </div>
+
+          {departure.note && (
+            <p className='text-xs text-muted-foreground mt-1.5 italic'>
+              "{departure.note}"
+            </p>
+          )}
+
+          {/* Seat bar */}
+          <div className='mt-3 space-y-1'>
+            <div className='flex items-center justify-between text-xs'>
+              <span className='text-muted-foreground'>
+                {departure.bookedSeats}/{departure.totalSeats} booked
+              </span>
+              <span className={cn('font-semibold', u.text)}>
+                {u.label(departure.availableSeats)}
+              </span>
+            </div>
+            <div className='h-1.5 w-full bg-muted rounded-full overflow-hidden'>
+              <div
+                className={cn(
+                  'h-full rounded-full transition-all duration-500',
+                  u.bar,
+                )}
+                style={{ width: `${Math.max(departure.fillPct, 2)}%` }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Right: price + radio */}
+        <div className='shrink-0 text-right flex flex-col items-end gap-3'>
+          <div>
+            <p className='font-bold text-base text-primary'>
+              ৳{departure.effectivePricePerPerson.toLocaleString()}
+            </p>
+            {departure.effectiveOriginalPrice &&
+              departure.effectiveOriginalPrice !==
+                departure.effectivePricePerPerson && (
+                <p className='text-xs text-muted-foreground line-through'>
+                  ৳{departure.effectiveOriginalPrice.toLocaleString()}
+                </p>
+              )}
+            <p className='text-[10px] text-muted-foreground'>/ person</p>
+          </div>
+          <div
+            className={cn(
+              'w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all',
+              selected ? 'border-primary bg-primary' : 'border-border',
+            )}
+          >
+            {selected && (
+              <div className='w-2 h-2 rounded-full bg-primary-foreground' />
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Couple price row */}
+      {packageIsCouple && departure.effectiveCouplePrice && (
+        <div className='mt-3 pt-3 border-t border-border/60 flex items-center justify-between text-xs'>
+          <span className='text-muted-foreground'>Couple price</span>
+          <div className='flex items-center gap-2'>
+            {departure.effectiveOriginalCouplePrice &&
+              departure.effectiveOriginalCouplePrice !==
+                departure.effectiveCouplePrice && (
+                <span className='text-muted-foreground line-through'>
+                  ৳{departure.effectiveOriginalCouplePrice.toLocaleString()}
+                </span>
+              )}
+            <span className='font-bold text-primary'>
+              ৳{departure.effectiveCouplePrice.toLocaleString()}
+            </span>
+          </div>
+        </div>
+      )}
+    </button>
+  );
+}
+
+// ─── Departure picker ─────────────────────────────────────────────────────────
+
+function DeparturePicker({
+  departures,
+  selectedId,
+  onSelect,
+  error,
+  packageIsCouple,
+}: {
+  departures: Departure[];
+  selectedId: string | undefined;
+  onSelect: (d: Departure) => void;
+  error?: string;
+  packageIsCouple: boolean;
+}) {
+  const departureDates = useMemo(
+    () => departures.map((d) => new Date(d.startDate)),
+    [departures],
+  );
+
+  const [calendarMonth, setCalendarMonth] = useState<Date>(
+    departureDates[0] ?? new Date(),
+  );
+  const [filterDate, setFilterDate] = useState<Date | undefined>(undefined);
+
+  const visibleDepartures = useMemo(() => {
+    if (!filterDate) return departures;
+    const filtered = departures.filter((d) =>
+      isSameDay(new Date(d.startDate), filterDate),
+    );
+    return filtered.length > 0 ? filtered : departures;
+  }, [departures, filterDate]);
+
+  if (departures.length === 0) {
+    return (
+      <div className='flex items-center gap-3 p-5 rounded-xl border-2 border-dashed text-muted-foreground'>
+        <AlertCircle className='w-5 h-5 shrink-0' />
+        <div>
+          <p className='text-sm font-semibold'>No upcoming departures</p>
+          <p className='text-xs mt-0.5'>
+            Check back soon — new dates are added regularly.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className='space-y-5'>
+      {/* Calendar navigator */}
+      <div
+        className={cn(
+          'rounded-xl border-2 overflow-hidden w-fit transition-colors',
+          error
+            ? 'border-destructive'
+            : 'border-border hover:border-primary/30',
+        )}
+      >
+        <Calendar
+          mode='single'
+          month={calendarMonth}
+          onMonthChange={setCalendarMonth}
+          selected={filterDate}
+          onSelect={(d) => {
+            if (!d) return;
+            const hasDep = departureDates.some((dep) => isSameDay(dep, d));
+            if (hasDep) {
+              setFilterDate((prev) =>
+                prev && isSameDay(prev, d) ? undefined : d,
+              );
+            }
+          }}
+          disabled={(d) => !departureDates.some((dep) => isSameDay(dep, d))}
+          modifiers={{ departure: departureDates }}
+          modifiersClassNames={{
+            departure: [
+              'font-bold text-primary relative',
+              'after:absolute after:bottom-0.5 after:left-1/2',
+              'after:-translate-x-1/2 after:w-1.5 after:h-1.5',
+              'after:rounded-full after:bg-primary',
+            ].join(' '),
+          }}
+          className='p-4'
+        />
+      </div>
+
+      {/* Filter hint */}
+      <div className='flex items-center justify-between gap-2 -mt-2'>
+        <p className='text-xs text-muted-foreground flex items-center gap-1.5'>
+          <CalendarDays className='w-3.5 h-3.5 text-primary shrink-0' />
+          {filterDate
+            ? `Filtered to ${format(filterDate, 'dd MMM')} — click again to clear`
+            : 'Click a highlighted date to filter departures'}
+        </p>
+        {filterDate && (
+          <button
+            type='button'
+            onClick={() => setFilterDate(undefined)}
+            className='text-xs text-primary underline underline-offset-2 hover:text-primary/80 shrink-0'
+          >
+            Show all ({departures.length})
+          </button>
+        )}
+      </div>
+
+      {/* Slots */}
+      <div className='space-y-3'>
+        {visibleDepartures.map((d) => (
+          <DepartureSlot
+            key={d.id}
+            departure={d}
+            selected={selectedId === d.id}
+            onSelect={() => onSelect(d)}
+            packageIsCouple={packageIsCouple}
+          />
+        ))}
+      </div>
+
+      {error && (
+        <p className='text-xs text-destructive flex items-center gap-1.5'>
+          <AlertCircle className='w-3.5 h-3.5' />
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ─── Group composition ────────────────────────────────────────────────────────
+
 function GroupCompositionSection({
   group,
   maxGroupSize,
+  availableSeats,
   onChangeGroup,
   onResizeMembers,
 }: {
   group: BookingFormValues['group'];
   maxGroupSize: number;
+  availableSeats: number;
   onChangeGroup: (key: TierKey, value: number) => void;
   onResizeMembers: (newCount: number) => void;
 }) {
@@ -148,6 +477,7 @@ function GroupCompositionSection({
     (s, k) => s + group[k],
     0,
   );
+  const effectiveMax = Math.min(maxGroupSize, availableSeats);
 
   const handleChange = (key: TierKey, value: number) => {
     onChangeGroup(key, value);
@@ -162,6 +492,7 @@ function GroupCompositionSection({
       {(Object.keys(TIERS) as TierKey[]).map((key) => {
         const { label, sublabel } = TIERS[key];
         const Icon = TIER_ICONS[key];
+        const remaining = effectiveMax - (totalPax - group[key]);
         return (
           <div
             key={key}
@@ -179,21 +510,29 @@ function GroupCompositionSection({
             <Stepper
               value={group[key]}
               min={key === 'adult' ? 1 : 0}
-              max={maxGroupSize - (totalPax - group[key])}
+              max={remaining}
               onChange={(v) => handleChange(key, v)}
             />
           </div>
         );
       })}
-      <p className='text-xs text-muted-foreground pt-2'>
-        Total: <span className='font-semibold text-foreground'>{totalPax}</span>{' '}
-        · Max: {maxGroupSize}
-      </p>
+      <div className='flex items-center justify-between pt-2 text-xs text-muted-foreground'>
+        <span>
+          Total:{' '}
+          <span className='font-semibold text-foreground'>{totalPax}</span>
+          {' · '}Max: {effectiveMax}
+        </span>
+        <span className='flex items-center gap-1'>
+          <Users className='w-3 h-3' />
+          {availableSeats} seats on this departure
+        </span>
+      </div>
     </div>
   );
 }
 
-// ─── Confirm Dialog ───────────────────────────────────────────────────────────
+// ─── Confirm dialog ───────────────────────────────────────────────────────────
+
 function ConfirmBookingDialog({
   open,
   onClose,
@@ -202,7 +541,7 @@ function ConfirmBookingDialog({
   values,
   packageName,
   packageLocation,
-  pricePerPerson,
+  selectedDeparture,
 }: {
   open: boolean;
   onClose: () => void;
@@ -211,10 +550,13 @@ function ConfirmBookingDialog({
   values: BookingFormValues;
   packageName: string;
   packageLocation: string;
-  pricePerPerson: number;
+  selectedDeparture: Departure;
 }) {
-  const { subtotal, vat, total } = calcPricing(pricePerPerson, values.group);
-  const leadTraveller = values.members[0];
+  const { subtotal, vat, total } = calcPricing(
+    selectedDeparture.effectivePricePerPerson,
+    values.group,
+  );
+  const lead = values.members[0];
   const totalPax = (Object.keys(TIERS) as TierKey[]).reduce(
     (s, k) => s + values.group[k],
     0,
@@ -240,11 +582,18 @@ function ConfirmBookingDialog({
               <MapPin className='w-3 h-3' />
               <span>{packageLocation}</span>
             </div>
-            {values.travelDate && (
-              <div className='flex items-center gap-1.5 text-xs text-muted-foreground'>
-                <CalendarIcon className='w-3 h-3' />
-                <span>{format(values.travelDate, 'dd MMMM yyyy')}</span>
-              </div>
+            <div className='flex items-center gap-1.5 text-xs text-muted-foreground'>
+              <CalendarDays className='w-3 h-3' />
+              <span>
+                {format(new Date(selectedDeparture.startDate), 'dd MMM yyyy')}
+                {' → '}
+                {format(new Date(selectedDeparture.endDate), 'dd MMM yyyy')}
+              </span>
+            </div>
+            {selectedDeparture.note && (
+              <p className='text-xs italic text-muted-foreground'>
+                "{selectedDeparture.note}"
+              </p>
             )}
           </div>
 
@@ -276,22 +625,18 @@ function ConfirmBookingDialog({
             <p className='text-xs font-semibold tracking-[0.15em] uppercase text-muted-foreground'>
               Lead Traveller
             </p>
-            <p className='text-sm font-medium'>{leadTraveller?.fullName}</p>
-            <p className='text-xs text-muted-foreground'>
-              {leadTraveller?.email}
-            </p>
-            <p className='text-xs text-muted-foreground'>
-              {leadTraveller?.phone}
-            </p>
+            <p className='text-sm font-medium'>{lead?.fullName}</p>
+            <p className='text-xs text-muted-foreground'>{lead?.email}</p>
+            <p className='text-xs text-muted-foreground'>{lead?.phone}</p>
           </div>
 
           <Separator />
 
-          {/* Pricing summary */}
+          {/* Pricing */}
           <div className='space-y-1.5 text-sm'>
             <div className='flex justify-between text-muted-foreground'>
               <span>Subtotal ({totalPax} travellers)</span>
-              <span>৳{subtotal.toLocaleString()}</span>
+              <span>৳{Math.round(subtotal).toLocaleString()}</span>
             </div>
             <div className='flex justify-between text-muted-foreground'>
               <span>VAT (15%)</span>
@@ -328,13 +673,18 @@ function ConfirmBookingDialog({
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function BookNowPage({
   params,
 }: {
   params: Promise<{ packageId: string }>;
 }) {
   const { packageId } = use(params);
-  const { data: pkg, isPending, isError } = useSinglePackages(packageId);
+  const {
+    data: pkg,
+    isPending,
+    isError,
+  } = useSinglePackagesWithDepartures(packageId);
   const { data: session, isPending: isSessionPending } = useSession();
   const router = useRouter();
 
@@ -343,12 +693,15 @@ export default function BookNowPage({
   const [pendingValues, setPendingValues] = useState<BookingFormValues | null>(
     null,
   );
+  const [selectedDeparture, setSelectedDeparture] = useState<Departure | null>(
+    null,
+  );
   const { mutateAsync, isPending: isConfirming } = useBooking();
 
   const form = useForm<BookingFormValues>({
     resolver: zodResolver(bookingSchema),
     defaultValues: {
-      travelDate: undefined,
+      departureId: '',
       group: { adult: 1, preteen: 0, child: 0, infant: 0 },
       members: [emptyMember('adult')],
       notes: '',
@@ -368,8 +721,7 @@ export default function BookNowPage({
   }, [isPending, isSessionPending, session, router, packageId]);
 
   const group = form.watch('group');
-  const travelDate = form.watch('travelDate');
-  const travelDateError = form.formState.errors.travelDate;
+  const departureIdError = form.formState.errors.departureId;
 
   const handleGroupChange = (key: TierKey, value: number) => {
     form.setValue(`group.${key}`, value, { shouldValidate: true });
@@ -379,11 +731,21 @@ export default function BookNowPage({
     const current = fields.length;
     if (newCount > current) {
       for (let i = current; i < newCount; i++) {
-        const type = i < group.adult ? 'adult' : 'preteen';
-        append(emptyMember(type));
+        append(emptyMember(i < group.adult ? 'adult' : 'preteen'));
       }
     } else if (newCount < current) {
       for (let i = current - 1; i >= newCount; i--) remove(i);
+    }
+  };
+
+  const handleSelectDeparture = (d: Departure) => {
+    setSelectedDeparture(d);
+    form.setValue('departureId', d.id, { shouldValidate: true });
+    // Reset group if it exceeds this departure's available seats
+    const totalPax = Object.values(group).reduce((s, v) => s + v, 0);
+    if (totalPax > d.availableSeats) {
+      form.setValue('group', { adult: 1, preteen: 0, child: 0, infant: 0 });
+      handleResizeMembers(1);
     }
   };
 
@@ -393,15 +755,12 @@ export default function BookNowPage({
   };
 
   const handleConfirm = async () => {
-    if (!pendingValues) return;
-
+    if (!pendingValues || !selectedDeparture) return;
     const formData = new FormData();
-    formData.append('packageId', packageId);
-    formData.append('travelDate', pendingValues.travelDate.toISOString());
+    formData.append('departureId', selectedDeparture.id);
     formData.append('group', JSON.stringify(pendingValues.group));
     formData.append('members', JSON.stringify(pendingValues.members));
     if (pendingValues.notes) formData.append('notes', pendingValues.notes);
-
     try {
       await mutateAsync(formData);
       setConfirmOpen(false);
@@ -423,10 +782,14 @@ export default function BookNowPage({
     );
   }
 
+  const departures: Departure[] = Array.isArray(pkg.departures)
+    ? pkg.departures
+    : [];
+
   return (
     <div className='min-h-screen bg-background'>
       {/* Confirm dialog */}
-      {pendingValues && (
+      {pendingValues && selectedDeparture && (
         <ConfirmBookingDialog
           open={confirmOpen}
           onClose={() => setConfirmOpen(false)}
@@ -435,7 +798,7 @@ export default function BookNowPage({
           values={pendingValues}
           packageName={pkg.name}
           packageLocation={pkg.location}
-          pricePerPerson={Number(pkg.pricePerPerson)}
+          selectedDeparture={selectedDeparture}
         />
       )}
 
@@ -455,6 +818,7 @@ export default function BookNowPage({
             </span>
             <span className='text-primary'>.</span>
           </h1>
+          <p className='text-sm text-muted-foreground mt-2'>{pkg.name}</p>
         </div>
       </section>
 
@@ -463,14 +827,49 @@ export default function BookNowPage({
         <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
           <form onSubmit={form.handleSubmit(handleFormSubmit)}>
             <div className='grid lg:grid-cols-[1fr_1.5fr] gap-10 lg:gap-16 items-start'>
-              {/* Left: pricing summary */}
+              {/* Left: sticky pricing summary */}
               <div className='lg:sticky lg:top-8'>
                 <Card className='border-2 p-6'>
                   <CardContent className='p-0'>
+                    {/* Selected departure snapshot */}
+                    {selectedDeparture && (
+                      <div className='mb-5 pb-5 border-b border-border'>
+                        <p className='text-[10px] font-bold tracking-[0.15em] uppercase text-muted-foreground mb-2'>
+                          Selected Departure
+                        </p>
+                        <p className='text-sm font-semibold'>
+                          {format(
+                            new Date(selectedDeparture.startDate),
+                            'dd MMM',
+                          )}
+                          {' → '}
+                          {format(
+                            new Date(selectedDeparture.endDate),
+                            'dd MMM yyyy',
+                          )}
+                        </p>
+                        <div className='flex items-center gap-3 mt-1.5 text-xs text-muted-foreground'>
+                          <span className='flex items-center gap-1'>
+                            <Users className='w-3 h-3' />
+                            {selectedDeparture.availableSeats} seats left
+                          </span>
+                          {selectedDeparture.isGuaranteed && (
+                            <span className='flex items-center gap-1 text-emerald-600'>
+                              <ShieldCheck className='w-3 h-3' />
+                              Guaranteed
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
                     <PricingSummary
                       pkg={pkg}
                       group={group}
-                      travelDate={travelDate}
+                      travelDate={
+                        selectedDeparture
+                          ? new Date(selectedDeparture.startDate)
+                          : undefined
+                      }
                     />
                   </CardContent>
                 </Card>
@@ -478,45 +877,19 @@ export default function BookNowPage({
 
               {/* Right: form */}
               <div className='space-y-10'>
-                {/* Travel date */}
+                {/* Departure selection */}
                 <FieldSet>
-                  <FieldLegend className='sr-only'>Travel Date</FieldLegend>
-                  <SectionLabel>Travel Date</SectionLabel>
-                  <Field data-invalid={!!travelDateError}>
-                    <FieldLabel htmlFor='travelDate'>Departure Date</FieldLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          id='travelDate'
-                          variant='outline'
-                          aria-invalid={!!travelDateError}
-                          className={cn(
-                            'w-full justify-start text-left font-normal h-11',
-                            !travelDate && 'text-muted-foreground',
-                          )}
-                        >
-                          <CalendarIcon className='mr-2 h-4 w-4' />
-                          {travelDate
-                            ? format(travelDate, 'PPP')
-                            : 'Pick a travel date'}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className='w-auto p-0' align='start'>
-                        <Calendar
-                          mode='single'
-                          selected={travelDate}
-                          onSelect={(date) =>
-                            form.setValue('travelDate', date as Date, {
-                              shouldValidate: true,
-                            })
-                          }
-                          disabled={(date) => date < new Date()}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FieldError
-                      errors={travelDateError ? [travelDateError] : undefined}
+                  <FieldLegend className='sr-only'>
+                    Select Departure
+                  </FieldLegend>
+                  <SectionLabel>Select Departure</SectionLabel>
+                  <Field data-invalid={!!departureIdError}>
+                    <DeparturePicker
+                      departures={departures}
+                      selectedId={selectedDeparture?.id}
+                      onSelect={handleSelectDeparture}
+                      error={departureIdError?.message}
+                      packageIsCouple={pkg.isCouple}
                     />
                   </Field>
                 </FieldSet>
@@ -530,6 +903,9 @@ export default function BookNowPage({
                   <GroupCompositionSection
                     group={group}
                     maxGroupSize={pkg.maxGroupSize}
+                    availableSeats={
+                      selectedDeparture?.availableSeats ?? pkg.maxGroupSize
+                    }
                     onChangeGroup={handleGroupChange}
                     onResizeMembers={handleResizeMembers}
                   />
@@ -602,7 +978,7 @@ export default function BookNowPage({
                   type='submit'
                   size='lg'
                   className='w-full h-12 text-base font-semibold'
-                  disabled={form.formState.isSubmitting}
+                  disabled={form.formState.isSubmitting || !selectedDeparture}
                 >
                   Review & Confirm Booking
                 </Button>

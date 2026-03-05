@@ -6,7 +6,6 @@ import { isAdmin } from '@/lib/auth-utils';
 import { prisma } from '@/lib/prisma';
 import type { Division } from '@/prisma/generated/prisma/client/enums';
 
-// ─── GET ──────────────────────────────────────────────────────────────────────
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -14,7 +13,6 @@ export async function GET(req: NextRequest) {
     if (!slug) {
       return NextResponse.json({ error: 'Missing slug' }, { status: 400 });
     }
-
     const pkg = await prisma.package.findUnique({
       where: { slug },
       include: {
@@ -28,11 +26,9 @@ export async function GET(req: NextRequest) {
         itinerary: { orderBy: { order: 'asc' } },
       },
     });
-
     if (!pkg) {
       return NextResponse.json({ error: 'Package not found' }, { status: 404 });
     }
-
     return NextResponse.json(pkg);
   } catch (_error) {
     return NextResponse.json(

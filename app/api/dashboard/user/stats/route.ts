@@ -1,9 +1,9 @@
 // app/api/user/dashboard/route.ts
 
-import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
 import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {

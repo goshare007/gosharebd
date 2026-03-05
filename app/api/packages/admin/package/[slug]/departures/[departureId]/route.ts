@@ -1,4 +1,4 @@
-// app/api/admin/packages/[id]/departures/[departureId]/route.ts
+// app/api/admin/packages/[slug]/departures/[departureId]/route.ts
 
 import { addDays } from 'date-fns';
 import { headers } from 'next/headers';
@@ -20,7 +20,7 @@ const updateSchema = z.object({
   originalCouplePrice: z.number().positive().optional().nullable(),
 });
 
-type RouteParams = { params: Promise<{ id: string; departureId: string }> };
+type RouteParams = { params: Promise<{ slug: string; departureId: string }> };
 
 // ─── PATCH — update a departure ───────────────────────────────────────────────
 
@@ -31,7 +31,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id: packageId, departureId } = await params;
+    const { slug: packageId, departureId } = await params;
 
     const existing = await prisma.departure.findFirst({
       where: { id: departureId, packageId },
@@ -102,7 +102,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id: packageId, departureId } = await params;
+    const { slug: packageId, departureId } = await params;
 
     const departure = await prisma.departure.findFirst({
       where: { id: departureId, packageId },

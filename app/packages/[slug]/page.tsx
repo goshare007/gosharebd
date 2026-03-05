@@ -582,7 +582,7 @@ export default function PackageDetailPage({
                     size='lg'
                     asChild
                   >
-                    <Link href={`/book/${packageData.id}`}>
+                    <Link href={`/book/${packageData.slug}`}>
                       Continue Booking
                     </Link>
                   </Button>

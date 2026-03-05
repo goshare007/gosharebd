@@ -2,6 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
+import { QUERY_KEYS } from '@/constants/query-keys';
+import type { SinglePackageWithDepartureType } from '@/types/package';
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -9,7 +11,7 @@ export type DepartureStatus = 'ACTIVE' | 'FULL' | 'CANCELLED' | 'COMPLETED';
 
 export type Departure = {
   id: string;
-  packageId: string;
+  slug: string;
   startDate: string;
   endDate: string;
   status: DepartureStatus;
@@ -78,39 +80,39 @@ export type UpdateDeparturePayload = {
 // ─── query key factory ────────────────────────────────────────────────────────
 
 const keys = {
-  all: (packageId: string) => ['departures', packageId] as const,
+  all: (slug: string) => ['departures', slug] as const,
 };
 
 // ─── hooks ────────────────────────────────────────────────────────────────────
 
-export function useDepartures(packageId: string) {
+export function useDepartures(slug: string) {
   return useQuery<DeparturesResponse>({
-    queryKey: keys.all(packageId),
+    queryKey: keys.all(slug),
     queryFn: async () => {
       const { data } = await axios.get(
-        `/api/admin/packages/${packageId}/departures`,
+        `/api/packages/admin/package/${slug}/departures`,
       );
       return data;
     },
-    enabled: !!packageId,
+    enabled: !!slug,
   });
 }
 
-export function useCreateDeparture(packageId: string) {
+export function useCreateDeparture(slug: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: CreateSinglePayload | CreateBulkPayload) => {
       const { data } = await axios.post(
-        `/api/packages/admin/packages/${packageId}/departures`,
+        `/api/packages/admin/package/${slug}/departures`,
         payload,
       );
       return data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: keys.all(packageId) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.all(slug) }),
   });
 }
 
-export function useUpdateDeparture(packageId: string) {
+export function useUpdateDeparture(slug: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({
@@ -121,24 +123,39 @@ export function useUpdateDeparture(packageId: string) {
       payload: UpdateDeparturePayload;
     }) => {
       const { data } = await axios.patch(
-        `/api/packages/admin/packages/${packageId}/departures/${departureId}`,
+        `/api/packages/admin/package/${slug}/departures/${departureId}`,
         payload,
       );
       return data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: keys.all(packageId) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.all(slug) }),
   });
 }
 
-export function useDeleteDeparture(packageId: string) {
+export function useDeleteDeparture(slug: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (departureId: string) => {
       const { data } = await axios.delete(
-        `/api/packages/admin/packages/${packageId}/departures/${departureId}`,
+        `/api/packages/admin/package/${slug}/departures/${departureId}`,
       );
       return data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: keys.all(packageId) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.all(slug) }),
   });
 }
+
+export const useSinglePackagesWithDepartures = (slug: string) => {
+  return useQuery<SinglePackageWithDepartureType>({
+    queryKey: [QUERY_KEYS.SINGLE_PACKAGE_WITH_DEPARTURES, slug],
+    queryFn: async () => {
+      const response = await axios.get<SinglePackageWithDepartureType>(
+        '/api/packages/single-package/departures',
+        {
+          params: { slug },
+        },
+      );
+      return response.data;
+    },
+  });
+};
