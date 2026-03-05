@@ -1,5 +1,11 @@
 'use client';
 
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useWishlist, useWishlistPackages } from '@/services/wishlist';
+import type { WishlistType } from '@/types/wishlist';
 import {
   AlertTriangle,
   Award,
@@ -12,12 +18,6 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useWishlist, useWishlistPackages } from '@/services/wishlist';
-import type { WishlistType } from '@/types/wishlist';
 
 // ── Wishlist Card ─────────────────────────────────────────────────────────────
 
@@ -120,9 +120,7 @@ function WishlistCard({ pkg }: { pkg: WishlistType }) {
 
         {/* CTA */}
         <Button asChild size='sm' className='w-full'>
-          <Link href={`/packages/${pkg.destinationId}/${pkg.id}`}>
-            View Package
-          </Link>
+          <Link href={`/packages/${pkg.slug}`}>View Package</Link>
         </Button>
       </CardContent>
     </Card>

@@ -1,6 +1,6 @@
 export interface WishlistType {
   id: string;
-  destinationId: string;
+  slug: string;
   name: string;
   coverImage: string;
   pricePerPerson: number;

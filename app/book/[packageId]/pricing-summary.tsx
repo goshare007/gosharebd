@@ -1,9 +1,9 @@
-import { format } from 'date-fns';
-import { CheckCircle2, Clock, MapPin, Shield, Star, Users } from 'lucide-react';
-import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import type { SinglePackageType } from '@/types/package';
+import { format } from 'date-fns';
+import { CheckCircle2, Clock, MapPin, Shield, Star, Users } from 'lucide-react';
+import Image from 'next/image';
 import calcPricing from './helper';
 import type { BookingFormValues } from './schema';
 
@@ -42,7 +42,7 @@ export default function PricingSummary({
           </h2>
           <div className='flex items-center gap-1.5 mt-1 text-xs text-white/80'>
             <MapPin className='w-3 h-3' />
-            <span>{pkg.Location}</span>
+            <span>{pkg.location}</span>
           </div>
         </div>
       </div>

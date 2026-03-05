@@ -127,9 +127,7 @@ export default function PackagesPage({
           </p>
         </div>
         <Button asChild className='gap-2'>
-          <Link
-            href={`/dashboard/admin/packages/add-new?destinationId=${destinationId}`}
-          >
+          <Link href={`/dashboard/admin/packages/add-new`}>
             <Plus className='w-4 h-4' /> Add First Package
           </Link>
         </Button>

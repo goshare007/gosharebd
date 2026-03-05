@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
     const ageRestriction = formData.get('ageRestriction') as string | null;
     const isBestsellerRaw = formData.get('isBestseller') as string | null;
     const isActiveRaw = formData.get('isActive') as string | null;
+    const slug = formData.get('slug') as string | null;
 
     // ── Required field validation ─────────────────────────────────────────
     if (
@@ -66,7 +67,8 @@ export async function POST(req: NextRequest) {
       !maxGroupSizeRaw ||
       !pricePerPersonRaw ||
       !coverImageFile ||
-      !itineraryRaw
+      !itineraryRaw ||
+      !slug
     ) {
       return NextResponse.json(
         { error: 'Missing required fields' },
@@ -132,6 +134,7 @@ export async function POST(req: NextRequest) {
     const newPackage = await prisma.package.create({
       data: {
         name,
+        slug,
         summary,
         division: division as Division,
         location,

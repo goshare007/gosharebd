@@ -13,11 +13,11 @@ export const useAddPackage = () => {
       });
 
       toast.promise(apiPromise, {
-        loading: 'Adding Destination, please wait...',
-        success: 'Destination added successfully!',
+        loading: 'Adding Package, please wait...',
+        success: 'Package added successfully!',
         // biome-ignore lint/suspicious/noExplicitAny: this is fine
         error: (err: any) =>
-          err?.response?.data?.message || 'Failed to add destination',
+          err?.response?.data?.message || 'Failed to add the package.',
       });
 
       const response = await apiPromise;

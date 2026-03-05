@@ -1,7 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -11,6 +9,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAllPackages } from '@/services/packages';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 // ─── Package Selector ─────────────────────────────────────────────────────────
 function PackageSelector({
@@ -38,7 +38,7 @@ function PackageSelector({
             <SelectItem key={p.id} value={p.id}>
               {p.name}
               <span className='ml-2 text-xs text-muted-foreground'>
-                · {p.Location} · ৳{Number(p.pricePerPerson).toLocaleString()}
+                · {p.location} · ৳{Number(p.pricePerPerson).toLocaleString()}
                 /person
               </span>
             </SelectItem>

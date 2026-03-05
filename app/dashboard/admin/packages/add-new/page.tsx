@@ -4,9 +4,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   ArrowLeft,
   CalendarDays,
+  CheckCircle2,
   GripVertical,
   Info,
   Layers,
+  Link2,
+  Loader2,
   MapPin,
   Package,
   Plus,
@@ -17,12 +20,13 @@ import {
   Upload,
   Users,
   X,
+  XCircle,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Suspense, useState } from 'react';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { Suspense, useEffect, useRef, useState } from 'react';
+import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { Badge } from '@/components/ui/badge';
@@ -52,7 +56,9 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { toSlug } from '@/lib/slugify';
 import { useAddPackage } from '@/services/packages';
+import { useCheckSlugUniqueness } from '@/services/slug';
 
 // ---------------------------------------------------------------------------
 // Division options
@@ -92,6 +98,14 @@ const packageSchema = z.object({
     .string()
     .min(2, 'Name must be at least 2 characters')
     .max(100, 'Name must not exceed 100 characters'),
+  slug: z
+    .string()
+    .min(2, 'Slug must be at least 2 characters')
+    .max(120, 'Slug must not exceed 120 characters')
+    .regex(
+      /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+      'Slug may only contain lowercase letters, numbers, and hyphens',
+    ),
   summary: z
     .string()
     .min(20, 'Summary must be at least 20 characters')
@@ -120,7 +134,7 @@ const packageSchema = z.object({
 type PackageFormData = z.infer<typeof packageSchema>;
 
 // ---------------------------------------------------------------------------
-// Reusable string-array field (tags, highlights, includes, excludes)
+// Reusable string-array field
 // ---------------------------------------------------------------------------
 interface StringArrayFieldProps {
   label: string;
@@ -226,6 +240,8 @@ function AddNewPackageContent() {
   );
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
 
+  const slugManuallyEdited = useRef(false);
+
   const {
     register,
     handleSubmit,
@@ -238,6 +254,7 @@ function AddNewPackageContent() {
     resolver: zodResolver(packageSchema),
     defaultValues: {
       name: '',
+      slug: '',
       summary: '',
       division: undefined,
       location: '',
@@ -264,6 +281,32 @@ function AddNewPackageContent() {
     name: 'itinerary',
   });
   const isCouple = watch('isCouple');
+  const watchedName = watch('name');
+  const watchedSlug = watch('slug');
+
+  // Slug uniqueness check
+  const {
+    data: slugAvailable,
+    isFetching: slugChecking,
+    isError: slugError,
+  } = useCheckSlugUniqueness(watchedSlug);
+
+  const slugStatus = !watchedSlug
+    ? 'idle'
+    : slugChecking
+      ? 'checking'
+      : slugError
+        ? 'error'
+        : slugAvailable
+          ? 'available'
+          : 'taken';
+
+  // Auto-generate slug from name unless user has manually edited it
+  useEffect(() => {
+    if (!slugManuallyEdited.current) {
+      setValue('slug', toSlug(watchedName), { shouldValidate: !!watchedName });
+    }
+  }, [watchedName, setValue]);
 
   const handleCoverImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -289,6 +332,7 @@ function AddNewPackageContent() {
 
   const resetForm = () => {
     reset();
+    slugManuallyEdited.current = false;
     setTags([]);
     setHighlights([]);
     setIncludes([]);
@@ -299,8 +343,18 @@ function AddNewPackageContent() {
 
   const onSubmit = (data: PackageFormData) => {
     if (!coverImageFile) return;
+    if (slugStatus === 'taken') {
+      toast.error('Please choose a unique slug before submitting');
+      return;
+    }
+    if (slugStatus === 'checking') {
+      toast.info('Please wait while we check slug availability');
+      return;
+    }
+
     const formData = new FormData();
     formData.append('name', data.name);
+    formData.append('slug', data.slug);
     formData.append('summary', data.summary);
     formData.append('division', data.division);
     formData.append('location', data.location);
@@ -330,11 +384,7 @@ function AddNewPackageContent() {
     formData.append('isBestseller', String(data.isBestseller));
     formData.append('isActive', String(data.isActive));
 
-    addPackage(formData, {
-      onSuccess: () => {
-        resetForm();
-      },
-    });
+    addPackage(formData, { onSuccess: resetForm });
   };
 
   return (
@@ -382,6 +432,7 @@ function AddNewPackageContent() {
               <CardContent>
                 <FieldSet>
                   <FieldGroup className='gap-6'>
+                    {/* Name */}
                     <Field data-invalid={!!errors.name}>
                       <FieldLabel htmlFor='name'>
                         Package Name <span className='text-red-500'>*</span>
@@ -400,35 +451,84 @@ function AddNewPackageContent() {
                       )}
                     </Field>
 
-                    {/* Division + Location side by side */}
+                    {/* Slug */}
+                    <Field
+                      data-invalid={!!errors.slug || slugStatus === 'taken'}
+                    >
+                      <FieldLabel htmlFor='slug'>
+                        Slug <span className='text-red-500'>*</span>
+                      </FieldLabel>
+                      <div className='relative'>
+                        <Link2 className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground' />
+                        <Input
+                          id='slug'
+                          placeholder='e.g., coxs-bazar-sunrise-trek'
+                          className='h-11 pl-9 pr-9'
+                          aria-invalid={!!errors.slug || slugStatus === 'taken'}
+                          {...register('slug', {
+                            onChange: () => {
+                              slugManuallyEdited.current = true;
+                            },
+                          })}
+                        />
+                        <div className='absolute right-3 top-1/2 -translate-y-1/2'>
+                          {slugStatus === 'checking' && (
+                            <Loader2 className='w-4 h-4 text-muted-foreground animate-spin' />
+                          )}
+                          {slugStatus === 'available' && (
+                            <CheckCircle2 className='w-4 h-4 text-green-500' />
+                          )}
+                          {slugStatus === 'taken' && (
+                            <XCircle className='w-4 h-4 text-destructive' />
+                          )}
+                        </div>
+                      </div>
+                      {errors.slug ? (
+                        <FieldError>{errors.slug.message}</FieldError>
+                      ) : slugStatus === 'taken' ? (
+                        <FieldError>This slug is already taken</FieldError>
+                      ) : slugStatus === 'available' ? (
+                        <FieldDescription className='text-green-600'>
+                          Slug is available
+                        </FieldDescription>
+                      ) : (
+                        <FieldDescription>
+                          Auto-generated from name — you can edit it manually.
+                        </FieldDescription>
+                      )}
+                    </Field>
+
+                    {/* Division + Location */}
                     <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                       <Field data-invalid={!!errors.division}>
                         <FieldLabel htmlFor='division'>
                           Division <span className='text-red-500'>*</span>
                         </FieldLabel>
-                        <Select
-                          value={watch('division')}
-                          onValueChange={(val) =>
-                            setValue('division', val as DivisionValue, {
-                              shouldValidate: true,
-                            })
-                          }
-                        >
-                          <SelectTrigger
-                            id='division'
-                            className='h-11'
-                            aria-invalid={!!errors.division}
-                          >
-                            <SelectValue placeholder='Select a division' />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {DIVISIONS.map(({ value, label }) => (
-                              <SelectItem key={value} value={value}>
-                                {label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Controller
+                          control={control}
+                          name='division'
+                          render={({ field }) => (
+                            <Select
+                              value={field.value}
+                              onValueChange={field.onChange}
+                            >
+                              <SelectTrigger
+                                id='division'
+                                className='h-11'
+                                aria-invalid={!!errors.division}
+                              >
+                                <SelectValue placeholder='Select a division' />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {DIVISIONS.map(({ value, label }) => (
+                                  <SelectItem key={value} value={value}>
+                                    {label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
                         {errors.division ? (
                           <FieldError>{errors.division.message}</FieldError>
                         ) : (
@@ -462,6 +562,7 @@ function AddNewPackageContent() {
                       </Field>
                     </div>
 
+                    {/* Summary */}
                     <Field data-invalid={!!errors.summary}>
                       <FieldLabel htmlFor='summary'>
                         Summary <span className='text-red-500'>*</span>
@@ -481,6 +582,7 @@ function AddNewPackageContent() {
                       )}
                     </Field>
 
+                    {/* Duration / Group sizes */}
                     <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
                       <Field data-invalid={!!errors.durationDays}>
                         <FieldLabel htmlFor='durationDays'>
@@ -938,7 +1040,7 @@ function AddNewPackageContent() {
               </CardContent>
             </Card>
 
-            {/* ── 8. Policies ── */}
+            {/* ── 7. Policies ── */}
             <Card>
               <CardHeader>
                 <CardTitle>Policies</CardTitle>
@@ -989,7 +1091,7 @@ function AddNewPackageContent() {
               </CardContent>
             </Card>
 
-            {/* ── 9. Settings ── */}
+            {/* ── 8. Settings ── */}
             <Card>
               <CardHeader>
                 <div className='flex items-center gap-2'>
@@ -1047,10 +1149,18 @@ function AddNewPackageContent() {
                 type='submit'
                 size='lg'
                 className='gap-2 sm:w-auto'
-                disabled={isPending}
+                disabled={
+                  isPending ||
+                  slugStatus === 'taken' ||
+                  slugStatus === 'checking'
+                }
               >
-                <Save className='w-4 h-4' />
-                Create Package
+                {isPending ? (
+                  <Loader2 className='w-4 h-4 animate-spin' />
+                ) : (
+                  <Save className='w-4 h-4' />
+                )}
+                {isPending ? 'Creating...' : 'Create Package'}
               </Button>
             </div>
           </div>

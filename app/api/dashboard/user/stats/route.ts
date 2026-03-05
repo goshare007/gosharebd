@@ -1,9 +1,9 @@
 // app/api/user/dashboard/route.ts
 
-import { headers } from 'next/headers';
-import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { headers } from 'next/headers';
+import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
@@ -31,8 +31,7 @@ export async function GET() {
               name: true,
               coverImage: true,
               durationDays: true,
-              Location: true,
-              destination: { select: { name: true } },
+              location: true,
             },
           },
           members: true,
@@ -55,8 +54,7 @@ export async function GET() {
               name: true,
               coverImage: true,
               durationDays: true,
-              Location: true,
-              destination: { select: { name: true } },
+              location: true,
             },
           },
         },

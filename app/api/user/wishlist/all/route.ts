@@ -1,8 +1,8 @@
-import { headers } from 'next/headers';
-import { type NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import type { WishlistType } from '@/types/wishlist';
+import { headers } from 'next/headers';
+import { type NextRequest, NextResponse } from 'next/server';
 
 export async function GET(req: NextRequest) {
   try {
@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
         package: {
           select: {
             id: true,
-            destinationId: true,
+            slug: true,
             name: true,
             coverImage: true,
             pricePerPerson: true,
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
             durationDays: true,
             maxGroupSize: true,
             minGroupSize: true,
-            Location: true,
+            location: true,
             isBestseller: true,
             reviews: { select: { rating: true } },
           },
@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
 
     const packages: WishlistType[] = wishlists.map(({ package: pkg }) => ({
       id: pkg.id,
-      destinationId: pkg.destinationId,
+      slug: pkg.slug,
       name: pkg.name,
       coverImage: pkg.coverImage,
       pricePerPerson: Number(pkg.pricePerPerson),
@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
       durationDays: pkg.durationDays,
       maxGroupSize: pkg.maxGroupSize,
       minGroupSize: pkg.minGroupSize,
-      Location: pkg.Location,
+      Location: pkg.location,
       isBestseller: pkg.isBestseller,
       reviewCount: pkg.reviews.length,
       averageRating:

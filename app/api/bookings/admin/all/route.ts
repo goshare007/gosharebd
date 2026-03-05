@@ -52,7 +52,6 @@ export async function GET(req: NextRequest) {
               name: true,
               coverImage: true,
               durationDays: true,
-              destination: { select: { name: true } },
             },
           },
         },

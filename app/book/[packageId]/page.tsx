@@ -1,19 +1,5 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
-import { format } from 'date-fns';
-import {
-  CalendarIcon,
-  CheckCircle2,
-  MapPin,
-  Minus,
-  Plus,
-  Shield,
-  Star,
-} from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { use, useEffect, useState } from 'react';
-import { useFieldArray, useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent } from '@/components/ui/card';
@@ -44,6 +30,20 @@ import { useSession } from '@/lib/auth-client';
 import { cn } from '@/lib/utils';
 import { useBooking } from '@/services/booking';
 import { useSinglePackages } from '@/services/packages';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { format } from 'date-fns';
+import {
+  CalendarIcon,
+  CheckCircle2,
+  MapPin,
+  Minus,
+  Plus,
+  Shield,
+  Star,
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { use, useEffect, useState } from 'react';
+import { useFieldArray, useForm } from 'react-hook-form';
 import ErrorState from './error-state';
 import { TIER_ICONS, type TierKey } from './helper';
 import LoadingSkeleton from './loading-skeleton';
@@ -434,7 +434,7 @@ export default function BookNowPage({
           isSubmitting={isConfirming}
           values={pendingValues}
           packageName={pkg.name}
-          packageLocation={pkg.Location}
+          packageLocation={pkg.location}
           pricePerPerson={Number(pkg.pricePerPerson)}
         />
       )}

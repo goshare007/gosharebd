@@ -51,10 +51,7 @@ export async function GET(req: NextRequest) {
             name: true,
             coverImage: true,
             durationDays: true,
-            Location: true,
-            destination: {
-              select: { name: true, division: true },
-            },
+            location: true,
           },
         },
         members: {
