@@ -1,3 +1,6 @@
+// ─── services/booking.ts ──────────────────────────────────────────────────────
+// Full updated file — replace your existing services/booking.ts
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { toast } from 'sonner';
@@ -16,16 +19,14 @@ export const useBooking = () => {
       const apiPromise = axios.post('/api/bookings/add', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-
       toast.promise(apiPromise, {
         loading: 'Booking your package, please wait...',
         success: 'Package booked successfully!',
-        // biome-ignore lint/suspicious/noExplicitAny: this is fine
+        // biome-ignore lint/suspicious/noExplicitAny: fine
         error: (err: any) =>
           err?.response?.data?.message ||
           'Failed to book the package. Please try again.',
       });
-
       const response = await apiPromise;
       return response.data;
     },
@@ -35,12 +36,19 @@ export const useBooking = () => {
   });
 };
 
-export const useAdminBookingList = ({ status = '', page = 1 } = {}) => {
+export const useAdminBookingList = ({
+  status = '',
+  page = 1,
+}: {
+  status?: string;
+  page?: number;
+} = {}) => {
   return useQuery<AdminBookingListType>({
     queryKey: [QUERY_KEYS.ADMIN_BOOKINGS_LIST, status, page],
     queryFn: async () => {
       const params = new URLSearchParams();
-      if (status) params.set('status', status);
+      // Only send status param when a filter is active — avoids sending 'ALL'
+      if (status && status !== 'ALL') params.set('status', status);
       params.set('page', String(page));
       const res = await axios.get<AdminBookingListType>(
         `/api/bookings/admin/all?${params}`,
@@ -84,9 +92,7 @@ export const useUpdateBookingStatus = () => {
       return (await p).data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: [QUERY_KEYS.SINGLE_BOOKING],
-      });
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.SINGLE_BOOKING] });
       queryClient.invalidateQueries({
         queryKey: [QUERY_KEYS.ADMIN_BOOKINGS_LIST],
       });
@@ -106,8 +112,6 @@ export const useSingleBooking = (id: string) => {
   });
 };
 
-// ─── fetcher ──────────────────────────────────────────────────────────────────
-
 async function fetchBookings(
   params: BookingsParams,
 ): Promise<BookingsResponse> {
@@ -124,12 +128,14 @@ async function fetchBookings(
   return data;
 }
 
-// ─── hook ─────────────────────────────────────────────────────────────────────
-
 export function useMyBookings(params: BookingsParams = {}) {
   return useQuery<BookingsResponse>({
-    queryKey: ['bookings', params.status ?? 'ALL', params.page ?? 1],
+    queryKey: [
+      QUERY_KEYS.MY_BOOKINGS,
+      params.status ?? 'ALL',
+      params.page ?? 1,
+    ],
     queryFn: () => fetchBookings(params),
-    placeholderData: (prev) => prev, // keep previous data while fetching next page
+    placeholderData: (prev) => prev,
   });
 }

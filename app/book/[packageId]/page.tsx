@@ -353,15 +353,15 @@ function DeparturePicker({
   const [calendarMonth, setCalendarMonth] = useState<Date>(
     departureDates[0] ?? new Date(),
   );
-  const [filterDate, setFilterDate] = useState<Date | undefined>(undefined);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
-  const visibleDepartures = useMemo(() => {
-    if (!filterDate) return departures;
-    const filtered = departures.filter((d) =>
-      isSameDay(new Date(d.startDate), filterDate),
+  // Departures matching the selected calendar date
+  const matchingDepartures = useMemo(() => {
+    if (!selectedDate) return [];
+    return departures.filter((d) =>
+      isSameDay(new Date(d.startDate), selectedDate),
     );
-    return filtered.length > 0 ? filtered : departures;
-  }, [departures, filterDate]);
+  }, [departures, selectedDate]);
 
   if (departures.length === 0) {
     return (
@@ -379,7 +379,7 @@ function DeparturePicker({
 
   return (
     <div className='space-y-5'>
-      {/* Calendar navigator */}
+      {/* Step 1 — Calendar */}
       <div
         className={cn(
           'rounded-xl border-2 overflow-hidden w-fit transition-colors',
@@ -392,15 +392,15 @@ function DeparturePicker({
           mode='single'
           month={calendarMonth}
           onMonthChange={setCalendarMonth}
-          selected={filterDate}
+          selected={selectedDate}
           onSelect={(d) => {
             if (!d) return;
             const hasDep = departureDates.some((dep) => isSameDay(dep, d));
-            if (hasDep) {
-              setFilterDate((prev) =>
-                prev && isSameDay(prev, d) ? undefined : d,
-              );
-            }
+            if (!hasDep) return;
+            // Toggle off if clicking the already-selected date
+            setSelectedDate((prev) =>
+              prev && isSameDay(prev, d) ? undefined : d,
+            );
           }}
           disabled={(d) => !departureDates.some((dep) => isSameDay(dep, d))}
           modifiers={{ departure: departureDates }}
@@ -416,37 +416,43 @@ function DeparturePicker({
         />
       </div>
 
-      {/* Filter hint */}
-      <div className='flex items-center justify-between gap-2 -mt-2'>
+      {/* Hint — only shown when no date is selected */}
+      {!selectedDate && (
         <p className='text-xs text-muted-foreground flex items-center gap-1.5'>
           <CalendarDays className='w-3.5 h-3.5 text-primary shrink-0' />
-          {filterDate
-            ? `Filtered to ${format(filterDate, 'dd MMM')} — click again to clear`
-            : 'Click a highlighted date to filter departures'}
+          Select a highlighted date to see available departures
         </p>
-        {filterDate && (
-          <button
-            type='button'
-            onClick={() => setFilterDate(undefined)}
-            className='text-xs text-primary underline underline-offset-2 hover:text-primary/80 shrink-0'
-          >
-            Show all ({departures.length})
-          </button>
-        )}
-      </div>
+      )}
 
-      {/* Slots */}
-      <div className='space-y-3'>
-        {visibleDepartures.map((d) => (
-          <DepartureSlot
-            key={d.id}
-            departure={d}
-            selected={selectedId === d.id}
-            onSelect={() => onSelect(d)}
-            packageIsCouple={packageIsCouple}
-          />
-        ))}
-      </div>
+      {/* Step 2 — Slots for selected date */}
+      {selectedDate && matchingDepartures.length > 0 && (
+        <div className='space-y-3 animate-in fade-in slide-in-from-top-2 duration-300'>
+          <div className='flex items-center justify-between'>
+            <p className='text-xs font-semibold text-muted-foreground'>
+              {matchingDepartures.length} departure
+              {matchingDepartures.length > 1 ? 's' : ''} on{' '}
+              {format(selectedDate, 'dd MMM yyyy')}
+            </p>
+            <button
+              type='button'
+              onClick={() => setSelectedDate(undefined)}
+              className='text-xs text-primary underline underline-offset-2 hover:text-primary/80'
+            >
+              Change date
+            </button>
+          </div>
+
+          {matchingDepartures.map((d) => (
+            <DepartureSlot
+              key={d.id}
+              departure={d}
+              selected={selectedId === d.id}
+              onSelect={() => onSelect(d)}
+              packageIsCouple={packageIsCouple}
+            />
+          ))}
+        </div>
+      )}
 
       {error && (
         <p className='text-xs text-destructive flex items-center gap-1.5'>
@@ -758,6 +764,7 @@ export default function BookNowPage({
     if (!pendingValues || !selectedDeparture) return;
     const formData = new FormData();
     formData.append('departureId', selectedDeparture.id);
+    formData.append('slug', packageId);
     formData.append('group', JSON.stringify(pendingValues.group));
     formData.append('members', JSON.stringify(pendingValues.members));
     if (pendingValues.notes) formData.append('notes', pendingValues.notes);

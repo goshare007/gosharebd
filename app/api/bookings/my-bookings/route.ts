@@ -36,9 +36,11 @@ export async function GET(req: NextRequest) {
             select: {
               id: true,
               name: true,
+              slug: true,
               coverImage: true,
               durationDays: true,
               location: true,
+              division: true,
             },
           },
           members: {

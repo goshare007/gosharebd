@@ -1,5 +1,6 @@
 'use client';
 
+import { format, parseISO } from 'date-fns';
 import {
   AlertCircle,
   ArrowLeft,
@@ -13,6 +14,7 @@ import {
   MapPin,
   Phone,
   RefreshCcw,
+  StickyNote,
   Trash2,
   User,
   Users,
@@ -47,16 +49,14 @@ import {
 } from '@/services/booking';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+
 type BookingStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
 const STATUS_CONFIG: Record<
   BookingStatus,
-  {
-    label: string;
-    icon: React.ElementType;
-    className: string;
-  }
+  { label: string; icon: React.ElementType; className: string }
 > = {
   PENDING: {
     label: 'Pending',
@@ -93,34 +93,29 @@ function StatusBadge({ status }: { status: BookingStatus }) {
   );
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
+function fmtDate(date: string) {
+  return format(parseISO(date), 'd MMM yyyy');
 }
 
-function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+function fmtDateTime(date: string) {
+  return format(parseISO(date), 'd MMM yyyy, h:mm a');
 }
 
 // ─── Section label ────────────────────────────────────────────────────────────
+
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className='text-xs font-semibold tracking-[0.12em] uppercase text-muted-foreground mb-3'>
-      {children}
-    </p>
+    <div className='flex items-center gap-3 mb-3'>
+      <div className='h-px w-6 bg-primary shrink-0' />
+      <span className='text-xs font-semibold tracking-[0.15em] uppercase text-primary'>
+        {children}
+      </span>
+    </div>
   );
 }
 
 // ─── Info row ─────────────────────────────────────────────────────────────────
+
 function InfoRow({
   icon: Icon,
   label,
@@ -142,6 +137,7 @@ function InfoRow({
 }
 
 // ─── Delete dialog ────────────────────────────────────────────────────────────
+
 function DeleteDialog({
   bookingId,
   open,
@@ -191,6 +187,7 @@ function DeleteDialog({
 }
 
 // ─── Status dialog ────────────────────────────────────────────────────────────
+
 function StatusDialog({
   bookingId,
   nextStatus,
@@ -248,6 +245,7 @@ function StatusDialog({
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function SingleBookingPage({
   params,
 }: {
@@ -256,7 +254,8 @@ export default function SingleBookingPage({
   const { bookingId } = use(params);
   const router = useRouter();
 
-  const { data, isPending, isError, refetch } = useSingleBooking(bookingId);
+  const { data, isPending, isError, isRefetching, refetch } =
+    useSingleBooking(bookingId);
   const { mutate: deleteBooking, isPending: isDeleting } = useDeleteBooking();
   const { mutate: updateStatus, isPending: isUpdating } =
     useUpdateBookingStatus();
@@ -288,12 +287,13 @@ export default function SingleBookingPage({
         </div>
         <div className='grid lg:grid-cols-3 gap-6'>
           <div className='lg:col-span-2 space-y-6'>
-            <Skeleton className='h-48 w-full rounded-2xl' />
+            <Skeleton className='h-52 w-full rounded-2xl' />
             <Skeleton className='h-64 w-full rounded-2xl' />
           </div>
           <div className='space-y-6'>
-            <Skeleton className='h-48 w-full rounded-2xl' />
-            <Skeleton className='h-48 w-full rounded-2xl' />
+            <Skeleton className='h-40 w-full rounded-2xl' />
+            <Skeleton className='h-40 w-full rounded-2xl' />
+            <Skeleton className='h-40 w-full rounded-2xl' />
           </div>
         </div>
       </div>
@@ -315,10 +315,12 @@ export default function SingleBookingPage({
         </div>
         <div className='flex gap-2'>
           <Button variant='outline' onClick={() => refetch()} className='gap-2'>
-            <RefreshCcw className='w-4 h-4' />
+            <RefreshCcw
+              className={cn('w-4 h-4', isRefetching && 'animate-spin')}
+            />
             Try again
           </Button>
-          <Button asChild variant='outline'>
+          <Button variant='outline' asChild>
             <Link href='/dashboard/admin/bookings'>
               <ArrowLeft className='w-4 h-4 mr-2' />
               All bookings
@@ -332,6 +334,7 @@ export default function SingleBookingPage({
   const otherStatuses = (
     ['PENDING', 'CONFIRMED', 'CANCELLED'] as BookingStatus[]
   ).filter((s) => s !== data.status);
+
   const totalTravellers =
     data.adultCount + data.preteenCount + data.childCount + data.infantCount;
 
@@ -354,7 +357,7 @@ export default function SingleBookingPage({
       />
 
       <div className='space-y-6'>
-        {/* ── Header ── */}
+        {/* Header */}
         <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
           <div className='flex items-center gap-3'>
             <Button variant='outline' size='sm' asChild className='gap-2'>
@@ -372,17 +375,21 @@ export default function SingleBookingPage({
                 <StatusBadge status={data.status as BookingStatus} />
               </div>
               <p className='text-xs text-muted-foreground mt-0.5'>
-                Created {formatDateTime(data.createdAt)}
+                Created {fmtDateTime(data.createdAt)}
               </p>
             </div>
           </div>
 
-          {/* Actions */}
           <div className='flex items-center gap-2'>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant='outline' size='sm' className='gap-2'>
-                  Update status
+                <Button
+                  variant='outline'
+                  size='sm'
+                  className='gap-2'
+                  disabled={isUpdating}
+                >
+                  {isUpdating ? 'Updating…' : 'Update status'}
                   <ChevronDown className='w-3.5 h-3.5' />
                 </Button>
               </DropdownMenuTrigger>
@@ -408,27 +415,28 @@ export default function SingleBookingPage({
               size='sm'
               className='gap-2'
               onClick={() => setShowDelete(true)}
+              disabled={isDeleting}
             >
               <Trash2 className='w-3.5 h-3.5' />
-              Delete
+              {isDeleting ? 'Deleting…' : 'Delete'}
             </Button>
           </div>
         </div>
 
-        {/* ── Body ── */}
+        {/* Body */}
         <div className='grid lg:grid-cols-3 gap-6'>
-          {/* ── Left column (2/3) ── */}
+          {/* Left col — package + members + notes */}
           <div className='lg:col-span-2 space-y-6'>
             {/* Package card */}
             <div className='rounded-2xl border border-border overflow-hidden'>
-              <div className='relative h-44'>
+              <div className='relative h-48'>
                 <Image
                   src={data.package.coverImage}
                   alt={data.package.name}
                   fill
                   className='object-cover'
                 />
-                <div className='absolute inset-0 bg-linear-to-t from-black/75 via-black/20 to-transparent' />
+                <div className='absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent' />
                 <div className='absolute bottom-0 left-0 right-0 p-4 text-white'>
                   <p className='font-bold text-base leading-tight'>
                     {data.package.name}
@@ -436,8 +444,7 @@ export default function SingleBookingPage({
                   <div className='flex items-center gap-3 mt-1 text-xs text-white/80'>
                     <div className='flex items-center gap-1'>
                       <MapPin className='w-3 h-3' />
-                      {data.package.destination.name},{' '}
-                      {data.package.destination.division}
+                      {data.package.division} · {data.package.location}
                     </div>
                     <span>·</span>
                     <div className='flex items-center gap-1'>
@@ -451,13 +458,15 @@ export default function SingleBookingPage({
                 <div className='p-4 text-center'>
                   <p className='text-xs text-muted-foreground'>Travel Date</p>
                   <p className='text-sm font-semibold mt-0.5'>
-                    {formatDate(data.travelDate)}
+                    {fmtDate(data.travelDate)}
                   </p>
                 </div>
                 <div className='p-4 text-center'>
-                  <p className='text-xs text-muted-foreground'>Location</p>
+                  <p className='text-xs text-muted-foreground'>
+                    Total Travellers
+                  </p>
                   <p className='text-sm font-semibold mt-0.5'>
-                    {data.package.Location}
+                    {totalTravellers} people
                   </p>
                 </div>
               </div>
@@ -470,19 +479,37 @@ export default function SingleBookingPage({
                   Traveller members · {data.members.length}
                 </SectionLabel>
                 <div className='space-y-3'>
-                  {data.members.map((member) => (
+                  {data.members.map((member, i) => (
                     <div
                       key={member.id}
-                      className='rounded-xl border border-border p-4 animate-in fade-in slide-in-from-bottom-2'
+                      className='rounded-xl border border-border p-4 hover:border-primary/20 transition-colors duration-200 animate-in fade-in slide-in-from-bottom-2'
+                      style={{
+                        animationDelay: `${i * 40}ms`,
+                        animationFillMode: 'both',
+                      }}
                     >
                       <div className='flex items-center justify-between mb-3'>
-                        <div className='flex items-center gap-2'>
-                          <div className='w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0'>
-                            <User className='w-3.5 h-3.5 text-primary' />
+                        <div className='flex items-center gap-2.5'>
+                          <div className='w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0'>
+                            <span className='text-xs font-bold text-primary'>
+                              {member.fullName
+                                .split(' ')
+                                .map((n) => n[0])
+                                .join('')
+                                .toUpperCase()
+                                .slice(0, 2)}
+                            </span>
                           </div>
-                          <p className='text-sm font-semibold'>
-                            {member.fullName}
-                          </p>
+                          <div>
+                            <p className='text-sm font-semibold'>
+                              {member.fullName}
+                            </p>
+                            {i === 0 && (
+                              <span className='text-[10px] font-bold text-primary'>
+                                Lead traveller
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <span className='text-xs bg-muted text-muted-foreground px-2.5 py-1 rounded-full capitalize font-medium'>
                           {member.type} · {member.gender}
@@ -512,31 +539,41 @@ export default function SingleBookingPage({
             {data.notes && (
               <div>
                 <SectionLabel>Notes</SectionLabel>
-                <p className='text-sm text-muted-foreground leading-relaxed bg-muted/40 rounded-xl p-4'>
-                  {data.notes}
-                </p>
+                <div className='flex gap-3 p-4 rounded-xl bg-primary/5 border border-primary/15'>
+                  <StickyNote className='w-4 h-4 text-primary shrink-0 mt-0.5' />
+                  <p className='text-sm text-muted-foreground leading-relaxed'>
+                    {data.notes}
+                  </p>
+                </div>
               </div>
             )}
           </div>
 
-          {/* ── Right column (1/3) ── */}
+          {/* Right col — customer + group + pricing + meta */}
           <div className='space-y-6'>
             {/* Customer */}
             <div>
               <SectionLabel>Customer</SectionLabel>
               <div className='rounded-xl border border-border p-4'>
-                <div className='flex items-center gap-3 mb-3'>
+                <div className='flex items-center gap-3 mb-4'>
                   {data.user.image ? (
                     <Image
                       src={data.user.image}
                       alt={data.user.name}
                       width={36}
                       height={36}
-                      className='rounded-full shrink-0'
+                      className='rounded-full shrink-0 border-2 border-border'
                     />
                   ) : (
-                    <div className='w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0'>
-                      <User className='w-4 h-4 text-primary' />
+                    <div className='w-9 h-9 rounded-full bg-primary/10 border-2 border-primary/20 flex items-center justify-center shrink-0'>
+                      <span className='text-xs font-bold text-primary'>
+                        {data.user.name
+                          .split(' ')
+                          .map((n) => n[0])
+                          .join('')
+                          .toUpperCase()
+                          .slice(0, 2)}
+                      </span>
                     </div>
                   )}
                   <div className='min-w-0'>
@@ -548,10 +585,8 @@ export default function SingleBookingPage({
                     </p>
                   </div>
                 </div>
-                <Separator className='my-3' />
-                <div className='space-y-1'>
-                  <InfoRow icon={Mail} label='Email' value={data.user.email} />
-                </div>
+                <Separator className='mb-3' />
+                <InfoRow icon={Mail} label='Email' value={data.user.email} />
               </div>
             </div>
 
@@ -597,12 +632,14 @@ export default function SingleBookingPage({
                   </span>
                 </div>
                 <div className='flex justify-between px-4 py-3 border-b border-border'>
-                  <span className='text-sm text-muted-foreground'>VAT</span>
+                  <span className='text-sm text-muted-foreground'>
+                    VAT (15%)
+                  </span>
                   <span className='text-sm font-medium'>
                     ৳{Number(data.vat).toLocaleString()}
                   </span>
                 </div>
-                <div className='flex justify-between px-4 py-3 bg-primary/5'>
+                <div className='flex justify-between px-4 py-3.5 bg-primary/5'>
                   <span className='text-sm font-bold'>Total</span>
                   <span className='text-sm font-bold text-primary'>
                     ৳{Number(data.total).toLocaleString()}
@@ -614,16 +651,16 @@ export default function SingleBookingPage({
             {/* Meta */}
             <div>
               <SectionLabel>Details</SectionLabel>
-              <div className='rounded-xl border border-border py-3 px-4 overflow-hidden'>
+              <div className='rounded-xl border border-border py-1 px-4'>
                 <InfoRow
                   icon={Calendar}
                   label='Booked on'
-                  value={formatDate(data.createdAt)}
+                  value={fmtDate(data.createdAt)}
                 />
                 <InfoRow
                   icon={Calendar}
-                  label='Updated on'
-                  value={formatDate(data.updatedAt)}
+                  label='Last updated'
+                  value={fmtDate(data.updatedAt)}
                 />
               </div>
             </div>

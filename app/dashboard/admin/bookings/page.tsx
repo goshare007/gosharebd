@@ -1,5 +1,8 @@
 'use client';
 
+// ─── app/dashboard/admin/bookings/page.tsx ────────────────────────────────────
+
+import { format, parseISO } from 'date-fns';
 import {
   AlertCircle,
   Calendar,
@@ -52,35 +55,49 @@ import {
 } from '@/services/booking';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+
 type BookingStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED';
 
-type Booking = {
+type AdminBooking = {
   id: string;
   status: BookingStatus;
   travelDate: string;
   createdAt: string;
-  total: number;
+  updatedAt: string;
+  notes: string | null;
+  subtotal: string;
+  vat: string;
+  total: string;
   adultCount: number;
   preteenCount: number;
   childCount: number;
   infantCount: number;
-  user: { name: string; email: string };
+  user: { id: string; name: string; email: string };
   package: {
+    id: string;
     name: string;
+    slug: string;
     coverImage: string;
     durationDays: number;
-    destination: { name: string };
+    location: string;
+    division: string;
   };
+  members: {
+    id: string;
+    type: string;
+    fullName: string;
+    gender: string;
+    idNumber: string;
+    email: string;
+    phone: string;
+  }[];
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
 const STATUS_CONFIG: Record<
   BookingStatus,
-  {
-    label: string;
-    icon: React.ElementType;
-    className: string;
-  }
+  { label: string; icon: React.ElementType; className: string }
 > = {
   PENDING: {
     label: 'Pending',
@@ -117,19 +134,16 @@ function StatusBadge({ status }: { status: BookingStatus }) {
   );
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
+function fmtDate(date: string) {
+  return format(parseISO(date), 'd MMM yyyy');
 }
 
-function totalTravellers(b: Booking) {
+function totalTravellers(b: AdminBooking) {
   return b.adultCount + b.preteenCount + b.childCount + b.infantCount;
 }
 
 // ─── Delete dialog ────────────────────────────────────────────────────────────
+
 function DeleteDialog({
   booking,
   open,
@@ -137,7 +151,7 @@ function DeleteDialog({
   onConfirm,
   isDeleting,
 }: {
-  booking: Booking | null;
+  booking: AdminBooking | null;
   open: boolean;
   onClose: () => void;
   onConfirm: () => void;
@@ -183,6 +197,7 @@ function DeleteDialog({
 }
 
 // ─── Status update dialog ─────────────────────────────────────────────────────
+
 function StatusDialog({
   booking,
   nextStatus,
@@ -191,7 +206,7 @@ function StatusDialog({
   onConfirm,
   isUpdating,
 }: {
-  booking: Booking | null;
+  booking: AdminBooking | null;
   nextStatus: BookingStatus | null;
   open: boolean;
   onClose: () => void;
@@ -244,14 +259,15 @@ function StatusDialog({
 }
 
 // ─── Row actions ──────────────────────────────────────────────────────────────
+
 function RowActions({
   booking,
   onDelete,
   onStatusChange,
 }: {
-  booking: Booking;
-  onDelete: (b: Booking) => void;
-  onStatusChange: (b: Booking, s: BookingStatus) => void;
+  booking: AdminBooking;
+  onDelete: (b: AdminBooking) => void;
+  onStatusChange: (b: AdminBooking, s: BookingStatus) => void;
 }) {
   const others = (
     ['PENDING', 'CONFIRMED', 'CANCELLED'] as BookingStatus[]
@@ -302,6 +318,7 @@ function RowActions({
 }
 
 // ─── Status tabs ──────────────────────────────────────────────────────────────
+
 const STATUS_TABS = [
   { value: '', label: 'All Bookings' },
   { value: 'PENDING', label: 'Pending' },
@@ -309,7 +326,8 @@ const STATUS_TABS = [
   { value: 'CANCELLED', label: 'Cancelled' },
 ] as const;
 
-// ─── Stats card ────────────────────────────────────────────────────────────────
+// ─── Stats card ───────────────────────────────────────────────────────────────
+
 function StatsCard({
   label,
   value,
@@ -330,7 +348,6 @@ function StatsCard({
       'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300',
     cancelled: 'bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-300',
   };
-
   return (
     <div
       className={cn(
@@ -351,18 +368,37 @@ function StatsCard({
   );
 }
 
+// ─── Skeleton stats ───────────────────────────────────────────────────────────
+
+function StatsCardSkeleton() {
+  return (
+    <div className='rounded-xl p-4 border border-border'>
+      <div className='flex items-center justify-between'>
+        <div className='space-y-2'>
+          <Skeleton className='h-3 w-20' />
+          <Skeleton className='h-7 w-12' />
+        </div>
+        <Skeleton className='h-6 w-6 rounded' />
+      </div>
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default function BookingListPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
-  const [deleteTarget, setDeleteTarget] = useState<Booking | null>(null);
-  const [statusTarget, setStatusTarget] = useState<Booking | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AdminBooking | null>(null);
+  const [statusTarget, setStatusTarget] = useState<AdminBooking | null>(null);
   const [nextStatus, setNextStatus] = useState<BookingStatus | null>(null);
 
-  const { isPending, data, isError, refetch } = useAdminBookingList({
-    status: statusFilter,
-    page,
-  });
+  const { isPending, data, isError, refetch, isRefetching } =
+    useAdminBookingList({
+      status: statusFilter,
+      page,
+    });
+
   const { mutate: deleteBooking, isPending: isDeleting } = useDeleteBooking();
   const { mutate: updateStatus, isPending: isUpdating } =
     useUpdateBookingStatus();
@@ -400,7 +436,9 @@ export default function BookingListPage() {
           </p>
         </div>
         <Button onClick={() => refetch()} variant='outline' className='gap-2'>
-          <RefreshCcw className='w-4 h-4' />
+          <RefreshCcw
+            className={cn('w-4 h-4', isRefetching && 'animate-spin')}
+          />
           Try again
         </Button>
       </div>
@@ -429,7 +467,7 @@ export default function BookingListPage() {
       />
 
       <div className='space-y-8'>
-        {/* ── Header ── */}
+        {/* Header */}
         <div className='flex flex-col gap-6'>
           <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
             <div>
@@ -441,44 +479,53 @@ export default function BookingListPage() {
               </p>
             </div>
             <Button onClick={() => refetch()} className='gap-2 self-start'>
-              <RefreshCcw className='w-4 h-4' />
+              <RefreshCcw
+                className={cn('w-4 h-4', isRefetching && 'animate-spin')}
+              />
               Refresh
             </Button>
           </div>
 
-          {/* ── Stats grid ── */}
-          {data && (
-            <div className='grid grid-cols-2 md:grid-cols-4 gap-3'>
-              <StatsCard
-                label='Total Bookings'
-                value={data.counts.all}
-                icon={Calendar}
-                variant='default'
-              />
-              <StatsCard
-                label='Pending'
-                value={data.counts.pending}
-                icon={Clock}
-                variant='pending'
-              />
-              <StatsCard
-                label='Confirmed'
-                value={data.counts.confirmed}
-                icon={CheckCircle2}
-                variant='confirmed'
-              />
-              <StatsCard
-                label='Cancelled'
-                value={data.counts.cancelled}
-                icon={XCircle}
-                variant='cancelled'
-              />
-            </div>
-          )}
+          {/* Stats grid */}
+          <div className='grid grid-cols-2 md:grid-cols-4 gap-3'>
+            {isPending ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: skeleton
+                <StatsCardSkeleton key={i} />
+              ))
+            ) : data ? (
+              <>
+                <StatsCard
+                  label='Total Bookings'
+                  value={data.counts.all}
+                  icon={Calendar}
+                  variant='default'
+                />
+                <StatsCard
+                  label='Pending'
+                  value={data.counts.pending}
+                  icon={Clock}
+                  variant='pending'
+                />
+                <StatsCard
+                  label='Confirmed'
+                  value={data.counts.confirmed}
+                  icon={CheckCircle2}
+                  variant='confirmed'
+                />
+                <StatsCard
+                  label='Cancelled'
+                  value={data.counts.cancelled}
+                  icon={XCircle}
+                  variant='cancelled'
+                />
+              </>
+            ) : null}
+          </div>
         </div>
 
-        {/* ── Status filter tabs ── */}
-        <div className='flex gap-2 overflow-x-auto pb-2'>
+        {/* Status filter tabs */}
+        <div className='flex gap-2 overflow-x-auto pb-1'>
           {STATUS_TABS.map(({ value, label }) => {
             const count = data?.counts
               ? value === ''
@@ -499,15 +546,16 @@ export default function BookingListPage() {
                   setPage(1);
                 }}
                 variant={statusFilter === value ? 'default' : 'outline'}
+                className='gap-2 shrink-0'
               >
                 {label}
                 {count !== null && (
                   <span
                     className={cn(
-                      'text-xs px-2 py-0.5 rounded-full font-semibold min-w-6 text-center',
+                      'text-xs px-1.5 py-0.5 rounded-full font-semibold min-w-5 text-center',
                       statusFilter === value
                         ? 'bg-white/25'
-                        : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400',
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400',
                     )}
                   >
                     {count}
@@ -518,8 +566,8 @@ export default function BookingListPage() {
           })}
         </div>
 
-        {/* ── Table ── */}
-        <Card className='p-0'>
+        {/* Table */}
+        <Card className='p-0 overflow-hidden'>
           <Table>
             <TableHeader>
               <TableRow>
@@ -533,10 +581,10 @@ export default function BookingListPage() {
             </TableHeader>
 
             <TableBody>
-              {/* Loading */}
+              {/* Loading rows */}
               {isPending &&
                 Array.from({ length: 8 }).map((_, i) => (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: fine
+                  // biome-ignore lint/suspicious/noArrayIndexKey: skeleton
                   <TableRow key={i}>
                     <TableCell>
                       <div className='flex items-center gap-3'>
@@ -559,14 +607,14 @@ export default function BookingListPage() {
                     <TableCell>
                       <Skeleton className='h-3.5 w-16' />
                     </TableCell>
-                    <TableCell>
-                      <Skeleton className='h-8 w-8 rounded-lg' />
+                    <TableCell className='text-right'>
+                      <Skeleton className='h-8 w-8 rounded-lg ml-auto' />
                     </TableCell>
                   </TableRow>
                 ))}
 
-              {/* Empty */}
-              {!isPending && data?.bookings.length <= 0 && (
+              {/* Empty state */}
+              {!isPending && data?.bookings.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={6}>
                     <div className='flex flex-col items-center justify-center py-12 space-y-3'>
@@ -593,20 +641,24 @@ export default function BookingListPage() {
                 data?.bookings.map((booking, i) => (
                   <TableRow
                     key={booking.id}
-                    style={{ animationDelay: `${i * 25}ms` }}
+                    className='animate-in fade-in duration-300'
+                    style={{
+                      animationDelay: `${i * 25}ms`,
+                      animationFillMode: 'both',
+                    }}
                   >
                     {/* Package */}
                     <TableCell>
                       <div className='flex items-center gap-3'>
                         <Link
                           href={`/dashboard/admin/bookings/${booking.id}`}
-                          className='relative w-10 h-10 rounded-xl overflow-hidden shrink-0'
+                          className='relative w-10 h-10 rounded-xl overflow-hidden shrink-0 block'
                         >
                           <Image
                             src={booking.package.coverImage}
                             alt={booking.package.name}
                             fill
-                            className='object-cover group-hover:scale-105 transition-transform duration-500'
+                            className='object-cover hover:scale-105 transition-transform duration-300'
                           />
                         </Link>
                         <div className='min-w-0'>
@@ -619,9 +671,12 @@ export default function BookingListPage() {
                           <div className='flex items-center gap-1 text-xs text-muted-foreground mt-0.5'>
                             <MapPin className='w-3 h-3 shrink-0' />
                             <span className='truncate'>
-                              {booking.package.destination.name}
+                              {booking.package.division} ·{' '}
+                              {booking.package.location}
                             </span>
-                            <span className='text-muted-foreground/40'>·</span>
+                            <span className='text-muted-foreground/40 shrink-0'>
+                              ·
+                            </span>
                             <span className='shrink-0'>
                               {booking.package.durationDays}d
                             </span>
@@ -635,22 +690,20 @@ export default function BookingListPage() {
                       <p className='text-sm font-medium'>{booking.user.name}</p>
                       <div className='flex items-center gap-1 text-xs text-muted-foreground mt-0.5'>
                         <Users className='w-3 h-3' />
-                        {totalTravellers(booking as Booking)} travellers
+                        {totalTravellers(booking)} travellers
                       </div>
                     </TableCell>
 
                     {/* Status */}
                     <TableCell>
-                      <StatusBadge status={booking.status as BookingStatus} />
+                      <StatusBadge status={booking.status} />
                     </TableCell>
 
                     {/* Travel date */}
                     <TableCell>
-                      <p className='text-sm'>
-                        {formatDate(booking.travelDate)}
-                      </p>
+                      <p className='text-sm'>{fmtDate(booking.travelDate)}</p>
                       <p className='text-xs text-muted-foreground mt-0.5'>
-                        Booked {formatDate(booking.createdAt)}
+                        Booked {fmtDate(booking.createdAt)}
                       </p>
                     </TableCell>
 
@@ -678,11 +731,12 @@ export default function BookingListPage() {
           </Table>
         </Card>
 
-        {/* ── Pagination ── */}
+        {/* Pagination */}
         {data && data.pagination.totalPages > 1 && (
           <div className='flex items-center justify-between'>
             <p className='text-xs text-muted-foreground'>
               Page {data.pagination.page} of {data.pagination.totalPages} ·{' '}
+              {data.pagination.total} total
             </p>
             <div className='flex gap-2'>
               <Button

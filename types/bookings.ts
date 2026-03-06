@@ -1,80 +1,6 @@
-export interface AdminBookingListType {
-  bookings: [
-    bookings: {
-      id: string;
-      status: 'PENDING' | 'CONFIRMED' | 'CANCELLED';
-      travelDate: string;
-      createdAt: string;
-      total: number;
-      adultCount: number;
-      preteenCount: number;
-      childCount: number;
-      infantCount: number;
-      user: { name: string; email: string };
-      package: {
-        name: string;
-        coverImage: string;
-        durationDays: number;
-        destination: { name: string };
-      };
-    },
-  ];
-  pagination: {
-    page: number;
-    pageSize: number;
-    totalPages: number;
-  };
-  counts: {
-    all: number;
-    pending: number;
-    confirmed: number;
-    cancelled: number;
-  };
-}
+// types/bookings.ts
 
-export interface BookingDetailsType {
-  id: string;
-  status: 'PENDING' | 'CONFIRMED' | 'CANCELLED';
-  travelDate: string;
-  createdAt: string;
-  updatedAt: string;
-  notes: string;
-  adultCount: number;
-  preteenCount: number;
-  childCount: number;
-  infantCount: number;
-  subtotal: number;
-  vat: number;
-  total: number;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    image: string;
-  };
-  package: {
-    id: string;
-    name: string;
-    coverImage: string;
-    durationDays: number;
-    Location: string;
-    destination: {
-      name: string;
-      division: string;
-    };
-  };
-  members: [
-    {
-      id: string;
-      type: string;
-      fullName: string;
-      gender: string;
-      email: string;
-      phone: string;
-      idNumber: string;
-    },
-  ];
-}
+// ─── Shared ───────────────────────────────────────────────────────────────────
 
 export type BookingStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED';
 
@@ -88,29 +14,14 @@ export type BookingMember = {
   phone: string;
 };
 
-export type Booking = {
+export type BookingPackage = {
   id: string;
-  status: BookingStatus;
-  travelDate: string;
-  notes?: string;
-  adultCount: number;
-  preteenCount: number;
-  childCount: number;
-  infantCount: number;
-  subtotal: string;
-  vat: string;
-  total: string;
-  createdAt: string;
-  updatedAt: string;
-  package: {
-    id: string;
-    name: string;
-    coverImage: string;
-    durationDays: number;
-    Location: string;
-    destination: { id: string; name: string };
-  };
-  members: BookingMember[];
+  name: string;
+  slug: string;
+  coverImage: string;
+  durationDays: number;
+  location: string;
+  division: string;
 };
 
 export type BookingsPagination = {
@@ -122,13 +33,122 @@ export type BookingsPagination = {
   hasPrevPage: boolean;
 };
 
-export type BookingsResponse = {
-  bookings: Booking[];
-  pagination: BookingsPagination;
+// ─── My bookings ──────────────────────────────────────────────────────────────
+
+// Prisma returns Decimal as string over JSON
+export type Booking = {
+  id: string;
+  userId: string;
+  packageId: string;
+  departureId: string;
+  travelDate: string;
+  notes: string | null;
+  adultCount: number;
+  preteenCount: number;
+  childCount: number;
+  infantCount: number;
+  subtotal: string;
+  vat: string;
+  total: string;
+  status: BookingStatus;
+  createdAt: string;
+  updatedAt: string;
+  package: BookingPackage;
+  members: BookingMember[];
 };
 
 export type BookingsParams = {
   status?: BookingStatus | 'ALL';
   page?: number;
   limit?: number;
+};
+
+export type BookingsResponse = {
+  bookings: Booking[];
+  pagination: BookingsPagination;
+};
+
+// ─── Admin booking list ───────────────────────────────────────────────────────
+
+export type AdminBooking = {
+  id: string;
+  status: BookingStatus;
+  travelDate: string;
+  createdAt: string;
+  updatedAt: string;
+  notes: string | null;
+  subtotal: string;
+  vat: string;
+  total: string;
+  adultCount: number;
+  preteenCount: number;
+  childCount: number;
+  infantCount: number;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  package: {
+    id: string;
+    name: string;
+    slug: string;
+    coverImage: string;
+    durationDays: number;
+    location: string;
+    division: string;
+  };
+  members: BookingMember[];
+};
+
+export type AdminBookingListType = {
+  bookings: AdminBooking[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+  counts: {
+    all: number;
+    pending: number;
+    confirmed: number;
+    cancelled: number;
+  };
+};
+
+// ─── Admin single booking detail ──────────────────────────────────────────────
+
+export type BookingDetailsType = {
+  id: string;
+  status: BookingStatus;
+  travelDate: string;
+  createdAt: string;
+  updatedAt: string;
+  notes: string | null;
+  adultCount: number;
+  preteenCount: number;
+  childCount: number;
+  infantCount: number;
+  subtotal: string;
+  vat: string;
+  total: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    image: string | null;
+  };
+  package: {
+    id: string;
+    name: string;
+    slug: string;
+    coverImage: string;
+    durationDays: number;
+    location: string;
+    division: string;
+  };
+  members: BookingMember[];
 };

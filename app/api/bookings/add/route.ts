@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     }
 
     const formData = await req.formData();
-    const packageId = formData.get('packageId') as string;
+    const slug = formData.get('slug') as string;
     const departureId = formData.get('departureId') as string;
     const notes = formData.get('notes') as string | null;
 
@@ -48,19 +48,18 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate required fields
-    if (!packageId || !departureId || !group || !members) {
+    if (!slug || !departureId || !group || !members) {
       return NextResponse.json(
         {
-          error:
-            'Missing required fields: packageId, departureId, group, members',
+          error: 'Missing required fields: slug, departureId, group, members',
         },
         { status: 400 },
       );
     }
 
-    // Fetch package for pricing and validation
+    // Fetch package by slug for pricing and validation
     const pkg = await prisma.package.findUnique({
-      where: { id: packageId },
+      where: { slug },
     });
 
     if (!pkg) {
@@ -77,18 +76,17 @@ export async function POST(req: NextRequest) {
     // Validate group size
     const totalPax = group.adult + group.preteen + group.child + group.infant;
 
-    if (totalPax < pkg.minGroupSize || totalPax > pkg.maxGroupSize) {
+    if (totalPax > pkg.maxGroupSize) {
       return NextResponse.json(
-        {
-          error: `Group size must be between ${pkg.minGroupSize} and ${pkg.maxGroupSize}`,
-        },
+        { error: `Maximum group size for this package is ${pkg.maxGroupSize}` },
         { status: 400 },
       );
     }
 
     // Validate departure exists, belongs to this package, and has seats
+    // Use pkg.id (resolved from slug above) to verify ownership
     const departure = await prisma.departure.findFirst({
-      where: { id: departureId, packageId },
+      where: { id: departureId, packageId: pkg.id },
     });
 
     if (!departure) {
@@ -169,7 +167,7 @@ export async function POST(req: NextRequest) {
       return tx.booking.create({
         data: {
           userId: session.user.id,
-          packageId,
+          packageId: pkg.id,
           departureId,
           travelDate: departure.startDate,
           notes: notes ?? undefined,

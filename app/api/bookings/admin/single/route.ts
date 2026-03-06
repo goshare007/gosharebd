@@ -1,3 +1,5 @@
+// ─── app/api/bookings/admin/single/route.ts ───────────────────────────────────
+
 import { headers } from 'next/headers';
 import { type NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
@@ -7,17 +9,12 @@ import type { BookingStatus } from '@/prisma/generated/prisma/client/enums';
 
 export async function GET(req: NextRequest) {
   try {
-    // 1. Auth check
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const session = await auth.api.getSession({ headers: await headers() });
     if (!isAdmin(session)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 2. Validate id
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get('id');
+    const id = req.nextUrl.searchParams.get('id');
     if (!id) {
       return NextResponse.json(
         { error: 'Missing booking id' },
@@ -25,7 +22,6 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // 3. Fetch full booking
     const booking = await prisma.booking.findUnique({
       where: { id },
       select: {
@@ -49,9 +45,11 @@ export async function GET(req: NextRequest) {
           select: {
             id: true,
             name: true,
+            slug: true,
             coverImage: true,
             durationDays: true,
             location: true,
+            division: true,
           },
         },
         members: {
@@ -83,23 +81,19 @@ export async function GET(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
-    // 1. Auth check
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const session = await auth.api.getSession({ headers: await headers() });
     if (!isAdmin(session)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 2. Query params
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get('id');
-    const status = searchParams.get('status');
+    const id = req.nextUrl.searchParams.get('id');
+    const status = req.nextUrl.searchParams.get('status');
     const validStatuses: BookingStatus[] = [
       'PENDING',
       'CONFIRMED',
       'CANCELLED',
     ];
+
     if (!id || !status || !validStatuses.includes(status as BookingStatus)) {
       return NextResponse.json(
         { error: 'Missing booking ID or invalid status' },
@@ -107,18 +101,18 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    const response = await prisma.booking.findUnique({ where: { id } });
-    if (!response) {
-      return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
-    }
-
+    // Let Prisma throw if the booking doesn't exist — no need for a pre-check
     await prisma.booking.update({
       where: { id },
       data: { status: status as BookingStatus },
     });
 
     return NextResponse.json({ message: 'Booking status updated' });
-  } catch (_error) {
+  } catch (error) {
+    // P2025 = record not found
+    if ((error as { code?: string }).code === 'P2025') {
+      return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
+    }
     return NextResponse.json(
       { error: 'Failed to update booking status' },
       { status: 500 },
@@ -128,18 +122,12 @@ export async function PATCH(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    // 1. Auth check
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const session = await auth.api.getSession({ headers: await headers() });
     if (!isAdmin(session)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 2. Query params
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get('id');
-
+    const id = req.nextUrl.searchParams.get('id');
     if (!id) {
       return NextResponse.json(
         { error: 'Missing booking ID' },
@@ -147,17 +135,13 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    const response = await prisma.booking.findUnique({ where: { id } });
-    if (!response) {
-      return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
-    }
-
-    await prisma.booking.delete({
-      where: { id },
-    });
+    await prisma.booking.delete({ where: { id } });
 
     return NextResponse.json({ message: 'Booking deleted' });
-  } catch (_error) {
+  } catch (error) {
+    if ((error as { code?: string }).code === 'P2025') {
+      return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
+    }
     return NextResponse.json(
       { error: 'Failed to delete booking' },
       { status: 500 },
