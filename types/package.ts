@@ -59,6 +59,12 @@ export interface AllPackagesType {
   averageRating: number | null;
 }
 
+export interface AdminPackageWithGalleryType {
+  id: string;
+  name: string;
+  gallery: { id: string; url: string; publicId: string }[];
+}
+
 export interface SinglePackageWithDepartureType extends SinglePackageType {
   departures: {
     id: string;

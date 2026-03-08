@@ -3,9 +3,22 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
-    const result = await prisma.galleryImage.findMany();
+    const images = await prisma.galleryImage.findMany({
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        url: true,
+        package: {
+          select: {
+            name: true,
+            slug: true,
+            location: true,
+          },
+        },
+      },
+    });
 
-    return NextResponse.json(result);
+    return NextResponse.json(images);
   } catch (_error) {
     return NextResponse.json(
       { error: 'Failed to fetch gallery data' },

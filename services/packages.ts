@@ -2,7 +2,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios, { type AxiosError } from 'axios';
 import { toast } from 'sonner';
 import { QUERY_KEYS } from '@/constants/query-keys';
-import type { AllPackagesType, SinglePackageType } from '@/types/package';
+import type {
+  AdminPackageWithGalleryType,
+  AllPackagesType,
+  SinglePackageType,
+} from '@/types/package';
 
 export const useAddPackage = () => {
   const queryClient = useQueryClient();
@@ -132,3 +136,15 @@ export function useUpdatePackage(packageId: string | null) {
     },
   });
 }
+
+export const useAdminPackagesWithGallery = () => {
+  return useQuery<AdminPackageWithGalleryType[]>({
+    queryKey: [QUERY_KEYS.ADMIN_PACKAGES_WITH_GALLERY],
+    queryFn: async () => {
+      const response = await axios.get<AdminPackageWithGalleryType[]>(
+        '/api/admin/packages/with-gallery',
+      );
+      return response.data;
+    },
+  });
+};

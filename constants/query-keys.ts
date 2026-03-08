@@ -14,4 +14,5 @@ export const QUERY_KEYS = {
   ADMIN_USER_LIST: 'admin-user-list',
   USER_WISHLIST: 'user-wishlist',
   SINGLE_PACKAGE_WITH_DEPARTURES: 'single-package-with-departures',
+  ADMIN_PACKAGES_WITH_GALLERY: 'admin-packages-with-gallery',
 };

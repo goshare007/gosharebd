@@ -207,14 +207,14 @@ export default function GalleryIndexPage() {
           <div className='columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4'>
             {data.map((gallery) => (
               <Link
-                key={gallery.packageId}
-                href={`/gallery/${gallery.packageId}`}
+                key={gallery.id}
+                href={`/packages/${gallery.package.slug}`}
                 className='group block break-inside-avoid mb-4'
               >
                 <Card className='relative overflow-hidden p-0 border-none rounded-xl bg-muted'>
                   <Image
-                    src={gallery.thumbnail.url}
-                    alt={gallery.packageName}
+                    src={gallery.url}
+                    alt={gallery.package.name}
                     width={800}
                     height={1200}
                     className='w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500'
@@ -222,17 +222,12 @@ export default function GalleryIndexPage() {
                   {/* Overlay Info */}
                   <div className='absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-5'>
                     <h3 className='text-white font-bold text-xl'>
-                      {gallery.packageName}
+                      {gallery.package.name}
                     </h3>
                     <div className='flex items-center gap-2 text-white/80 text-sm mt-1'>
                       <MapPin className='w-3 h-3' />
-                      <span>{gallery.Location}</span>
+                      <span>{gallery.package.location}</span>
                     </div>
-                  </div>
-                  {/* Image Count Badge */}
-                  <div className='absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-md flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-black'>
-                    <ImageIcon className='w-3 h-3' />
-                    {gallery.imageCount}
                   </div>
                 </Card>
               </Link>

@@ -1,14 +1,11 @@
 export interface GalleryItem {
-  packageId: string;
-  packageName: string;
-  Location: string;
-  thumbnail: {
-    id: string;
-    url: string;
-    publicId: string;
-    createdAt: string;
+  id: string;
+  url: string;
+  package: {
+    name: string;
+    slug: string;
+    location: string;
   };
-  imageCount: number;
 }
 
 export interface SinglePackageImages {

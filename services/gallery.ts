@@ -27,3 +27,52 @@ export const useSinglePackageImages = (packageId: string) => {
     },
   });
 };
+
+// --- Mutations for Admin Gallery Management ---
+
+interface AddImagePayload {
+  packageId: string;
+  imageUrl: string;
+  publicId: string;
+}
+
+export const addImageToPackage = async ({
+  packageId,
+  imageUrl,
+  publicId,
+}: AddImagePayload) => {
+  const response = await axios.post(
+    `/api/admin/packages/${packageId}/gallery`,
+    {
+      imageUrl,
+      publicId,
+    },
+  );
+  return response.data;
+};
+
+interface DeleteImagePayload {
+  packageId: string;
+  imageId: string;
+}
+
+export const deleteImageFromPackage = async ({
+  packageId,
+  imageId,
+}: DeleteImagePayload) => {
+  const response = await axios.delete(
+    `/api/admin/packages/${packageId}/gallery/${imageId}`,
+  );
+  return response.data;
+};
+
+export const uploadGalleryImage = async (
+  formData: FormData,
+): Promise<{ imageUrl: string; publicId: string }> => {
+  const response = await axios.post('/api/admin/gallery/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};

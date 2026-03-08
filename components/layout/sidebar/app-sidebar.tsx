@@ -7,6 +7,7 @@ import {
   FileText,
   Headphones,
   Heart,
+  Image,
   LayoutDashboard,
   Package,
   Settings,
@@ -82,6 +83,12 @@ export const data: { navMain: NavItem[]; navSecondary: NavItem[] } = {
       title: 'All Users',
       url: '/dashboard/admin/users',
       icon: Users,
+      role: ['ADMIN'],
+    },
+    {
+      title: 'Manage Gallery',
+      url: '/dashboard/admin/gallery',
+      icon: Image,
       role: ['ADMIN'],
     },
 
