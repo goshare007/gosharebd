@@ -18,6 +18,12 @@ enum Division {
   MYMENSINGH
 }
 
+// New enum for Package Type
+enum PackageType {
+  REGULAR
+  FESTIVAL
+}
+
 model User {
   id            String    @id
   name          String
@@ -130,6 +136,7 @@ model Package {
   // Flags
   isBestseller      Boolean @default(false)
   isActive          Boolean @default(true)
+  packageType       PackageType @default(REGULAR) // New field
 
   // Relations
   itinerary         Itinerary[]

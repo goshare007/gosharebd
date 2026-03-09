@@ -299,7 +299,10 @@ function PackagesGrid({ data }: { data: AllPackagesType[] }) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function PackagesIndexPage() {
-  const { isPending, data, isError, refetch } = useAllPackages();
+  const { isPending, data, isError, refetch } = useAllPackages({
+    isActive: true,
+    type: 'REGULAR',
+  });
 
   return (
     <div className='min-h-screen bg-background'>

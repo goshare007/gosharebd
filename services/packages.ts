@@ -5,6 +5,7 @@ import { QUERY_KEYS } from '@/constants/query-keys';
 import type {
   AdminPackageWithGalleryType,
   AllPackagesType,
+  FestivalPackageType,
   SinglePackageType,
 } from '@/types/package';
 
@@ -29,6 +30,10 @@ export const useAddPackage = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.All_DESTINATION] });
+      // Invalidate festival packages if a new one is added
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.FESTIVAL_PACKAGES],
+      });
     },
   });
 };
@@ -48,11 +53,23 @@ export const useSinglePackages = (slug: string) => {
   });
 };
 
-export const useAllPackages = () => {
+export const useAllPackages = ({
+  type = 'ALL',
+  isActive,
+}: {
+  type?: 'REGULAR' | 'FESTIVAL' | 'ALL';
+  isActive?: boolean;
+} = {}) => {
+  // Default to empty object
   return useQuery<AllPackagesType[]>({
-    queryKey: [QUERY_KEYS.ALL_PACKAGES],
+    queryKey: [QUERY_KEYS.ALL_PACKAGES, type, isActive],
     queryFn: async () => {
-      const response = await axios.get<AllPackagesType[]>('/api/packages/all');
+      const response = await axios.get<AllPackagesType[]>('/api/packages/all', {
+        params: {
+          ...(type !== 'ALL' && { type }),
+          ...(isActive !== undefined && { isActive }),
+        },
+      });
       return response.data;
     },
   });
@@ -88,6 +105,10 @@ export function useDeletePackage(destinationId?: string) {
       } else {
         queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ALL_PACKAGES] });
       }
+      // Invalidate festival packages if one is deleted
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.FESTIVAL_PACKAGES],
+      });
     },
     onError: (error: AxiosError<{ message?: string }>) => {
       const message =
@@ -126,6 +147,10 @@ export function useUpdatePackage(packageId: string | null) {
       // Also invalidate destination-wise packages list
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.All_DESTINATION] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.ALL_PACKAGES] });
+      // Invalidate festival packages if one is updated
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.FESTIVAL_PACKAGES],
+      });
     },
     onError: (error: AxiosError<{ message?: string }>) => {
       const message =
@@ -144,6 +169,16 @@ export const useAdminPackagesWithGallery = () => {
       const response = await axios.get<AdminPackageWithGalleryType[]>(
         '/api/admin/packages/with-gallery',
       );
+      return response.data;
+    },
+  });
+};
+
+export const useFestivalPackages = () => {
+  return useQuery<FestivalPackageType[]>({
+    queryKey: [QUERY_KEYS.FESTIVAL_PACKAGES],
+    queryFn: async () => {
+      const response = await axios.get<FestivalPackageType[]>('/api/festivals');
       return response.data;
     },
   });

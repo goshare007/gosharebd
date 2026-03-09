@@ -15,6 +15,7 @@ import {
   Plus,
   Save,
   Settings,
+  Sparkles,
   Tag,
   Trash2,
   Upload,
@@ -57,6 +58,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { toSlug } from '@/lib/slugify';
+import { cn } from '@/lib/utils';
 import { useAddPackage } from '@/services/packages';
 import { useCheckSlugUniqueness } from '@/services/slug';
 
@@ -80,6 +82,26 @@ const DIVISION_VALUES = DIVISIONS.map((d) => d.value) as [
   DivisionValue,
   ...DivisionValue[],
 ];
+
+// ---------------------------------------------------------------------------
+// Package type options
+// ---------------------------------------------------------------------------
+const PACKAGE_TYPES = [
+  {
+    value: 'REGULAR' as const,
+    label: 'Regular',
+    description: 'Standard tour package',
+    icon: Package,
+  },
+  {
+    value: 'FESTIVAL' as const,
+    label: 'Festival',
+    description: 'Seasonal or festival-themed tour',
+    icon: Sparkles,
+  },
+];
+
+type PackageTypeValue = 'REGULAR' | 'FESTIVAL';
 
 // ---------------------------------------------------------------------------
 // Zod Schema
@@ -106,6 +128,8 @@ const packageSchema = z.object({
       /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
       'Slug may only contain lowercase letters, numbers, and hyphens',
     ),
+  // ── new field ──
+  packageType: z.enum(['REGULAR', 'FESTIVAL']),
   summary: z
     .string()
     .min(20, 'Summary must be at least 20 characters')
@@ -223,6 +247,82 @@ function StringArrayField({
 }
 
 // ---------------------------------------------------------------------------
+// Package Type Selector
+// ---------------------------------------------------------------------------
+function PackageTypeSelector({
+  value,
+  onChange,
+  error,
+}: {
+  value: PackageTypeValue;
+  onChange: (val: PackageTypeValue) => void;
+  error?: string;
+}) {
+  return (
+    <div className='space-y-2'>
+      <p className='text-sm font-medium leading-none'>
+        Package Type <span className='text-red-500'>*</span>
+      </p>
+      <div className='grid grid-cols-2 gap-3'>
+        {PACKAGE_TYPES.map(({ value: v, label, description, icon: Icon }) => {
+          const isSelected = value === v;
+          return (
+            <button
+              key={v}
+              type='button'
+              onClick={() => onChange(v)}
+              className={cn(
+                'relative flex items-start gap-3 rounded-xl border-2 p-4 text-left transition-all duration-200',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                isSelected
+                  ? 'border-primary bg-primary/5'
+                  : 'border-border hover:border-primary/30 hover:bg-muted/30',
+              )}
+            >
+              <div
+                className={cn(
+                  'w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 transition-colors',
+                  isSelected
+                    ? 'bg-primary/15 text-primary'
+                    : 'bg-muted text-muted-foreground',
+                )}
+              >
+                <Icon className='w-4 h-4' />
+              </div>
+              <div className='min-w-0 flex-1'>
+                <p
+                  className={cn(
+                    'text-sm font-semibold',
+                    isSelected && 'text-primary',
+                  )}
+                >
+                  {label}
+                </p>
+                <p className='text-xs text-muted-foreground mt-0.5'>
+                  {description}
+                </p>
+              </div>
+              {/* Radio dot */}
+              <div
+                className={cn(
+                  'absolute top-3 right-3 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all',
+                  isSelected ? 'border-primary' : 'border-border',
+                )}
+              >
+                {isSelected && (
+                  <div className='w-2 h-2 rounded-full bg-primary' />
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      {error && <p className='text-sm text-destructive'>{error}</p>}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main Page
 // ---------------------------------------------------------------------------
 function AddNewPackageContent() {
@@ -255,6 +355,7 @@ function AddNewPackageContent() {
     defaultValues: {
       name: '',
       slug: '',
+      packageType: 'REGULAR', // ── default ──
       summary: '',
       division: undefined,
       location: '',
@@ -283,8 +384,8 @@ function AddNewPackageContent() {
   const isCouple = watch('isCouple');
   const watchedName = watch('name');
   const watchedSlug = watch('slug');
+  const watchedPackageType = watch('packageType');
 
-  // Slug uniqueness check
   const {
     data: slugAvailable,
     isFetching: slugChecking,
@@ -301,7 +402,6 @@ function AddNewPackageContent() {
           ? 'available'
           : 'taken';
 
-  // Auto-generate slug from name unless user has manually edited it
   useEffect(() => {
     if (!slugManuallyEdited.current) {
       setValue('slug', toSlug(watchedName), { shouldValidate: !!watchedName });
@@ -355,6 +455,7 @@ function AddNewPackageContent() {
     const formData = new FormData();
     formData.append('name', data.name);
     formData.append('slug', data.slug);
+    formData.append('packageType', data.packageType); // ── new ──
     formData.append('summary', data.summary);
     formData.append('division', data.division);
     formData.append('location', data.location);
@@ -432,6 +533,31 @@ function AddNewPackageContent() {
               <CardContent>
                 <FieldSet>
                   <FieldGroup className='gap-6'>
+                    {/* ── Package Type ── */}
+                    <Controller
+                      control={control}
+                      name='packageType'
+                      render={({ field }) => (
+                        <PackageTypeSelector
+                          value={field.value}
+                          onChange={field.onChange}
+                          error={errors.packageType?.message}
+                        />
+                      )}
+                    />
+
+                    {/* Festival hint */}
+                    {watchedPackageType === 'FESTIVAL' && (
+                      <div className='flex items-start gap-2.5 px-4 py-3 rounded-xl bg-amber-500/8 border border-amber-500/20 text-amber-700 dark:text-amber-400 animate-in fade-in slide-in-from-top-1 duration-200'>
+                        <Sparkles className='w-4 h-4 shrink-0 mt-0.5' />
+                        <p className='text-xs leading-relaxed'>
+                          This package will appear on the{' '}
+                          <span className='font-semibold'>Festivals</span> page
+                          in addition to the main packages listing.
+                        </p>
+                      </div>
+                    )}
+
                     {/* Name */}
                     <Field data-invalid={!!errors.name}>
                       <FieldLabel htmlFor='name'>
@@ -989,11 +1115,12 @@ function AddNewPackageContent() {
                 {!coverImagePreview ? (
                   <label
                     htmlFor='cover-image'
-                    className={`flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${
+                    className={cn(
+                      'flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-xl cursor-pointer transition-colors',
                       errors.coverImage
                         ? 'border-red-500 bg-red-50/50 hover:bg-red-50'
-                        : 'hover:bg-secondary/50'
-                    }`}
+                        : 'hover:bg-secondary/50',
+                    )}
                   >
                     <Upload className='w-10 h-10 text-muted-foreground mb-3' />
                     <p className='text-sm font-medium'>

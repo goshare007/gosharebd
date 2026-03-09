@@ -2,9 +2,11 @@
 import {
   AlertCircle,
   Award,
+  Calendar,
   Clock,
   Edit2,
   MapPin,
+  MoreHorizontal,
   Package,
   Plus,
   RefreshCcw,
@@ -25,6 +27,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAllPackages, useDeletePackage } from '@/services/packages';
 
@@ -235,32 +244,53 @@ export default function PackagesPage({
                 </div>
 
                 {/* Action buttons — top right, revealed on hover */}
-                <div className='absolute top-3 right-3 z-20 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200'>
-                  <Link
-                    href={`/dashboard/admin/packages/edit?packageId=${pkg.slug}`}
-                  >
-                    <Button
-                      size='icon'
-                      variant='secondary'
-                      className='h-8 w-8 shadow-md pointer-events-auto'
-                      tabIndex={-1}
+                <div className='absolute top-3 right-3 z-20 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200'>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        size='icon'
+                        variant='secondary'
+                        className='h-8 w-8 shadow-md pointer-events-auto'
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
+                      >
+                        <MoreHorizontal className='h-4 w-4' />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      align='end'
+                      className='pointer-events-auto'
                     >
-                      <Edit2 className='w-3.5 h-3.5' />
-                    </Button>
-                  </Link>
-                  <Button
-                    size='icon'
-                    variant='destructive'
-                    className='h-8 w-8 shadow-md pointer-events-auto'
-                    tabIndex={-1}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setPackageToDelete({ id: pkg.id, name: pkg.name });
-                    }}
-                  >
-                    <Trash2 className='w-3.5 h-3.5' />
-                  </Button>
+                      <DropdownMenuItem asChild>
+                        <Link
+                          href={`/dashboard/admin/packages/edit?packageId=${pkg.slug}`}
+                        >
+                          <Edit2 className='mr-2 h-3.5 w-3.5' />
+                          <span>Edit Package</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link
+                          href={`/dashboard/admin/packages/${pkg.slug}/departures`}
+                        >
+                          <Calendar className='mr-2 h-3.5 w-3.5' />
+                          <span>Manage Departures</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onSelect={() =>
+                          setPackageToDelete({ id: pkg.id, name: pkg.name })
+                        }
+                        className='text-destructive focus:text-destructive'
+                      >
+                        <Trash2 className='mr-2 h-3.5 w-3.5' />
+                        <span>Delete</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
 
                 {/* Name + location anchored to bottom of image */}

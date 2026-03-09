@@ -15,6 +15,7 @@ import {
   Plus,
   Save,
   Settings,
+  Sparkles,
   Tag,
   Trash2,
   Upload,
@@ -59,8 +60,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { toSlug } from '@/lib/slugify';
+import { cn } from '@/lib/utils';
 import { useSinglePackages, useUpdatePackage } from '@/services/packages';
-// ✅ FIX: import from the correct dedicated slug service (not @/services/packages)
 import { useCheckSlugUniqueness } from '@/services/slug';
 
 // ---------------------------------------------------------------------------
@@ -83,6 +84,26 @@ const DIVISION_VALUES = DIVISIONS.map((d) => d.value) as [
   DivisionValue,
   ...DivisionValue[],
 ];
+
+// ---------------------------------------------------------------------------
+// Package type options
+// ---------------------------------------------------------------------------
+const PACKAGE_TYPES = [
+  {
+    value: 'REGULAR' as const,
+    label: 'Regular',
+    description: 'Standard tour package',
+    icon: Package,
+  },
+  {
+    value: 'FESTIVAL' as const,
+    label: 'Festival',
+    description: 'Seasonal or festival-themed tour',
+    icon: Sparkles,
+  },
+];
+
+type PackageTypeValue = 'REGULAR' | 'FESTIVAL';
 
 // ---------------------------------------------------------------------------
 // Zod Schema
@@ -109,6 +130,7 @@ const packageSchema = z.object({
       /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
       'Slug may only contain lowercase letters, numbers, and hyphens',
     ),
+  packageType: z.enum(['REGULAR', 'FESTIVAL']),
   division: z.enum(DIVISION_VALUES, { message: 'Division is required' }),
   summary: z
     .string()
@@ -226,6 +248,82 @@ function StringArrayField({
 }
 
 // ---------------------------------------------------------------------------
+// Package Type Selector
+// ---------------------------------------------------------------------------
+function PackageTypeSelector({
+  value,
+  onChange,
+  error,
+}: {
+  value: PackageTypeValue;
+  onChange: (val: PackageTypeValue) => void;
+  error?: string;
+}) {
+  return (
+    <div className='space-y-2'>
+      <p className='text-sm font-medium leading-none'>
+        Package Type <span className='text-red-500'>*</span>
+      </p>
+      <div className='grid grid-cols-2 gap-3'>
+        {PACKAGE_TYPES.map(({ value: v, label, description, icon: Icon }) => {
+          const isSelected = value === v;
+          return (
+            <button
+              key={v}
+              type='button'
+              onClick={() => onChange(v)}
+              className={cn(
+                'relative flex items-start gap-3 rounded-xl border-2 p-4 text-left transition-all duration-200',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                isSelected
+                  ? 'border-primary bg-primary/5'
+                  : 'border-border hover:border-primary/30 hover:bg-muted/30',
+              )}
+            >
+              <div
+                className={cn(
+                  'w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 transition-colors',
+                  isSelected
+                    ? 'bg-primary/15 text-primary'
+                    : 'bg-muted text-muted-foreground',
+                )}
+              >
+                <Icon className='w-4 h-4' />
+              </div>
+              <div className='min-w-0 flex-1'>
+                <p
+                  className={cn(
+                    'text-sm font-semibold',
+                    isSelected && 'text-primary',
+                  )}
+                >
+                  {label}
+                </p>
+                <p className='text-xs text-muted-foreground mt-0.5'>
+                  {description}
+                </p>
+              </div>
+              {/* Radio dot */}
+              <div
+                className={cn(
+                  'absolute top-3 right-3 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all',
+                  isSelected ? 'border-primary' : 'border-border',
+                )}
+              >
+                {isSelected && (
+                  <div className='w-2 h-2 rounded-full bg-primary' />
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      {error && <p className='text-sm text-destructive'>{error}</p>}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Loading skeleton
 // ---------------------------------------------------------------------------
 function EditPageSkeleton() {
@@ -257,9 +355,7 @@ function EditPageSkeleton() {
 type PackageData = NonNullable<ReturnType<typeof useSinglePackages>['data']>;
 
 // ---------------------------------------------------------------------------
-// Main edit form — only mounted after pkg is loaded (via EditPackageLoader),
-// so defaultValues are real data. No reset() needed → division renders fine.
-// The dataLoaded ref guards the slug auto-generation from firing on mount.
+// Main edit form
 // ---------------------------------------------------------------------------
 function EditPackageForm({
   pkg,
@@ -271,7 +367,6 @@ function EditPackageForm({
   const { mutate: updatePackage, isPending: isUpdating } =
     useUpdatePackage(packageId);
 
-  // String arrays initialised directly from pkg (no useEffect needed)
   const [tags, setTags] = useState<string[]>(pkg.tags);
   const [highlights, setHighlights] = useState<string[]>(pkg.highlights);
   const [includes, setIncludes] = useState<string[]>(pkg.includes);
@@ -282,15 +377,11 @@ function EditPackageForm({
   );
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
 
-  // ✅ FIX: track original slug to skip uniqueness check when slug is unchanged
   const originalSlug = useRef<string>(pkg.slug);
   const slugManuallyEdited = useRef(false);
-
-  // ✅ FIX: block auto-slug generation on the initial render cycle so the
-  //    existing slug isn't immediately overwritten by watchedName changes.
   const dataLoaded = useRef(false);
+
   useEffect(() => {
-    // Allow auto-slug only after the first render has committed
     const id = setTimeout(() => {
       dataLoaded.current = true;
     }, 0);
@@ -306,12 +397,11 @@ function EditPackageForm({
     watch,
   } = useForm<PackageFormData>({
     resolver: zodResolver(packageSchema),
-    // ✅ FIX: defaultValues are real pkg data because this component is only
-    //    mounted after pkg is available → Controller <Select> renders with the
-    //    correct division value immediately, no reset() race condition.
     defaultValues: {
       name: pkg.name,
       slug: pkg.slug,
+      // ── pre-populate from existing package ──
+      packageType: (pkg.packageType as PackageTypeValue) ?? 'REGULAR',
       division: pkg.division as DivisionValue,
       summary: pkg.summary,
       location: pkg.location,
@@ -350,6 +440,7 @@ function EditPackageForm({
   const isCouple = watch('isCouple');
   const watchedName = watch('name');
   const watchedSlug = watch('slug');
+  const watchedPackageType = watch('packageType');
   const [debouncedSlug] = useDebounce(watchedSlug, 500);
 
   const slugChanged = watchedSlug !== originalSlug.current;
@@ -371,8 +462,6 @@ function EditPackageForm({
             ? 'available'
             : 'taken';
 
-  // ✅ FIX: auto-generate slug from name only after initial load AND only if
-  //    the user hasn't manually edited the slug field.
   useEffect(() => {
     if (!dataLoaded.current) return;
     if (!slugManuallyEdited.current) {
@@ -419,6 +508,7 @@ function EditPackageForm({
     const formData = new FormData();
     formData.append('name', data.name);
     formData.append('slug', data.slug);
+    formData.append('packageType', data.packageType); // ── new ──
     formData.append('division', data.division);
     formData.append('summary', data.summary);
     formData.append('location', data.location);
@@ -500,6 +590,31 @@ function EditPackageForm({
               <CardContent>
                 <FieldSet>
                   <FieldGroup className='gap-6'>
+                    {/* ── Package Type ── */}
+                    <Controller
+                      control={control}
+                      name='packageType'
+                      render={({ field }) => (
+                        <PackageTypeSelector
+                          value={field.value}
+                          onChange={field.onChange}
+                          error={errors.packageType?.message}
+                        />
+                      )}
+                    />
+
+                    {/* Festival hint */}
+                    {watchedPackageType === 'FESTIVAL' && (
+                      <div className='flex items-start gap-2.5 px-4 py-3 rounded-xl bg-amber-500/8 border border-amber-500/20 text-amber-700 dark:text-amber-400 animate-in fade-in slide-in-from-top-1 duration-200'>
+                        <Sparkles className='w-4 h-4 shrink-0 mt-0.5' />
+                        <p className='text-xs leading-relaxed'>
+                          This package will appear on the{' '}
+                          <span className='font-semibold'>Festivals</span> page
+                          in addition to the main packages listing.
+                        </p>
+                      </div>
+                    )}
+
                     {/* Name */}
                     <Field data-invalid={!!errors.name}>
                       <FieldLabel htmlFor='name'>
@@ -1062,11 +1177,12 @@ function EditPackageForm({
                 {!coverImagePreview ? (
                   <label
                     htmlFor='cover-image'
-                    className={`flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${
+                    className={cn(
+                      'flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-xl cursor-pointer transition-colors',
                       errors.coverImage
                         ? 'border-red-500 bg-red-50/50 hover:bg-red-50'
-                        : 'hover:bg-secondary/50'
-                    }`}
+                        : 'hover:bg-secondary/50',
+                    )}
                   >
                     <Upload className='w-10 h-10 text-muted-foreground mb-3' />
                     <p className='text-sm font-medium'>
@@ -1134,7 +1250,7 @@ function EditPackageForm({
               </CardContent>
             </Card>
 
-            {/* ── 8. Policies ── */}
+            {/* ── 7. Policies ── */}
             <Card>
               <CardHeader>
                 <CardTitle>Policies</CardTitle>
@@ -1185,7 +1301,7 @@ function EditPackageForm({
               </CardContent>
             </Card>
 
-            {/* ── 9. Settings ── */}
+            {/* ── 8. Settings ── */}
             <Card>
               <CardHeader>
                 <div className='flex items-center gap-2'>
@@ -1247,7 +1363,11 @@ function EditPackageForm({
                 type='submit'
                 size='lg'
                 className='gap-2 sm:w-auto'
-                disabled={isUpdating}
+                disabled={
+                  isUpdating ||
+                  slugStatus === 'taken' ||
+                  slugStatus === 'checking'
+                }
               >
                 {isUpdating ? (
                   <Loader2 className='w-4 h-4 animate-spin' />
@@ -1265,8 +1385,7 @@ function EditPackageForm({
 }
 
 // ---------------------------------------------------------------------------
-// Loader shell — fetches pkg, shows skeleton/error, then mounts form with data
-// key={pkg.id} ensures the form remounts fresh if a different package loads
+// Loader shell
 // ---------------------------------------------------------------------------
 function EditPackageLoader({ packageId }: { packageId: string }) {
   const { data: pkg, isPending, isError } = useSinglePackages(packageId);

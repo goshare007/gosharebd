@@ -4,7 +4,10 @@ import { DeleteImage, UploadImage } from '@/cloudinary';
 import { auth } from '@/lib/auth';
 import { isAdmin } from '@/lib/auth-utils';
 import { prisma } from '@/lib/prisma';
-import type { Division } from '@/prisma/generated/prisma/client/enums';
+import type {
+  Division,
+  PackageType,
+} from '@/prisma/generated/prisma/client/enums';
 
 export async function GET(req: NextRequest) {
   try {
@@ -68,6 +71,7 @@ export async function PATCH(req: NextRequest) {
 
     const name = formData.get('name') as string | null;
     const slug = formData.get('slug') as string | null;
+    const packageType = formData.get('packageType') as PackageType;
     const division = formData.get('division') as Division;
     const summary = formData.get('summary') as string | null;
     const location = formData.get('location') as string | null;
@@ -108,6 +112,7 @@ export async function PATCH(req: NextRequest) {
       !maxGroupSizeRaw ||
       !pricePerPersonRaw ||
       !itineraryRaw ||
+      !packageType ||
       (!coverImageFile && !keepCoverImage)
     ) {
       return NextResponse.json(
@@ -197,6 +202,7 @@ export async function PATCH(req: NextRequest) {
           summary,
           location,
           slug,
+          packageType,
           division,
           durationDays,
           minGroupSize,

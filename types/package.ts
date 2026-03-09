@@ -1,6 +1,9 @@
+import type { PackageType } from '@/prisma/generated/prisma/client/enums';
+
 export interface SinglePackageType {
   id: string;
   destinationId: string;
+  packageType: PackageType;
   name: string;
   slug: string;
   division: string;
@@ -55,6 +58,32 @@ export interface AllPackagesType {
   originalCouplePrice?: number;
   isCouple: boolean;
   tags: string[];
+  reviewCount: number;
+  averageRating: number | null;
+}
+
+export interface FestivalPackageType {
+  id: string;
+  name: string;
+  slug: string;
+  division: string;
+  location: string;
+  tags: string[];
+  coverImage: string;
+  pricePerPerson: number;
+  originalPrice?: number | null;
+  couplePrice?: number;
+  originalCouplePrice?: number;
+  isCouple: boolean;
+  durationDays: number;
+  maxGroupSize: number;
+  minGroupSize: number;
+  summary: string;
+  highlights: string[];
+  isBestseller: boolean;
+  isActive: boolean;
+  packageType: PackageType;
+  gallery: { id: string; url: string }[];
   reviewCount: number;
   averageRating: number | null;
 }

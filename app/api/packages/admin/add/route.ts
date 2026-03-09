@@ -4,7 +4,10 @@ import { UploadImage } from '@/cloudinary';
 import { auth } from '@/lib/auth';
 import { isAdmin } from '@/lib/auth-utils';
 import { prisma } from '@/lib/prisma';
-import type { Division } from '@/prisma/generated/prisma/client/enums';
+import type {
+  Division,
+  PackageType,
+} from '@/prisma/generated/prisma/client/enums';
 
 const VALID_DIVISIONS: Division[] = [
   'DHAKA',
@@ -28,6 +31,7 @@ export async function POST(req: NextRequest) {
     // ── Parse FormData ────────────────────────────────────────────────────
     const formData = await req.formData();
     const name = formData.get('name') as string | null;
+    const packageType = formData.get('packageType') as string | null;
     const summary = formData.get('summary') as string | null;
     const division = formData.get('division') as string | null;
     const location = formData.get('location') as string | null;
@@ -68,7 +72,8 @@ export async function POST(req: NextRequest) {
       !pricePerPersonRaw ||
       !coverImageFile ||
       !itineraryRaw ||
-      !slug
+      !slug ||
+      !packageType
     ) {
       return NextResponse.json(
         { error: 'Missing required fields' },
@@ -137,6 +142,7 @@ export async function POST(req: NextRequest) {
         slug,
         summary,
         division: division as Division,
+        packageType: packageType as PackageType,
         location,
         durationDays,
         minGroupSize,
