@@ -7,6 +7,8 @@ datasource db {
   provider = "postgresql"
 }
 
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
 enum Division {
   DHAKA
   CHITTAGONG
@@ -18,11 +20,47 @@ enum Division {
   MYMENSINGH
 }
 
-// New enum for Package Type
 enum PackageType {
   REGULAR
   FESTIVAL
 }
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+enum DepartureStatus {
+  ACTIVE    // open for booking
+  FULL      // no seats remaining (auto-set when bookedSeats >= totalSeats)
+  CANCELLED // admin cancelled this run
+  COMPLETED // trip has taken place
+}
+
+enum BookingMemberType {
+  adult
+  preteen
+}
+
+enum Gender {
+  male
+  female
+  other
+}
+
+enum SubscriberStatus {
+  ACTIVE
+  UNSUBSCRIBED
+}
+
+enum BlogStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+// ─── User & Auth ──────────────────────────────────────────────────────────────
 
 model User {
   id            String    @id
@@ -37,11 +75,14 @@ model User {
   banned        Boolean?  @default(false)
   banReason     String?
   banExpires    DateTime?
+
   sessions      Session[]
   accounts      Account[]
   bookings      Booking[]
   reviews       Review[]
-  wishlists Wishlist[]
+  wishlists     Wishlist[]
+  blogPosts     BlogPost[]
+  blogComments  BlogComment[]
 
   @@unique([email])
   @@map("user")
@@ -96,21 +137,22 @@ model Verification {
   @@map("verification")
 }
 
+// ─── Packages ─────────────────────────────────────────────────────────────────
 
 model Package {
-  id            String   @id @default(cuid())
+  id           String      @id @default(cuid())
 
   // Identity & Location
-  name          String
-  slug          String   @unique
-  division      Division
-  location      String
-  tags          String[]
+  name         String
+  slug         String      @unique
+  division     Division
+  location     String
+  tags         String[]
 
   // Media
-  coverImage    String
-  coverImageId  String
-  gallery       GalleryImage[]
+  coverImage   String
+  coverImageId String
+  gallery      GalleryImage[]
 
   // Pricing
   pricePerPerson      Decimal  @db.Decimal(10, 2)
@@ -120,11 +162,11 @@ model Package {
   isCouple            Boolean  @default(false)
 
   // Details
-  durationDays       Int
-  maxGroupSize       Int
-  minGroupSize       Int
-  summary            String
-  highlights         String[]
+  durationDays  Int
+  maxGroupSize  Int
+  minGroupSize  Int
+  summary       String
+  highlights    String[]
 
   // Inclusions/Policies
   includes           String[]
@@ -134,59 +176,43 @@ model Package {
   ageRestriction     String?
 
   // Flags
-  isBestseller      Boolean @default(false)
-  isActive          Boolean @default(true)
-  packageType       PackageType @default(REGULAR) // New field
+  isBestseller Boolean     @default(false)
+  isActive     Boolean     @default(true)
+  packageType  PackageType @default(REGULAR)
 
   // Relations
-  itinerary         Itinerary[]
-  reviews           Review[]
-  departures        Departure[]
-  bookings          Booking[]
-  wishlists         Wishlist[]
+  itinerary  Itinerary[]
+  reviews    Review[]
+  departures Departure[]
+  bookings   Booking[]
+  wishlists  Wishlist[]
 
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("package")
 }
+
 model Departure {
   id        String  @id @default(cuid())
   packageId String
   package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
 
-  // Schedule
-  // endDate is frozen at creation time (startDate + package.durationDays).
-  // Stored explicitly so it remains accurate even if durationDays is later
-  // changed on the package.
   startDate DateTime
   endDate   DateTime
 
-  // Status
-  status DepartureStatus @default(ACTIVE)
+  status       DepartureStatus @default(ACTIVE)
+  totalSeats   Int
+  bookedSeats  Int             @default(0)
+  isGuaranteed Boolean         @default(false)
 
-  // Capacity
-  // bookedSeats is a denormalized counter incremented atomically inside a
-  // transaction when a booking is confirmed. Avoids a COUNT() on every
-  // availability check.
-  totalSeats  Int
-  bookedSeats Int @default(0)
-
-  // Guaranteed flag
-  // true  → this departure is confirmed to run regardless of current seat count
-  // false → tentative; may be cancelled if minGroupSize is not reached
-  isGuaranteed Boolean @default(false)
-
-  // Per-departure pricing overrides (all nullable).
-  // When null the booking logic falls back to the parent package prices.
-  // Use this for seasonal or promotional pricing without touching the package.
+  // Per-departure pricing overrides (null = fall back to package price)
   pricePerPerson      Decimal? @db.Decimal(10, 2)
   originalPrice       Decimal? @db.Decimal(10, 2)
   couplePrice         Decimal? @db.Decimal(10, 2)
   originalCouplePrice Decimal? @db.Decimal(10, 2)
 
-  // Optional human-readable label shown to users on the departure picker,
-  // e.g. "Eid Special", "Monsoon Tour", "Long Weekend Package"
+  // e.g. "Eid Special", "Monsoon Tour"
   note String?
 
   createdAt DateTime  @default(now())
@@ -195,7 +221,7 @@ model Departure {
 
   @@index([packageId])
   @@index([startDate])
-  @@index([packageId, status]) // fast lookup: active departures for a package
+  @@index([packageId, status])
   @@map("departure")
 }
 
@@ -212,6 +238,21 @@ model Itinerary {
   @@index([packageId])
   @@map("itinerary")
 }
+
+model GalleryImage {
+  id       String @id @default(cuid())
+  url      String
+  publicId String // Cloudinary public_id
+
+  packageId String
+  package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@map("gallery_image")
+}
+
+// ─── Reviews ──────────────────────────────────────────────────────────────────
 
 model Review {
   id        String  @id @default(cuid())
@@ -231,21 +272,11 @@ model Review {
   @@map("review")
 }
 
-model GalleryImage {
-  id       String @id @default(cuid())
-  url      String
-  publicId String
-
-  packageId String
-  package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-}
+// ─── Bookings ─────────────────────────────────────────────────────────────────
 
 model Booking {
   id String @id @default(cuid())
 
-  // Relations
   userId      String
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   packageId   String
@@ -253,25 +284,20 @@ model Booking {
   departureId String
   departure   Departure @relation(fields: [departureId], references: [id])
 
-  // travelDate is a frozen snapshot of departure.startDate captured at the
-  // moment of booking. Kept denormalized so receipts and history remain
-  // accurate even if the departure is later edited or cancelled.
+  // Frozen snapshot of departure.startDate at booking time
   travelDate DateTime
   notes      String?
 
-  // Group composition snapshot
   adultCount   Int
   preteenCount Int
   childCount   Int
   infantCount  Int
 
-  // Pricing snapshot — all values frozen at booking time so the receipt is
-  // never affected by future price changes on the package or departure.
+  // Pricing snapshot — frozen at booking time
   subtotal Decimal @db.Decimal(10, 2)
   vat      Decimal @db.Decimal(10, 2)
   total    Decimal @db.Decimal(10, 2)
 
-  // Status
   status BookingStatus @default(PENDING)
 
   createdAt DateTime @default(now())
@@ -301,54 +327,24 @@ model BookingMember {
   @@map("booking_member")
 }
 
-// ─── enums ────────────────────────────────────────────────────────────────────
-
-enum BookingStatus {
-  PENDING
-  CONFIRMED
-  CANCELLED
-}
-
-enum DepartureStatus {
-  ACTIVE    // open for booking
-  FULL      // no seats remaining (auto-set when bookedSeats >= totalSeats)
-  CANCELLED // admin cancelled this run
-  COMPLETED // trip has taken place
-}
-
-enum BookingMemberType {
-  adult
-  preteen
-}
-
-enum Gender {
-  male
-  female
-  other
-}
+// ─── Subscribers ──────────────────────────────────────────────────────────────
 
 model Subscriber {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?  // Optional — pre-fill if they subscribe while logged in
+  id    String  @id @default(cuid())
+  email String  @unique
+  name  String?
 
-  status    SubscriberStatus @default(ACTIVE)
-
-  // Track where the subscription came from
-  // e.g. "blog_footer", "homepage_hero", "package_page"
-  source    String?
+  status SubscriberStatus @default(ACTIVE)
+  source String?
 
   subscribedAt   DateTime  @default(now())
-  unsubscribedAt DateTime? // Set when they opt out — never delete rows
+  unsubscribedAt DateTime?
 
   @@index([status])
   @@map("subscriber")
 }
 
-enum SubscriberStatus {
-  ACTIVE
-  UNSUBSCRIBED
-}
+// ─── Wishlists ────────────────────────────────────────────────────────────────
 
 model Wishlist {
   id        String   @id @default(cuid())
@@ -358,7 +354,125 @@ model Wishlist {
   package   Package  @relation(fields: [packageId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 
-  @@unique([userId, packageId]) // prevent duplicate wishlist entries
+  @@unique([userId, packageId])
   @@index([userId])
   @@map("wishlist")
+}
+
+// ─── Blog ─────────────────────────────────────────────────────────────────────
+
+model BlogPost {
+  id           String   @id @default(cuid())
+
+  // Identity
+  title        String
+  slug         String   @unique
+  excerpt      String   // Short description for cards and SEO meta
+  content      String   // TipTap JSONContent stored as JSON string
+
+  // Media
+  coverImage   String
+  coverImageId String   // Cloudinary public_id for transforms & deletion
+
+  // Optional separate OG/Twitter social share image
+  metaImage    String?
+  metaImageId  String?  // Cloudinary public_id
+
+  // Taxonomy
+  categoryId   String
+  category     BlogCategory @relation(fields: [categoryId], references: [id])
+  tags         String[]
+
+  // Authorship
+  authorId     String
+  author       User         @relation(fields: [authorId], references: [id])
+
+  // Status & visibility
+  status       BlogStatus   @default(DRAFT)
+  featured     Boolean      @default(false)
+
+  // SEO overrides
+  metaTitle       String?
+  metaDescription String?
+
+  // Denormalized counter — increment via $executeRaw, avoid COUNT() on reads
+  viewCount    Int          @default(0)
+
+  // Relations
+  images       BlogImage[]
+  comments     BlogComment[]
+
+  publishedAt  DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([status])
+  @@index([categoryId])
+  @@index([authorId])
+  @@index([slug])
+  @@index([status, publishedAt]) // fast: published posts sorted by date
+  @@map("blog_post")
+}
+
+model BlogCategory {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  slug        String     @unique
+  description String?
+
+  posts       BlogPost[]
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@map("blog_category")
+}
+
+// Tracks every image uploaded via TipTap editor or as cover/meta image.
+// Enables Cloudinary cleanup on post deletion via onDelete: Cascade.
+model BlogImage {
+  id       String   @id @default(cuid())
+
+  postId   String
+  post     BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  url      String   // Cloudinary delivery URL
+  publicId String   // Cloudinary public_id — required for deletion API call
+
+  createdAt DateTime @default(now())
+
+  @@index([postId])
+  @@map("blog_image")
+}
+
+model BlogComment {
+  id     String   @id @default(cuid())
+
+  postId String
+  post   BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  // Nullable — supports guest comments in the future
+  userId String?
+  user   User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // Snapshot at time of comment — stays accurate even if user renames
+  name  String
+  email String
+  body  String
+
+  // Moderation — new comments are hidden until approved
+  approved Boolean @default(false)
+
+  // One level of threading (reply to a top-level comment)
+  parentId String?
+  parent   BlogComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies  BlogComment[] @relation("CommentReplies")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([postId])
+  @@index([userId])
+  @@index([postId, approved]) // fast: only approved comments for a post
+  @@map("blog_comment")
 }
