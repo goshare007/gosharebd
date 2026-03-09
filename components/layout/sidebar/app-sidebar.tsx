@@ -2,6 +2,7 @@
 
 import {
   Bell,
+  BookOpen,
   Calendar,
   Compass,
   FileText,
@@ -32,9 +33,10 @@ import { NavUser } from './nav-user';
 interface NavItem {
   title: string;
   url: string;
-  icon: React.ElementType;
+  icon?: React.ElementType;
   role?: ('ADMIN' | 'USER')[]; // Role array
   badge?: number; // Optional badge count
+  items?: { title: string; url: string }[]; // Sub-items for collapsible
 }
 
 // Navigation data for travel/tour website
@@ -89,6 +91,12 @@ export const data: { navMain: NavItem[]; navSecondary: NavItem[] } = {
       title: 'Manage Gallery',
       url: '/dashboard/admin/gallery',
       icon: Image,
+      role: ['ADMIN'],
+    },
+    {
+      title: 'Blog Management',
+      url: '/dashboard/admin/blog',
+      icon: BookOpen,
       role: ['ADMIN'],
     },
 
