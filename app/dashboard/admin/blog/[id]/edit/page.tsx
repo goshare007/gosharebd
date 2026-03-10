@@ -35,6 +35,7 @@ import {
   useCreateBlogPost,
   useUpdateBlogPost,
 } from '@/services/blog';
+import { useCheckBlogSlug } from '@/services/slug';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface BlogPostFormData {
@@ -94,7 +95,7 @@ function ImageUploader({
   return (
     <div className='space-y-2'>
       <Label>{label}</Label>
-      <div className='flex items-start gap-4'>
+      <div className='flex items-start flex-col md:flex-row gap-4'>
         <label
           className={cn(
             'relative flex items-center justify-center shrink-0 rounded-xl border-2 border-dashed border-border bg-muted/40 overflow-hidden cursor-pointer transition-colors hover:border-primary/40 hover:bg-primary/5',
@@ -120,7 +121,7 @@ function ImageUploader({
             disabled={isUploading}
           />
         </label>
-        <div className='pt-1 space-y-1'>
+        <div className='pt-1 flex flex-col md:flex-row gap-1'>
           {isUploading && (
             <p className='text-xs text-muted-foreground flex items-center gap-1.5'>
               <Loader2 className='w-3 h-3 animate-spin' />
@@ -188,7 +189,14 @@ export default function BlogPostFormPage() {
   });
 
   const title = watch('title');
+  const slugValue = watch('slug');
   const isSaving = createPost.isPending || updatePost.isPending;
+
+  // ── Slug uniqueness check (create mode only) ────────────────────────────────
+  const { data: slugAvailable, isFetching: checkingSlug } = useCheckBlogSlug(
+    slugValue,
+    !isEditMode,
+  );
 
   // ── Populate form in edit mode ──────────────────────────────────────────────
   useEffect(() => {
@@ -253,6 +261,11 @@ export default function BlogPostFormPage() {
 
   // ── Submit ──────────────────────────────────────────────────────────────────
   const onSubmit = async (data: BlogPostFormData) => {
+    if (!isEditMode && slugAvailable === false) {
+      toast.error('This slug is already taken, please choose a different one');
+      return;
+    }
+
     const postData = {
       ...data,
       tags: tagsArray,
@@ -365,7 +378,7 @@ export default function BlogPostFormPage() {
                   <Label htmlFor='slug'>
                     Slug <span className='text-destructive'>*</span>
                   </Label>
-                  <div className='relative flex-1'>
+                  <div className='relative'>
                     <span className='absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground select-none'>
                       /blog/
                     </span>
@@ -375,14 +388,45 @@ export default function BlogPostFormPage() {
                       placeholder='post-url-slug'
                       disabled={isEditMode}
                       className={cn(
-                        'pl-12',
+                        'pl-12 pr-28',
                         isEditMode && 'opacity-60 cursor-not-allowed',
+                        !isEditMode &&
+                          slugAvailable === false &&
+                          'border-destructive focus-visible:ring-destructive',
+                        !isEditMode &&
+                          slugAvailable === true &&
+                          'border-green-500 focus-visible:ring-green-500',
                       )}
                     />
+                    {/* Status badge */}
+                    {!isEditMode && slugValue?.length >= 2 && (
+                      <div className='absolute right-3 top-1/2 -translate-y-1/2'>
+                        {checkingSlug ? (
+                          <span className='flex items-center gap-1 text-xs text-muted-foreground'>
+                            <Loader2 className='w-3 h-3 animate-spin' />
+                            Checking…
+                          </span>
+                        ) : slugAvailable === true ? (
+                          <span className='text-xs font-medium text-green-600'>
+                            ✓ Available
+                          </span>
+                        ) : slugAvailable === false ? (
+                          <span className='text-xs font-medium text-destructive'>
+                            ✗ Taken
+                          </span>
+                        ) : null}
+                      </div>
+                    )}
                   </div>
                   {errors.slug && (
                     <p className='text-xs text-destructive'>
                       {errors.slug.message}
+                    </p>
+                  )}
+                  {!isEditMode && slugAvailable === false && (
+                    <p className='text-xs text-destructive'>
+                      This slug is already in use. Please choose a different
+                      one.
                     </p>
                   )}
                   {isEditMode && (
@@ -443,7 +487,7 @@ export default function BlogPostFormPage() {
                       value={watch('categoryId')}
                       onValueChange={(v) => setValue('categoryId', v)}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className='min-w-56'>
                         <SelectValue placeholder='Select a category' />
                       </SelectTrigger>
                       <SelectContent>
@@ -471,7 +515,7 @@ export default function BlogPostFormPage() {
                         setValue('status', v as BlogPostFormData['status'])
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className='min-w-56'>
                         <SelectValue placeholder='Select status' />
                       </SelectTrigger>
                       <SelectContent>
@@ -600,7 +644,7 @@ export default function BlogPostFormPage() {
                   <Button
                     type='button'
                     variant='outline'
-                    disabled={isSaving}
+                    disabled={isSaving || slugAvailable === false}
                     onClick={() => {
                       setValue('status', 'DRAFT');
                       handleSubmit(onSubmit)();
@@ -609,7 +653,13 @@ export default function BlogPostFormPage() {
                     Save as Draft
                   </Button>
                 )}
-                <Button type='submit' disabled={isSaving} className='min-w-32'>
+                <Button
+                  type='submit'
+                  disabled={
+                    isSaving || (!isEditMode && slugAvailable === false)
+                  }
+                  className='min-w-32'
+                >
                   {isSaving ? (
                     <span className='flex items-center gap-2'>
                       <Loader2 className='w-4 h-4 animate-spin' />
