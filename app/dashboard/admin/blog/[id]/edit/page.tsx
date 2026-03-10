@@ -135,7 +135,7 @@ function ImageUploader({
 }
 
 // ─── Page skeleton ────────────────────────────────────────────────────────────
-function PageSkeleton({ isEdit }: { isEdit: boolean }) {
+function PageSkeleton() {
   return (
     <div className='min-h-screen bg-background'>
       <section className='relative pt-16 pb-12 bg-primary/5 border-b border-border'>
@@ -166,16 +166,13 @@ export default function BlogPostFormPage() {
 
   const { data: categories, isPending: categoriesLoading } =
     useBlogCategories();
-  const { data: post, isPending: postLoading } = useAdminBlogPost(postId ?? '');
+  const { data: post } = useAdminBlogPost(postId ?? '');
   const createPost = useCreateBlogPost();
   const updatePost = useUpdateBlogPost();
 
   const [coverImage, setCoverImage] = useState('');
   const [coverImageId, setCoverImageId] = useState('');
-  const [metaImage, setMetaImage] = useState('');
-  const [metaImageId, setMetaImageId] = useState('');
   const [isUploadingCover, setIsUploadingCover] = useState(false);
-  const [isUploadingMeta, setIsUploadingMeta] = useState(false);
   const [tagsArray, setTagsArray] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
 
@@ -191,7 +188,6 @@ export default function BlogPostFormPage() {
   });
 
   const title = watch('title');
-  const slug = watch('slug');
   const isSaving = createPost.isPending || updatePost.isPending;
 
   // ── Populate form in edit mode ──────────────────────────────────────────────
@@ -211,8 +207,6 @@ export default function BlogPostFormPage() {
       });
       setCoverImage(post.coverImage);
       setCoverImageId(post.coverImageId);
-      setMetaImage(post.metaImage ?? '');
-      setMetaImageId(post.metaImageId ?? '');
       setTagsArray(post.tags);
     }
   }, [isEditMode, post, reset]);
@@ -224,7 +218,7 @@ export default function BlogPostFormPage() {
     }
   }, [title, isEditMode, setValue]);
 
-  // ── Image handlers ──────────────────────────────────────────────────────────
+  // ── Cover image handler ─────────────────────────────────────────────────────
   const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -237,23 +231,6 @@ export default function BlogPostFormPage() {
       toast.error('Failed to upload cover image');
     } finally {
       setIsUploadingCover(false);
-    }
-  };
-
-  const handleMetaImageUpload = async (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setIsUploadingMeta(true);
-    try {
-      const { url, publicId } = await uploadBlogImage(file, postId);
-      setMetaImage(url);
-      setMetaImageId(publicId);
-    } catch {
-      toast.error('Failed to upload meta image');
-    } finally {
-      setIsUploadingMeta(false);
     }
   };
 
@@ -281,8 +258,6 @@ export default function BlogPostFormPage() {
       tags: tagsArray,
       coverImage,
       coverImageId,
-      metaImage: metaImage || null,
-      metaImageId: metaImageId || null,
     };
 
     try {
@@ -299,8 +274,12 @@ export default function BlogPostFormPage() {
     }
   };
 
-  if ((isEditMode && postLoading) || categoriesLoading) {
-    return <PageSkeleton isEdit={isEditMode} />;
+  if (isEditMode && !post) {
+    return <PageSkeleton />;
+  }
+
+  if (categoriesLoading) {
+    return <PageSkeleton />;
   }
 
   return (
@@ -386,22 +365,20 @@ export default function BlogPostFormPage() {
                   <Label htmlFor='slug'>
                     Slug <span className='text-destructive'>*</span>
                   </Label>
-                  <div className='flex items-center gap-2'>
-                    <div className='relative flex-1'>
-                      <span className='absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground select-none'>
-                        /blog/
-                      </span>
-                      <Input
-                        id='slug'
-                        {...register('slug', { required: 'Slug is required' })}
-                        placeholder='post-url-slug'
-                        disabled={isEditMode}
-                        className={cn(
-                          'pl-12',
-                          isEditMode && 'opacity-60 cursor-not-allowed',
-                        )}
-                      />
-                    </div>
+                  <div className='relative flex-1'>
+                    <span className='absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground select-none'>
+                      /blog/
+                    </span>
+                    <Input
+                      id='slug'
+                      {...register('slug', { required: 'Slug is required' })}
+                      placeholder='post-url-slug'
+                      disabled={isEditMode}
+                      className={cn(
+                        'pl-12',
+                        isEditMode && 'opacity-60 cursor-not-allowed',
+                      )}
+                    />
                   </div>
                   {errors.slug && (
                     <p className='text-xs text-destructive'>
@@ -431,6 +408,7 @@ export default function BlogPostFormPage() {
                   <Label>Body Content</Label>
                   <div className='rounded-xl border border-border overflow-hidden'>
                     <TipTapEditor
+                      key={watch('content') ? 'loaded' : 'empty'}
                       content={watch('content')}
                       onChange={(content) => setValue('content', content)}
                     />
@@ -461,6 +439,7 @@ export default function BlogPostFormPage() {
                       Category <span className='text-destructive'>*</span>
                     </Label>
                     <Select
+                      key={watch('categoryId')}
                       value={watch('categoryId')}
                       onValueChange={(v) => setValue('categoryId', v)}
                     >
@@ -486,6 +465,7 @@ export default function BlogPostFormPage() {
                   <div className='space-y-2'>
                     <Label htmlFor='status'>Status</Label>
                     <Select
+                      key={watch('status')}
                       value={watch('status')}
                       onValueChange={(v) =>
                         setValue('status', v as BlogPostFormData['status'])
@@ -616,7 +596,6 @@ export default function BlogPostFormPage() {
               </Button>
 
               <div className='flex items-center gap-3'>
-                {/* Quick-save as draft */}
                 {!isEditMode && (
                   <Button
                     type='button'

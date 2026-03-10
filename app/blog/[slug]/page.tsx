@@ -37,7 +37,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: true,
       metaTitle: true,
       metaDescription: true,
-      metaImage: true,
       coverImage: true,
     },
   });
@@ -50,13 +49,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: post.metaTitle || post.title,
       description: post.metaDescription || undefined,
-      images: [post.metaImage || post.coverImage],
+      images: [post.coverImage],
     },
     twitter: {
       card: 'summary_large_image',
       title: post.metaTitle || post.title,
       description: post.metaDescription || undefined,
-      images: [post.metaImage || post.coverImage],
+      images: [post.coverImage],
     },
   };
 }
@@ -99,7 +98,7 @@ export default async function BlogPostPage({ params }: Props) {
 
   return (
     <article className='min-h-screen bg-background'>
-      <div className='relative h-[50vh] min-h-[400px]'>
+      <div className='relative h-[50vh] min-h-100'>
         <Image
           src={post.coverImage}
           alt={post.title}
@@ -107,7 +106,7 @@ export default async function BlogPostPage({ params }: Props) {
           className='object-cover'
           priority
         />
-        <div className='absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent' />
+        <div className='absolute inset-0 bg-linear-to-t from-background via-background/50 to-transparent' />
       </div>
 
       <div className='max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 -mt-32 relative z-10'>

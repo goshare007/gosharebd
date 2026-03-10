@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       data: {
         url: secure_url,
         publicId: public_id,
-        postId: postId || '',
+        postId: postId ?? null,
       },
     });
 

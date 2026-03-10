@@ -5,6 +5,7 @@ import { Tag } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import {
@@ -162,7 +163,41 @@ function LoadingSkeleton() {
   );
 }
 
-export default function BlogPage() {
+// ─── Hero (static, outside Suspense) ─────────────────────────────────────────
+function BlogHero() {
+  return (
+    <section className='relative pt-16 pb-12 bg-primary/5 border-b border-border overflow-hidden'>
+      <div className='absolute right-8 top-4 font-display text-[8rem] font-bold text-primary/5 leading-none select-none pointer-events-none hidden lg:block'>
+        BLOG
+      </div>
+      <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
+        <div className='max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-700'>
+          <div className='flex items-center gap-3 mb-4'>
+            <div className='h-px w-10 bg-primary' />
+            <span className='text-xs font-semibold tracking-[0.2em] uppercase text-primary'>
+              Journal
+            </span>
+          </div>
+          <h1 className='font-display text-4xl sm:text-5xl font-bold leading-tight mb-4'>
+            Stories from the{' '}
+            <span className='italic font-light text-muted-foreground'>
+              road
+            </span>
+            <span className='text-primary'>.</span>
+          </h1>
+          <p className='text-muted-foreground text-base leading-relaxed'>
+            Travel guides, destination deep-dives, cultural insights, and
+            practical tips for exploring Bangladesh — written by people who love
+            it as much as you do.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Inner component (uses useSearchParams) ───────────────────────────────────
+function BlogContent() {
   const searchParams = useSearchParams();
   const categorySlug = searchParams.get('category') || undefined;
   const tagName = searchParams.get('tag') || undefined;
@@ -178,92 +213,73 @@ export default function BlogPage() {
   const posts = result?.posts || [];
   const featured = posts.find((p) => p.featured);
   const rest = posts.filter((p) => !p.featured);
-
   const categoryList = ['All', ...(categories?.map((c) => c.name) || [])];
 
   return (
-    <div className='min-h-screen bg-background'>
-      <section className='relative pt-16 pb-12 bg-primary/5 border-b border-border overflow-hidden'>
-        <div className='absolute right-8 top-4 font-display text-[8rem] font-bold text-primary/5 leading-none select-none pointer-events-none hidden lg:block'>
-          BLOG
-        </div>
-        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
-          <div className='max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-700'>
-            <div className='flex items-center gap-3 mb-4'>
-              <div className='h-px w-10 bg-primary' />
+    <section className='py-12 md:py-16'>
+      <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12'>
+        {featured && !categorySlug && !tagName && (
+          <div>
+            <div className='flex items-center gap-3 mb-6'>
+              <div className='h-px w-8 bg-primary' />
               <span className='text-xs font-semibold tracking-[0.2em] uppercase text-primary'>
-                Journal
+                Featured
               </span>
             </div>
-            <h1 className='font-display text-4xl sm:text-5xl font-bold leading-tight mb-4'>
-              Stories from the{' '}
-              <span className='italic font-light text-muted-foreground'>
-                road
-              </span>
-              <span className='text-primary'>.</span>
-            </h1>
-            <p className='text-muted-foreground text-base leading-relaxed'>
-              Travel guides, destination deep-dives, cultural insights, and
-              practical tips for exploring Bangladesh — written by people who
-              love it as much as you do.
-            </p>
+            <FeaturedArticle post={featured} />
           </div>
+        )}
+
+        <div className='flex items-center gap-2 flex-wrap'>
+          <Tag className='w-3.5 h-3.5 text-muted-foreground shrink-0' />
+          {categoryList.map((cat) => (
+            <Link
+              key={cat}
+              href={
+                cat === 'All'
+                  ? '/blog'
+                  : `/blog?category=${cat.toLowerCase().replace(' ', '-')}`
+              }
+              className={cn(
+                'text-xs px-3 py-1.5 rounded-full font-medium transition-colors',
+                cat === 'All'
+                  ? !categorySlug && !tagName
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/70'
+                  : 'bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/70',
+              )}
+            >
+              {cat}
+            </Link>
+          ))}
         </div>
-      </section>
 
-      <section className='py-12 md:py-16'>
-        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12'>
-          {featured && !categorySlug && !tagName && (
-            <div>
-              <div className='flex items-center gap-3 mb-6'>
-                <div className='h-px w-8 bg-primary' />
-                <span className='text-xs font-semibold tracking-[0.2em] uppercase text-primary'>
-                  Featured
-                </span>
-              </div>
-              <FeaturedArticle post={featured} />
-            </div>
-          )}
-
-          <div className='flex items-center gap-2 flex-wrap'>
-            <Tag className='w-3.5 h-3.5 text-muted-foreground shrink-0' />
-            {categoryList.map((cat) => (
-              <Link
-                key={cat}
-                href={
-                  cat === 'All'
-                    ? '/blog'
-                    : `/blog?category=${cat.toLowerCase().replace(' ', '-')}`
-                }
-                className={cn(
-                  'text-xs px-3 py-1.5 rounded-full font-medium transition-colors',
-                  cat === 'All'
-                    ? !categorySlug && !tagName
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/70'
-                    : 'bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/70',
-                )}
-              >
-                {cat}
-              </Link>
+        {isPending ? (
+          <LoadingSkeleton />
+        ) : rest.length === 0 ? (
+          <div className='text-center py-12 text-muted-foreground'>
+            No posts found
+          </div>
+        ) : (
+          <div className='grid sm:grid-cols-2 lg:grid-cols-3 gap-5'>
+            {rest.map((post, i) => (
+              <ArticleCard key={post.id} post={post} index={i} />
             ))}
           </div>
+        )}
+      </div>
+    </section>
+  );
+}
 
-          {isPending ? (
-            <LoadingSkeleton />
-          ) : rest.length === 0 ? (
-            <div className='text-center py-12 text-muted-foreground'>
-              No posts found
-            </div>
-          ) : (
-            <div className='grid sm:grid-cols-2 lg:grid-cols-3 gap-5'>
-              {rest.map((post, i) => (
-                <ArticleCard key={post.id} post={post} index={i} />
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
+// ─── Page ─────────────────────────────────────────────────────────────────────
+export default function BlogPage() {
+  return (
+    <div className='min-h-screen bg-background'>
+      <BlogHero />
+      <Suspense fallback={<LoadingSkeleton />}>
+        <BlogContent />
+      </Suspense>
     </div>
   );
 }

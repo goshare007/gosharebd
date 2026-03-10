@@ -66,8 +66,6 @@ export async function PUT(
       content,
       coverImage,
       coverImageId,
-      metaImage,
-      metaImageId,
       categoryId,
       tags,
       status,
@@ -103,8 +101,6 @@ export async function PUT(
     if (content) updateData.content = content;
     if (coverImage) updateData.coverImage = coverImage;
     if (coverImageId) updateData.coverImageId = coverImageId;
-    if (metaImage !== undefined) updateData.metaImage = metaImage;
-    if (metaImageId !== undefined) updateData.metaImageId = metaImageId;
     if (categoryId) updateData.categoryId = categoryId;
     if (tags) updateData.tags = tags;
     if (status) updateData.status = status;
@@ -168,9 +164,6 @@ export async function DELETE(
 
     if (existing.coverImageId) {
       await DeleteImage(existing.coverImageId);
-    }
-    if (existing.metaImageId) {
-      await DeleteImage(existing.metaImageId);
     }
 
     await prisma.blogPost.delete({ where: { id } });

@@ -374,10 +374,6 @@ model BlogPost {
   coverImage   String
   coverImageId String   // Cloudinary public_id for transforms & deletion
 
-  // Optional separate OG/Twitter social share image
-  metaImage    String?
-  metaImageId  String?  // Cloudinary public_id
-
   // Taxonomy
   categoryId   String
   category     BlogCategory @relation(fields: [categoryId], references: [id])
@@ -433,11 +429,11 @@ model BlogCategory {
 model BlogImage {
   id       String   @id @default(cuid())
 
-  postId   String
-  post     BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId   String?                                                              // ← nullable
+  post     BlogPost? @relation(fields: [postId], references: [id], onDelete: Cascade)
 
-  url      String   // Cloudinary delivery URL
-  publicId String   // Cloudinary public_id — required for deletion API call
+  url      String
+  publicId String
 
   createdAt DateTime @default(now())
 
