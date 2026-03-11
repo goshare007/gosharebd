@@ -11,12 +11,13 @@ import {
   Wallet,
   XCircle,
 } from 'lucide-react';
+import { motion, useInView, type Variants } from 'motion/react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSession } from '@/lib/auth-client';
@@ -24,7 +25,30 @@ import { cn } from '@/lib/utils';
 import { useUserDashboardStats } from '@/services/dashboard';
 import type { UserDashboardStats } from '@/types/dashboard';
 
-// ─── helpers ──────────────────────────────────────────────────────────────────
+// ── Animation config ──────────────────────────────────────────────────────────
+
+const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
+const fadeUp: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  show: (delay: number = 0) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: EASE, delay },
+  }),
+};
+
+const gridVariants: Variants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07 } },
+};
+
+const cardVariants: Variants = {
+  hidden: { opacity: 0, y: 16 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: EASE } },
+};
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmt(amount: number | string) {
   return new Intl.NumberFormat('en-BD', {
@@ -70,7 +94,7 @@ function totalTravelers(booking: {
   );
 }
 
-// ─── status badge ─────────────────────────────────────────────────────────────
+// ── Status badge ──────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<
@@ -98,7 +122,10 @@ function StatusBadge({ status }: { status: string }) {
   return (
     <Badge
       variant='outline'
-      className={cn('text-xs font-semibold tracking-wide gap-1', s.className)}
+      className={cn(
+        'text-xs font-semibold tracking-wide gap-1 shrink-0',
+        s.className,
+      )}
     >
       <Icon className='w-3 h-3' />
       {s.label}
@@ -106,98 +133,92 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-// ─── upcoming trip card ───────────────────────────────────────────────────────
+// ── Upcoming trip card ────────────────────────────────────────────────────────
 
 function UpcomingTripCard({
   trip,
-  delay,
 }: {
   trip: UserDashboardStats['upcomingTrips'][number];
-  delay: number;
 }) {
   const days = daysUntil(trip.travelDate);
 
   return (
-    <Card
-      className='group border-2 hover:border-primary/40 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden p-0 animate-in fade-in slide-in-from-bottom'
-      style={{ animationDelay: `${delay}ms` }}
+    <motion.div
+      variants={cardVariants}
+      whileHover={{ y: -4 }}
+      transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+      className='group rounded-2xl border border-border overflow-hidden hover:border-primary/30 hover:shadow-xl hover:shadow-black/5 transition-colors duration-300 flex flex-col'
     >
-      {/* cover image */}
-      <div className='relative h-40 overflow-hidden'>
+      {/* Image */}
+      <div className='relative h-44 overflow-hidden shrink-0'>
         <Image
           src={trip.package.coverImage}
           alt={trip.package.name}
           fill
-          className='object-cover group-hover:scale-105 transition-transform duration-500'
+          className='object-cover group-hover:scale-105 transition-transform duration-700'
         />
-        <div className='absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent' />
+        <div className='absolute inset-0 bg-linear-to-t from-black/75 via-black/20 to-transparent' />
 
-        {/* countdown pill */}
-        <div className='absolute top-3 right-3'>
-          <div className='bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-full'>
-            {days === 0 ? 'Today!' : days === 1 ? 'Tomorrow' : `${days} days`}
-          </div>
+        {/* Countdown pill */}
+        <div className='absolute top-3 right-3 bg-primary text-primary-foreground text-[11px] font-bold px-3 py-1.5 rounded-full'>
+          {days === 0 ? 'Today!' : days === 1 ? 'Tomorrow' : `${days} days`}
         </div>
 
-        {/* destination label bottom-left */}
-        <div className='absolute bottom-3 left-3'>
-          <div className='flex items-center gap-1 text-white'>
-            <MapPin className='w-3.5 h-3.5 shrink-0' />
-            <span className='text-xs font-semibold'>
+        {/* Name + location */}
+        <div className='absolute bottom-0 left-0 right-0 p-4'>
+          <h3 className='text-white text-base font-bold leading-snug line-clamp-1'>
+            {trip.package.name}
+          </h3>
+          <div className='flex items-center gap-1.5 mt-1'>
+            <MapPin className='w-3.5 h-3.5 text-white/70 shrink-0' />
+            <span className='text-white/70 text-xs'>
               {trip.package.destination.name}
             </span>
           </div>
         </div>
       </div>
 
-      <CardContent className='p-4 space-y-3'>
-        <div>
-          <h3 className='font-display font-bold text-base leading-tight line-clamp-1'>
-            {trip.package.name}
-          </h3>
-          <p className='text-xs text-muted-foreground mt-0.5'>
-            {trip.package.Location}
-          </p>
-        </div>
-
+      {/* Body */}
+      <div className='p-4 flex flex-col gap-3 flex-1 bg-background'>
         <div className='flex items-center justify-between text-xs text-muted-foreground'>
-          <div className='flex items-center gap-1'>
-            <CalendarDays className='w-3.5 h-3.5' />
+          <div className='flex items-center gap-1.5'>
+            <CalendarDays className='w-3.5 h-3.5 shrink-0' />
             <span>{fmtDate(trip.travelDate)}</span>
           </div>
-          <div className='flex items-center gap-1'>
-            <Clock className='w-3.5 h-3.5' />
-            <span>{trip.package.durationDays}D</span>
+          <div className='flex items-center gap-1.5'>
+            <Clock className='w-3.5 h-3.5 shrink-0' />
+            <span>{trip.package.durationDays} days</span>
           </div>
         </div>
 
-        <div className='flex items-center gap-2 pt-2 border-t border-border'>
+        {/* Divider rule — design system pattern */}
+        <div className='h-px bg-border' />
+
+        <div className='flex items-center gap-2'>
           <div className='h-px w-4 bg-primary shrink-0' />
-          <span className='text-xs font-bold text-primary'>
+          <span className='text-sm font-bold text-primary'>
             {fmt(trip.total)}
           </span>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </motion.div>
   );
 }
 
-// ─── booking list row ─────────────────────────────────────────────────────────
+// ── Booking list row ──────────────────────────────────────────────────────────
 
 function BookingRow({
   booking,
-  delay,
 }: {
   booking: UserDashboardStats['bookings'][number];
-  delay: number;
 }) {
   return (
-    <div
-      className='group flex items-center gap-4 p-4 rounded-xl border-2 border-transparent hover:border-primary/20 hover:bg-primary/5 transition-all duration-200 animate-in fade-in slide-in-from-bottom'
-      style={{ animationDelay: `${delay}ms` }}
+    <motion.div
+      variants={cardVariants}
+      className='group flex items-center gap-4 p-4 rounded-xl hover:bg-primary/3 transition-colors duration-200'
     >
-      {/* package image */}
-      <div className='relative w-16 h-16 rounded-xl overflow-hidden shrink-0 border-2 border-border'>
+      {/* Package image */}
+      <div className='relative w-14 h-14 rounded-xl overflow-hidden shrink-0 border border-border'>
         <Image
           src={booking.package.coverImage}
           alt={booking.package.name}
@@ -206,7 +227,7 @@ function BookingRow({
         />
       </div>
 
-      {/* main info */}
+      {/* Info */}
       <div className='flex-1 min-w-0'>
         <div className='flex items-start justify-between gap-2'>
           <div className='min-w-0'>
@@ -215,15 +236,13 @@ function BookingRow({
             </p>
             <div className='flex items-center gap-1 mt-0.5 text-xs text-muted-foreground'>
               <MapPin className='w-3 h-3 shrink-0' />
-              <span className='truncate'>
-                {booking.package.destination.name}
-              </span>
+              <span className='truncate'>{booking.package.location}</span>
             </div>
           </div>
           <StatusBadge status={booking.status} />
         </div>
 
-        <div className='flex items-center gap-4 mt-2'>
+        <div className='flex flex-wrap items-center gap-x-4 gap-y-1 mt-2'>
           <div className='flex items-center gap-1 text-xs text-muted-foreground'>
             <CalendarDays className='w-3 h-3' />
             <span>{fmtDate(booking.travelDate)}</span>
@@ -232,42 +251,42 @@ function BookingRow({
             <Users className='w-3 h-3' />
             <span>{totalTravelers(booking)} travelers</span>
           </div>
-          <span className='text-xs font-bold text-primary ml-auto'>
-            {fmt(booking.total)}
-          </span>
+          <div className='flex items-center gap-1.5 ml-auto'>
+            <div className='h-px w-3 bg-primary shrink-0' />
+            <span className='text-xs font-bold text-primary'>
+              {fmt(booking.total)}
+            </span>
+          </div>
         </div>
       </div>
 
-      <ChevronRight className='w-4 h-4 text-muted-foreground/40 group-hover:text-primary transition-colors duration-200 shrink-0 hidden sm:block' />
-    </div>
+      <ChevronRight className='w-4 h-4 text-muted-foreground/30 group-hover:text-primary transition-colors duration-200 shrink-0 hidden sm:block' />
+    </motion.div>
   );
 }
 
-// ─── skeletons ────────────────────────────────────────────────────────────────
+// ── Skeletons ─────────────────────────────────────────────────────────────────
 
 function UpcomingTripSkeleton() {
   return (
-    <Card className='border-2 overflow-hidden p-0'>
-      <Skeleton className='h-40 w-full rounded-none' />
-      <CardContent className='p-4 space-y-3'>
-        <Skeleton className='h-5 w-3/4' />
-        <Skeleton className='h-3 w-1/2' />
+    <div className='rounded-2xl border border-border overflow-hidden'>
+      <Skeleton className='h-44 w-full rounded-none' />
+      <div className='p-4 space-y-3'>
         <div className='flex justify-between'>
           <Skeleton className='h-3 w-24' />
           <Skeleton className='h-3 w-12' />
         </div>
-        <div className='pt-2 border-t border-border'>
-          <Skeleton className='h-3 w-20' />
-        </div>
-      </CardContent>
-    </Card>
+        <div className='h-px bg-border' />
+        <Skeleton className='h-4 w-20' />
+      </div>
+    </div>
   );
 }
 
 function BookingRowSkeleton() {
   return (
     <div className='flex items-center gap-4 p-4'>
-      <Skeleton className='w-16 h-16 rounded-xl shrink-0' />
+      <Skeleton className='w-14 h-14 rounded-xl shrink-0' />
       <div className='flex-1 space-y-2'>
         <Skeleton className='h-4 w-48' />
         <Skeleton className='h-3 w-32' />
@@ -280,14 +299,23 @@ function BookingRowSkeleton() {
   );
 }
 
-// ─── main ─────────────────────────────────────────────────────────────────────
+// ── Main ──────────────────────────────────────────────────────────────────────
 
 export default function UserDashboard() {
   const { data: session } = useSession();
   const { isPending, data, isError } = useUserDashboardStats();
 
-  const user = session?.user;
+  const headerRef = useRef<HTMLDivElement>(null);
+  const statsRef = useRef<HTMLDivElement>(null);
+  const tripsRef = useRef<HTMLDivElement>(null);
+  const historyRef = useRef<HTMLDivElement>(null);
 
+  const headerInView = useInView(headerRef, { once: true, margin: '-40px' });
+  const statsInView = useInView(statsRef, { once: true, margin: '-40px' });
+  const tripsInView = useInView(tripsRef, { once: true, margin: '-40px' });
+  const historyInView = useInView(historyRef, { once: true, margin: '-40px' });
+
+  const user = session?.user;
   const confirmed =
     data?.bookings.filter((b) => b.status === 'CONFIRMED') ?? [];
   const pending = data?.bookings.filter((b) => b.status === 'PENDING') ?? [];
@@ -298,7 +326,7 @@ export default function UserDashboard() {
     return (
       <div className='flex h-96 items-center justify-center'>
         <div className='text-center'>
-          <div className='flex items-center gap-3 justify-center mb-4'>
+          <div className='flex items-center gap-3 justify-center mb-3'>
             <div className='h-px w-8 bg-destructive' />
             <span className='text-xs font-semibold tracking-[0.2em] uppercase text-destructive'>
               Error
@@ -314,18 +342,24 @@ export default function UserDashboard() {
   }
 
   return (
-    <div className='flex flex-col gap-10 p-4 pt-0'>
-      {/* ── welcome header ───────────────────────────────────────────────── */}
-      <div className='animate-in fade-in slide-in-from-bottom-4 duration-700'>
-        <div className='flex items-start justify-between gap-4 flex-wrap'>
+    <div className='flex flex-col gap-10 mt-6 mb-16 md:mb-20'>
+      {/* ── Welcome header ───────────────────────────────────────────────── */}
+      <div ref={headerRef}>
+        <motion.div
+          variants={fadeUp}
+          initial='hidden'
+          animate={headerInView ? 'show' : 'hidden'}
+          custom={0}
+          className='flex items-start justify-between gap-4 flex-wrap'
+        >
           <div>
             <div className='flex items-center gap-3 mb-3'>
-              <div className='h-px w-12 bg-primary' />
+              <div className='h-px w-10 bg-primary' />
               <span className='text-xs font-semibold tracking-[0.2em] uppercase text-primary'>
                 My Dashboard
               </span>
             </div>
-            <h1 className='font-display text-4xl font-bold leading-tight tracking-tight'>
+            <h1 className='text-2xl md:text-4xl font-bold leading-tight tracking-tight'>
               Welcome back
               <span className='text-primary'>,</span>{' '}
               <span className='italic font-light text-muted-foreground'>
@@ -338,96 +372,94 @@ export default function UserDashboard() {
             </p>
           </div>
 
-          {/* user avatar + profile snippet */}
+          {/* Avatar */}
           <div className='flex items-center gap-3 self-end pb-1'>
             <div className='text-right hidden sm:block'>
               <p className='text-sm font-semibold'>{user?.name}</p>
               <p className='text-xs text-muted-foreground'>{user?.email}</p>
             </div>
-            <Avatar className='h-11 w-11 border-2 border-primary/20'>
+            <Avatar className='h-11 w-11 border border-border'>
               <AvatarImage src={user?.image ?? ''} />
-              <AvatarFallback className='bg-primary/10 text-primary font-bold'>
+              <AvatarFallback className='bg-primary/10 text-primary font-bold text-sm'>
                 {user?.name ? initials(user.name) : '?'}
               </AvatarFallback>
             </Avatar>
           </div>
-        </div>
+        </motion.div>
       </div>
 
-      {/* ── stats strip ─────────────────────────────────────────────────── */}
-      <div
-        className='grid grid-cols-2 md:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom duration-700'
-        style={{ animationDelay: '80ms' }}
-      >
-        {(
-          [
-            {
-              label: 'Total Trips',
-              icon: CalendarDays,
-              value: data?.stats.total,
-              color: 'text-primary',
-              bg: 'bg-primary/10',
-            },
-            {
-              label: 'Confirmed',
-              icon: CheckCircle2,
-              value: data?.stats.confirmed,
-              color: 'text-emerald-600',
-              bg: 'bg-emerald-500/10',
-            },
-            {
-              label: 'Pending',
-              icon: Hourglass,
-              value: data?.stats.pending,
-              color: 'text-amber-600',
-              bg: 'bg-amber-500/10',
-            },
-            {
-              label: 'Total Spent',
-              icon: Wallet,
-              value: data ? fmt(data.stats.totalSpent) : null,
-              color: 'text-violet-600',
-              bg: 'bg-violet-500/10',
-            },
-          ] as const
-        ).map(({ label, icon: Icon, value, color, bg }, i) => (
-          <Card
-            key={label}
-            className='border-2 transition-all duration-300'
-            style={{ animationDelay: `${i * 60}ms` }}
-          >
-            <CardContent className='p-4 flex items-center gap-3'>
-              <div
-                className={cn(
-                  'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
-                  bg,
-                )}
+      {/* ── Stats strip — divided table pattern ──────────────────────────── */}
+      <div ref={statsRef}>
+        <motion.div
+          variants={gridVariants}
+          initial='hidden'
+          animate={statsInView ? 'show' : 'hidden'}
+          className='rounded-2xl border border-border overflow-hidden'
+        >
+          <div className='grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-border'>
+            {(
+              [
+                {
+                  label: 'Total Trips',
+                  icon: CalendarDays,
+                  value: data?.stats.total,
+                  formatted: false,
+                },
+                {
+                  label: 'Confirmed',
+                  icon: CheckCircle2,
+                  value: data?.stats.confirmed,
+                  formatted: false,
+                },
+                {
+                  label: 'Pending',
+                  icon: Hourglass,
+                  value: data?.stats.pending,
+                  formatted: false,
+                },
+                {
+                  label: 'Total Spent',
+                  icon: Wallet,
+                  value: data ? fmt(data.stats.totalSpent) : null,
+                  formatted: true,
+                },
+              ] as const
+            ).map(({ label, icon: Icon, value }) => (
+              <motion.div
+                key={label}
+                variants={cardVariants}
+                className='flex items-center gap-3 p-5'
               >
-                <Icon className={cn('w-4 h-4', color)} />
-              </div>
-              <div className='min-w-0'>
-                <p className='text-xs font-semibold tracking-[0.12em] uppercase text-muted-foreground'>
-                  {label}
-                </p>
-                {isPending ? (
-                  <Skeleton className='h-6 w-12 mt-0.5' />
-                ) : (
-                  <p className='font-display text-xl font-bold truncate'>
-                    {value ?? 0}
+                <div className='w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0'>
+                  <Icon className='w-4 h-4 text-primary' />
+                </div>
+                <div className='min-w-0'>
+                  <p className='text-[10px] font-semibold tracking-[0.18em] uppercase text-muted-foreground'>
+                    {label}
                   </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                  {isPending ? (
+                    <Skeleton className='h-6 w-12 mt-1' />
+                  ) : (
+                    <p className='text-xl font-bold tabular-nums truncate'>
+                      {value ?? 0}
+                    </p>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
       </div>
 
-      {/* ── upcoming trips ───────────────────────────────────────────────── */}
-      <div
-        className='animate-in fade-in slide-in-from-bottom duration-700'
-        style={{ animationDelay: '200ms' }}
-      >
-        <div className='flex items-center justify-between mb-5'>
+      {/* ── Upcoming trips ───────────────────────────────────────────────── */}
+      <div ref={tripsRef}>
+        <motion.div
+          variants={fadeUp}
+          initial='hidden'
+          animate={tripsInView ? 'show' : 'hidden'}
+          custom={0}
+          className='flex items-center justify-between mb-6'
+        >
           <div>
             <div className='flex items-center gap-3 mb-1'>
               <div className='h-px w-8 bg-primary' />
@@ -435,7 +467,7 @@ export default function UserDashboard() {
                 Up Next
               </span>
             </div>
-            <h2 className='font-display text-xl font-bold'>
+            <h2 className='text-xl font-bold tracking-tight'>
               Upcoming{' '}
               <span className='italic font-light text-muted-foreground'>
                 trips
@@ -447,119 +479,143 @@ export default function UserDashboard() {
               Browse more <ChevronRight className='w-3.5 h-3.5' />
             </Link>
           </Button>
-        </div>
+        </motion.div>
 
         {isPending ? (
           <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
             {Array.from({ length: 3 }).map((_, i) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
+              // biome-ignore lint/suspicious/noArrayIndexKey: skeleton
               <UpcomingTripSkeleton key={i} />
             ))}
           </div>
         ) : data?.upcomingTrips.length === 0 ? (
-          <Card className='border-2 border-dashed'>
-            <CardContent className='py-12 flex flex-col items-center justify-center gap-3 text-center'>
-              <div className='w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center'>
-                <MapPin className='w-5 h-5 text-primary' />
-              </div>
-              <div>
-                <p className='font-semibold text-sm'>No upcoming trips</p>
-                <p className='text-xs text-muted-foreground mt-1'>
-                  Your next adventure is waiting.
-                </p>
-              </div>
-              <Button size='sm' asChild>
-                <Link href='/packages'>Explore Packages</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
-            {data?.upcomingTrips.map((trip, i) => (
-              <UpcomingTripCard key={trip.id} trip={trip} delay={i * 80} />
-            ))}
+          <div className='rounded-2xl border border-border border-dashed p-12 flex flex-col items-center justify-center gap-3 text-center'>
+            <div className='w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center'>
+              <MapPin className='w-5 h-5 text-primary' />
+            </div>
+            <div>
+              <p className='font-semibold text-sm'>No upcoming trips</p>
+              <p className='text-xs text-muted-foreground mt-1'>
+                Your next adventure is waiting.
+              </p>
+            </div>
+            <Button size='sm' asChild>
+              <Link href='/packages'>Explore Packages</Link>
+            </Button>
           </div>
+        ) : (
+          <motion.div
+            variants={gridVariants}
+            initial='hidden'
+            animate={tripsInView ? 'show' : 'hidden'}
+            className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'
+          >
+            {data?.upcomingTrips.map((trip) => (
+              <UpcomingTripCard key={trip.id} trip={trip} />
+            ))}
+          </motion.div>
         )}
       </div>
 
-      {/* ── booking history tabs ─────────────────────────────────────────── */}
-      <div
-        className='animate-in fade-in slide-in-from-bottom duration-700'
-        style={{ animationDelay: '300ms' }}
-      >
-        <div className='mb-5'>
+      {/* ── Booking history ──────────────────────────────────────────────── */}
+      <div ref={historyRef}>
+        <motion.div
+          variants={fadeUp}
+          initial='hidden'
+          animate={historyInView ? 'show' : 'hidden'}
+          custom={0}
+          className='mb-6'
+        >
           <div className='flex items-center gap-3 mb-1'>
             <div className='h-px w-8 bg-primary' />
             <span className='text-xs font-semibold tracking-[0.2em] uppercase text-primary'>
               History
             </span>
           </div>
-          <h2 className='font-display text-xl font-bold'>
+          <h2 className='text-xl font-bold tracking-tight'>
             All{' '}
             <span className='italic font-light text-muted-foreground'>
               bookings
             </span>
           </h2>
-        </div>
+        </motion.div>
 
-        <Tabs defaultValue='all'>
-          <TabsList className='mb-4 h-9'>
-            <TabsTrigger value='all' className='text-xs gap-1.5'>
-              All
-              {!isPending && (
-                <Badge variant='secondary' className='text-xs px-1.5 py-0 h-4'>
-                  {data?.bookings.length ?? 0}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value='confirmed' className='text-xs gap-1.5'>
-              Confirmed
-              {!isPending && (
-                <Badge variant='secondary' className='text-xs px-1.5 py-0 h-4'>
-                  {confirmed.length}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value='pending' className='text-xs gap-1.5'>
-              Pending
-              {!isPending && (
-                <Badge variant='secondary' className='text-xs px-1.5 py-0 h-4'>
-                  {pending.length}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value='cancelled' className='text-xs gap-1.5'>
-              Cancelled
-              {!isPending && (
-                <Badge variant='secondary' className='text-xs px-1.5 py-0 h-4'>
-                  {cancelled.length}
-                </Badge>
-              )}
-            </TabsTrigger>
-          </TabsList>
+        <motion.div
+          variants={fadeUp}
+          initial='hidden'
+          animate={historyInView ? 'show' : 'hidden'}
+          custom={0.1}
+        >
+          <Tabs defaultValue='all'>
+            {/* Scrollable tab list — prevents overflow on small screens */}
+            <div className='overflow-x-auto scrollbar-none mb-4'>
+              <TabsList className='h-9 w-max min-w-full'>
+                {(
+                  [
+                    {
+                      value: 'all',
+                      label: 'All',
+                      count: data?.bookings.length ?? 0,
+                    },
+                    {
+                      value: 'confirmed',
+                      label: 'Confirmed',
+                      count: confirmed.length,
+                    },
+                    {
+                      value: 'pending',
+                      label: 'Pending',
+                      count: pending.length,
+                    },
+                    {
+                      value: 'cancelled',
+                      label: 'Cancelled',
+                      count: cancelled.length,
+                    },
+                  ] as const
+                ).map(({ value, label, count }) => (
+                  <TabsTrigger
+                    key={value}
+                    value={value}
+                    className='text-xs gap-1.5'
+                  >
+                    {label}
+                    {!isPending && (
+                      <Badge
+                        variant='secondary'
+                        className='text-xs px-1.5 py-0 h-4'
+                      >
+                        {count}
+                      </Badge>
+                    )}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
 
-          {(['all', 'confirmed', 'pending', 'cancelled'] as const).map(
-            (tab) => {
-              const list =
-                tab === 'all'
-                  ? (data?.bookings ?? [])
-                  : tab === 'confirmed'
-                    ? confirmed
-                    : tab === 'pending'
-                      ? pending
-                      : cancelled;
+            {(['all', 'confirmed', 'pending', 'cancelled'] as const).map(
+              (tab) => {
+                const list =
+                  tab === 'all'
+                    ? (data?.bookings ?? [])
+                    : tab === 'confirmed'
+                      ? confirmed
+                      : tab === 'pending'
+                        ? pending
+                        : cancelled;
 
-              return (
-                <TabsContent key={tab} value={tab}>
-                  <Card className='border-2'>
-                    <CardContent className='p-2 divide-y divide-border'>
+                return (
+                  <TabsContent key={tab} value={tab}>
+                    <div className='rounded-2xl border border-border overflow-hidden'>
                       {isPending ? (
-                        Array.from({ length: 4 }).map((_, i) => (
-                          // biome-ignore lint/suspicious/noArrayIndexKey: This is fine
-                          <BookingRowSkeleton key={i} />
-                        ))
+                        <div className='divide-y divide-border'>
+                          {Array.from({ length: 4 }).map((_, i) => (
+                            // biome-ignore lint/suspicious/noArrayIndexKey: skeleton
+                            <BookingRowSkeleton key={i} />
+                          ))}
+                        </div>
                       ) : list.length === 0 ? (
-                        <div className='py-12 flex flex-col items-center justify-center gap-2 text-center'>
+                        <div className='py-14 flex flex-col items-center justify-center gap-2 text-center'>
                           <p className='text-sm font-semibold text-muted-foreground'>
                             No bookings here
                           </p>
@@ -570,21 +626,24 @@ export default function UserDashboard() {
                           </p>
                         </div>
                       ) : (
-                        list.map((booking, i) => (
-                          <BookingRow
-                            key={booking.id}
-                            booking={booking}
-                            delay={i * 40}
-                          />
-                        ))
+                        <motion.div
+                          variants={gridVariants}
+                          initial='hidden'
+                          animate='show'
+                          className='divide-y divide-border'
+                        >
+                          {list.map((booking) => (
+                            <BookingRow key={booking.id} booking={booking} />
+                          ))}
+                        </motion.div>
                       )}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              );
-            },
-          )}
-        </Tabs>
+                    </div>
+                  </TabsContent>
+                );
+              },
+            )}
+          </Tabs>
+        </motion.div>
       </div>
     </div>
   );

@@ -664,7 +664,7 @@ function MyBookingsPage() {
               </span>
             </div>
             <div className='flex items-end justify-between gap-4 flex-wrap'>
-              <h1 className='font-display text-4xl sm:text-5xl font-bold leading-tight'>
+              <h1 className='font-display text-3xl sm:text-5xl font-bold leading-tight'>
                 My{' '}
                 <span className='italic font-light text-muted-foreground'>
                   bookings
@@ -689,7 +689,7 @@ function MyBookingsPage() {
 
       {/* Content */}
       <section className='py-10'>
-        <div className='max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6'>
+        <div className='max-w-5xl mx-auto space-y-6'>
           {/* Filter tabs */}
           <div
             className='animate-in fade-in slide-in-from-bottom duration-700'

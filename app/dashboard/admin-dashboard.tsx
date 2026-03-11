@@ -1,9 +1,9 @@
 'use client';
 
 import {
-  ArrowUpRight,
   CalendarCheck,
   CheckCircle2,
+  ChevronRight,
   Clock,
   DollarSign,
   Hourglass,
@@ -11,10 +11,12 @@ import {
   TrendingUp,
   XCircle,
 } from 'lucide-react';
+import { motion, useInView, type Variants } from 'motion/react';
 import { useRouter } from 'next/navigation';
+import { useRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
@@ -27,7 +29,30 @@ import {
 import { cn } from '@/lib/utils';
 import { useAdminDashboardStats } from '@/services/dashboard';
 
-// ─── helpers ──────────────────────────────────────────────────────────────────
+// ── Animation config ──────────────────────────────────────────────────────────
+
+const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
+const fadeUp: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  show: (delay: number = 0) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: EASE, delay },
+  }),
+};
+
+const gridVariants: Variants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07 } },
+};
+
+const cardVariants: Variants = {
+  hidden: { opacity: 0, y: 16 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: EASE } },
+};
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function fmt(amount: number | string) {
   return new Intl.NumberFormat('en-BD', {
@@ -54,77 +79,46 @@ function initials(name: string) {
     .slice(0, 2);
 }
 
-// ─── stat card ────────────────────────────────────────────────────────────────
-
-function StatCard({
-  title,
-  value,
-  sub,
-  icon: Icon,
-  delay = 0,
-}: {
-  title: string;
-  value: string | number;
-  sub: string;
-  icon: React.ElementType;
-  delay?: number;
-}) {
-  return (
-    <Card
-      className='border-2 hover:border-primary/40 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group animate-in fade-in slide-in-from-bottom'
-      style={{ animationDelay: `${delay}ms` }}
-    >
-      <CardContent className='p-6'>
-        <div className='flex items-start justify-between mb-4'>
-          <div className='w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300'>
-            <Icon className='w-5 h-5 text-primary' />
-          </div>
-          <ArrowUpRight className='w-4 h-4 text-muted-foreground/40 group-hover:text-primary transition-colors duration-300' />
-        </div>
-        <p className='font-display text-3xl font-bold tracking-tight mb-1'>
-          {value}
-        </p>
-        <p className='text-xs font-semibold tracking-[0.15em] uppercase text-muted-foreground'>
-          {title}
-        </p>
-        <div className='flex items-center gap-2 mt-3 pt-3 border-t border-border'>
-          <div className='h-px w-6 bg-primary shrink-0' />
-          <p className='text-xs text-muted-foreground'>{sub}</p>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// ─── status badge ─────────────────────────────────────────────────────────────
+// ── Status badge ──────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, { label: string; className: string }> = {
+  const map: Record<
+    string,
+    { label: string; className: string; icon: React.ElementType }
+  > = {
     PENDING: {
       label: 'Pending',
       className: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
+      icon: Hourglass,
     },
     CONFIRMED: {
       label: 'Confirmed',
       className: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
+      icon: CheckCircle2,
     },
     CANCELLED: {
       label: 'Cancelled',
       className: 'bg-red-500/10 text-red-500 border-red-500/20',
+      icon: XCircle,
     },
   };
-  const s = map[status] ?? { label: status, className: '' };
+  const s = map[status] ?? { label: status, className: '', icon: Clock };
+  const Icon = s.icon;
   return (
     <Badge
       variant='outline'
-      className={cn('text-xs font-semibold tracking-wide', s.className)}
+      className={cn(
+        'text-xs font-semibold tracking-wide gap-1 shrink-0',
+        s.className,
+      )}
     >
+      <Icon className='w-3 h-3' />
       {s.label}
     </Badge>
   );
 }
 
-// ─── popular packages bar chart ───────────────────────────────────────────────
+// ── Popular packages bar chart ────────────────────────────────────────────────
 
 function PopularPackagesChart({
   packages,
@@ -142,14 +136,15 @@ function PopularPackagesChart({
   const max = Math.max(...packages.map((p) => p.bookingCount), 1);
 
   return (
-    <div className='space-y-5'>
+    <motion.div
+      variants={gridVariants}
+      initial='hidden'
+      animate='show'
+      className='space-y-5'
+    >
       {packages.map((p, i) => (
-        <div
-          // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
-          key={i}
-          className='space-y-2 animate-in fade-in slide-in-from-bottom duration-500'
-          style={{ animationDelay: `${i * 60}ms` }}
-        >
+        // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
+        <motion.div key={i} variants={cardVariants} className='space-y-2'>
           <div className='flex items-start justify-between gap-2'>
             <div className='min-w-0'>
               <p className='text-sm font-semibold truncate leading-tight'>
@@ -169,48 +164,54 @@ function PopularPackagesChart({
             </div>
           </div>
           <div className='h-1.5 w-full bg-primary/10 rounded-full overflow-hidden'>
-            <div
-              className='h-full bg-primary rounded-full transition-all duration-700 ease-out'
-              style={{ width: `${(p.bookingCount / max) * 100}%` }}
+            <motion.div
+              className='h-full bg-primary rounded-full'
+              initial={{ width: 0 }}
+              animate={{ width: `${(p.bookingCount / max) * 100}%` }}
+              transition={{ duration: 0.7, ease: EASE, delay: i * 0.07 }}
             />
           </div>
-        </div>
+        </motion.div>
       ))}
+    </motion.div>
+  );
+}
+
+// ── Skeletons ─────────────────────────────────────────────────────────────────
+
+function PackageBarSkeleton() {
+  return (
+    <div className='space-y-2'>
+      <div className='flex justify-between'>
+        <Skeleton className='h-4 w-36' />
+        <Skeleton className='h-4 w-8' />
+      </div>
+      <Skeleton className='h-1.5 w-full rounded-full' />
     </div>
   );
 }
 
-// ─── skeletons ────────────────────────────────────────────────────────────────
-
-function StatCardSkeleton() {
-  return (
-    <Card className='border-2'>
-      <CardContent className='p-6'>
-        <div className='flex items-start justify-between mb-4'>
-          <Skeleton className='h-11 w-11 rounded-xl' />
-          <Skeleton className='h-4 w-4 rounded' />
-        </div>
-        <Skeleton className='h-8 w-28 mb-2' />
-        <Skeleton className='h-3 w-24' />
-        <div className='mt-3 pt-3 border-t border-border'>
-          <Skeleton className='h-3 w-32' />
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// ─── main ─────────────────────────────────────────────────────────────────────
+// ── Main ──────────────────────────────────────────────────────────────────────
 
 export default function AdminDashboard() {
   const { isPending, data, isError } = useAdminDashboardStats();
   const router = useRouter();
 
+  const headerRef = useRef<HTMLDivElement>(null);
+  const statsRef = useRef<HTMLDivElement>(null);
+  const statusRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  const headerInView = useInView(headerRef, { once: true, margin: '-40px' });
+  const statsInView = useInView(statsRef, { once: true, margin: '-40px' });
+  const statusInView = useInView(statusRef, { once: true, margin: '-40px' });
+  const bottomInView = useInView(bottomRef, { once: true, margin: '-40px' });
+
   if (isError) {
     return (
       <div className='flex h-96 items-center justify-center'>
-        <div className='text-center space-y-2'>
-          <div className='flex items-center gap-3 justify-center mb-4'>
+        <div className='text-center'>
+          <div className='flex items-center gap-3 justify-center mb-3'>
             <div className='h-px w-8 bg-destructive' />
             <span className='text-xs font-semibold tracking-[0.2em] uppercase text-destructive'>
               Error
@@ -226,238 +227,314 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className='flex flex-col gap-10 p-4 pt-0'>
-      {/* ── page header ─────────────────────────────────────────────────── */}
-      <div className='animate-in fade-in slide-in-from-bottom-4 duration-700'>
-        <div className='flex items-center gap-3 mb-3'>
-          <div className='h-px w-12 bg-primary' />
-          <span className='text-xs font-semibold tracking-[0.2em] uppercase text-primary'>
-            Overview
-          </span>
-        </div>
-        <h1 className='font-display text-4xl font-bold leading-tight tracking-tight'>
-          Admin{' '}
-          <span className='italic font-light text-muted-foreground'>
-            dashboard
-          </span>
-          <span className='text-primary'>.</span>
-        </h1>
-        <p className='text-muted-foreground text-sm mt-1'>
-          Real-time snapshot of your business performance.
-        </p>
-      </div>
-
-      {/* ── stat cards ──────────────────────────────────────────────────── */}
-      <div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4'>
-        {isPending ? (
-          // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
-          Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)
-        ) : (
-          <>
-            <StatCard
-              title='Total Bookings'
-              value={data.bookings.total.toLocaleString()}
-              sub='All time'
-              icon={CalendarCheck}
-              delay={0}
-            />
-            <StatCard
-              title='This Month'
-              value={data.bookings.thisMonth.toLocaleString()}
-              sub='Bookings in current month'
-              icon={TrendingUp}
-              delay={80}
-            />
-            <StatCard
-              title='Total Revenue'
-              value={fmt(data.revenue.total)}
-              sub='Confirmed bookings only'
-              icon={DollarSign}
-              delay={160}
-            />
-            <StatCard
-              title='Monthly Revenue'
-              value={fmt(data.revenue.thisMonth)}
-              sub='Confirmed this month'
-              icon={DollarSign}
-              delay={240}
-            />
-          </>
-        )}
-      </div>
-
-      {/* ── booking status row ───────────────────────────────────────────── */}
-      <div
-        className='grid gap-4 sm:grid-cols-3 animate-in fade-in slide-in-from-bottom duration-700'
-        style={{ animationDelay: '300ms' }}
-      >
-        {(
-          [
-            {
-              label: 'Pending',
-              icon: Hourglass,
-              color: 'text-amber-600',
-              bg: 'bg-amber-500/10',
-              key: 'pending',
-            },
-            {
-              label: 'Confirmed',
-              icon: CheckCircle2,
-              color: 'text-emerald-600',
-              bg: 'bg-emerald-500/10',
-              key: 'confirmed',
-            },
-            {
-              label: 'Cancelled',
-              icon: XCircle,
-              color: 'text-red-500',
-              bg: 'bg-red-500/10',
-              key: 'cancelled',
-            },
-          ] as const
-        ).map(({ label, icon: Icon, color, bg, key }) => (
-          <Card key={key} className='border-2 transition-all duration-300'>
-            <CardContent className='p-5 flex items-center gap-4'>
-              <div
-                className={cn(
-                  'w-11 h-11 rounded-xl flex items-center justify-center shrink-0',
-                  bg,
-                )}
-              >
-                <Icon className={cn('w-5 h-5', color)} />
-              </div>
-              <div>
-                <p className='text-xs font-semibold tracking-[0.15em] uppercase text-muted-foreground'>
-                  {label}
-                </p>
-                {isPending ? (
-                  <Skeleton className='h-7 w-12 mt-1' />
-                ) : (
-                  <p className='font-display text-2xl font-bold'>
-                    {data.bookings.byStatus[key].toLocaleString()}
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* ── bottom two-col grid ──────────────────────────────────────────── */}
-      <div className='grid gap-6 lg:grid-cols-3'>
-        {/* popular packages */}
-        <Card
-          className='lg:col-span-1 border-2 hover:border-primary/30 transition-all duration-300 animate-in fade-in slide-in-from-bottom'
-          style={{ animationDelay: '350ms' }}
+    <div className='flex flex-col gap-10 mt-6 mb-16 md:mb-20'>
+      {/* ── Page header ──────────────────────────────────────────────────── */}
+      <div ref={headerRef}>
+        <motion.div
+          variants={fadeUp}
+          initial='hidden'
+          animate={headerInView ? 'show' : 'hidden'}
+          custom={0}
         >
-          <CardHeader className='pb-4'>
-            <div className='flex items-center gap-2 mb-1'>
+          <div className='flex items-center gap-3 mb-3'>
+            <div className='h-px w-10 bg-primary' />
+            <span className='text-xs font-semibold tracking-[0.2em] uppercase text-primary'>
+              Overview
+            </span>
+          </div>
+          <h1 className='text-2xl md:text-4xl font-bold leading-tight tracking-tight'>
+            Admin
+            <span className='text-primary'>,</span>{' '}
+            <span className='italic font-light text-muted-foreground'>
+              dashboard
+            </span>
+            <span className='text-primary'>.</span>
+          </h1>
+          <p className='text-muted-foreground text-sm mt-1'>
+            Real-time snapshot of your business performance.
+          </p>
+        </motion.div>
+      </div>
+
+      {/* ── Stats strip — divided table pattern ──────────────────────────── */}
+      <div ref={statsRef}>
+        <motion.div
+          variants={gridVariants}
+          initial='hidden'
+          animate={statsInView ? 'show' : 'hidden'}
+          className='rounded-2xl border border-border overflow-hidden'
+        >
+          <div className='grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-border'>
+            {(
+              [
+                {
+                  label: 'Total Bookings',
+                  icon: CalendarCheck,
+                  value: data?.bookings.total,
+                },
+                {
+                  label: 'This Month',
+                  icon: TrendingUp,
+                  value: data?.bookings.thisMonth,
+                },
+                {
+                  label: 'Total Revenue',
+                  icon: DollarSign,
+                  value: data ? fmt(data.revenue.total) : null,
+                },
+                {
+                  label: 'Monthly Revenue',
+                  icon: DollarSign,
+                  value: data ? fmt(data.revenue.thisMonth) : null,
+                },
+              ] as const
+            ).map(({ label, icon: Icon, value }) => (
+              <motion.div
+                key={label}
+                variants={cardVariants}
+                className='flex items-center gap-3 p-5'
+              >
+                <div className='w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0'>
+                  <Icon className='w-4 h-4 text-primary' />
+                </div>
+                <div className='min-w-0'>
+                  <p className='text-[10px] font-semibold tracking-[0.18em] uppercase text-muted-foreground'>
+                    {label}
+                  </p>
+                  {isPending ? (
+                    <Skeleton className='h-6 w-12 mt-1' />
+                  ) : (
+                    <p className='text-xl font-bold tabular-nums truncate'>
+                      {value ?? 0}
+                    </p>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      </div>
+
+      {/* ── Booking status strip ─────────────────────────────────────────── */}
+      <div ref={statusRef}>
+        <motion.div
+          variants={fadeUp}
+          initial='hidden'
+          animate={statusInView ? 'show' : 'hidden'}
+          custom={0}
+          className='mb-6'
+        >
+          <div className='flex items-center gap-3 mb-1'>
+            <div className='h-px w-8 bg-primary' />
+            <span className='text-xs font-semibold tracking-[0.2em] uppercase text-primary'>
+              By Status
+            </span>
+          </div>
+          <h2 className='text-xl font-bold tracking-tight'>
+            Booking{' '}
+            <span className='italic font-light text-muted-foreground'>
+              breakdown
+            </span>
+          </h2>
+        </motion.div>
+
+        <motion.div
+          variants={gridVariants}
+          initial='hidden'
+          animate={statusInView ? 'show' : 'hidden'}
+          className='rounded-2xl border border-border overflow-hidden'
+        >
+          <div className='grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border'>
+            {(
+              [
+                {
+                  label: 'Pending',
+                  icon: Hourglass,
+                  color: 'text-amber-600',
+                  bg: 'bg-amber-500/10',
+                  key: 'pending',
+                },
+                {
+                  label: 'Confirmed',
+                  icon: CheckCircle2,
+                  color: 'text-emerald-600',
+                  bg: 'bg-emerald-500/10',
+                  key: 'confirmed',
+                },
+                {
+                  label: 'Cancelled',
+                  icon: XCircle,
+                  color: 'text-red-500',
+                  bg: 'bg-red-500/10',
+                  key: 'cancelled',
+                },
+              ] as const
+            ).map(({ label, icon: Icon, color, bg, key }) => (
+              <motion.div
+                key={key}
+                variants={cardVariants}
+                className='flex items-center gap-3 p-5'
+              >
+                <div
+                  className={cn(
+                    'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
+                    bg,
+                  )}
+                >
+                  <Icon className={cn('w-4 h-4', color)} />
+                </div>
+                <div className='min-w-0'>
+                  <p className='text-[10px] font-semibold tracking-[0.18em] uppercase text-muted-foreground'>
+                    {label}
+                  </p>
+                  {isPending ? (
+                    <Skeleton className='h-6 w-12 mt-1' />
+                  ) : (
+                    <p className='text-xl font-bold tabular-nums'>
+                      {data.bookings.byStatus[key].toLocaleString()}
+                    </p>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      </div>
+
+      {/* ── Bottom two-col grid ──────────────────────────────────────────── */}
+      <div ref={bottomRef} className='grid gap-6 lg:grid-cols-3'>
+        {/* Popular packages */}
+        <motion.div
+          variants={fadeUp}
+          initial='hidden'
+          animate={bottomInView ? 'show' : 'hidden'}
+          custom={0}
+          className='lg:col-span-1 rounded-2xl border border-border overflow-hidden'
+        >
+          <div className='p-6 border-b border-border'>
+            <div className='flex items-center gap-3 mb-1'>
               <div className='w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center'>
                 <Package className='w-4 h-4 text-primary' />
               </div>
-              <CardTitle className='font-display text-lg font-bold'>
-                Popular Packages
-              </CardTitle>
+              <div>
+                <div className='flex items-center gap-2'>
+                  <div className='h-px w-6 bg-primary' />
+                  <span className='text-xs font-semibold tracking-[0.2em] uppercase text-primary'>
+                    Top 5
+                  </span>
+                </div>
+                <h2 className='text-base font-bold tracking-tight leading-tight'>
+                  Popular{' '}
+                  <span className='italic font-light text-muted-foreground'>
+                    packages
+                  </span>
+                </h2>
+              </div>
             </div>
-            <div className='flex items-center gap-2'>
-              <div className='h-px w-6 bg-primary' />
-              <p className='text-xs font-semibold tracking-[0.15em] uppercase text-primary'>
-                Top 5 by bookings
-              </p>
-            </div>
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div className='p-6'>
             {isPending ? (
               <div className='space-y-5'>
                 {Array.from({ length: 5 }).map((_, i) => (
                   // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
-                  <div key={i} className='space-y-2'>
-                    <div className='flex justify-between'>
-                      <Skeleton className='h-4 w-36' />
-                      <Skeleton className='h-4 w-8' />
-                    </div>
-                    <Skeleton className='h-1.5 w-full rounded-full' />
-                  </div>
+                  <PackageBarSkeleton key={i} />
                 ))}
               </div>
             ) : (
               <PopularPackagesChart packages={data.popularPackages} />
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </motion.div>
 
-        {/* recent bookings */}
-        <Card
-          className='lg:col-span-2 border-2 hover:border-primary/30 transition-all duration-300 animate-in fade-in slide-in-from-bottom'
-          style={{ animationDelay: '420ms' }}
+        {/* Recent bookings */}
+        <motion.div
+          variants={fadeUp}
+          initial='hidden'
+          animate={bottomInView ? 'show' : 'hidden'}
+          custom={0.1}
+          className='lg:col-span-2 rounded-2xl border border-border overflow-hidden'
         >
-          <CardHeader className='pb-4'>
-            <div className='flex items-center gap-2 mb-1'>
+          <div className='p-6 border-b border-border flex items-center justify-between'>
+            <div className='flex items-center gap-3'>
               <div className='w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center'>
                 <Clock className='w-4 h-4 text-primary' />
               </div>
-              <CardTitle className='font-display text-lg font-bold'>
-                Recent Bookings
-              </CardTitle>
-            </div>
-            <div className='flex items-center gap-2'>
-              <div className='h-px w-6 bg-primary' />
-              <p className='text-xs font-semibold tracking-[0.15em] uppercase text-primary'>
-                Last 10 bookings
-              </p>
-            </div>
-          </CardHeader>
-          <CardContent className='p-0'>
-            {isPending ? (
-              <div className='space-y-3 px-6 pb-6'>
-                {Array.from({ length: 6 }).map((_, i) => (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
-                  <div key={i} className='flex items-center gap-3'>
-                    <Skeleton className='h-8 w-8 rounded-full shrink-0' />
-                    <div className='flex-1 space-y-1.5'>
-                      <Skeleton className='h-3.5 w-32' />
-                      <Skeleton className='h-3 w-24' />
-                    </div>
-                    <Skeleton className='h-3.5 w-28 hidden md:block' />
-                    <Skeleton className='h-3.5 w-20' />
-                    <Skeleton className='h-5 w-20' />
-                  </div>
-                ))}
+              <div>
+                <div className='flex items-center gap-2'>
+                  <div className='h-px w-6 bg-primary' />
+                  <span className='text-xs font-semibold tracking-[0.2em] uppercase text-primary'>
+                    Last 10
+                  </span>
+                </div>
+                <h2 className='text-base font-bold tracking-tight leading-tight'>
+                  Recent{' '}
+                  <span className='italic font-light text-muted-foreground'>
+                    bookings
+                  </span>
+                </h2>
               </div>
-            ) : (
+            </div>
+            <Button
+              variant='ghost'
+              size='sm'
+              className='text-xs gap-1'
+              onClick={() => router.push('/dashboard/admin/bookings')}
+            >
+              View all <ChevronRight className='w-3.5 h-3.5' />
+            </Button>
+          </div>
+
+          {isPending ? (
+            <div className='divide-y divide-border'>
+              {Array.from({ length: 6 }).map((_, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
+                <div key={i} className='flex items-center gap-4 p-4'>
+                  <Skeleton className='h-8 w-8 rounded-full shrink-0' />
+                  <div className='flex-1 space-y-1.5'>
+                    <Skeleton className='h-3.5 w-32' />
+                    <Skeleton className='h-3 w-24' />
+                  </div>
+                  <Skeleton className='h-3.5 w-28 hidden md:block' />
+                  <Skeleton className='h-3.5 w-20' />
+                  <Skeleton className='h-5 w-20' />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <motion.div variants={gridVariants} initial='hidden' animate='show'>
               <Table>
                 <TableHeader>
                   <TableRow className='hover:bg-transparent'>
-                    <TableHead className='pl-6 text-xs font-semibold tracking-[0.12em] uppercase text-muted-foreground'>
+                    <TableHead className='pl-6 text-[10px] font-semibold tracking-[0.18em] uppercase text-muted-foreground'>
                       Customer
                     </TableHead>
-                    <TableHead className='text-xs font-semibold tracking-[0.12em] uppercase text-muted-foreground'>
+                    <TableHead className='text-[10px] font-semibold tracking-[0.18em] uppercase text-muted-foreground'>
                       Package
                     </TableHead>
-                    <TableHead className='hidden md:table-cell text-xs font-semibold tracking-[0.12em] uppercase text-muted-foreground'>
+                    <TableHead className='hidden md:table-cell text-[10px] font-semibold tracking-[0.18em] uppercase text-muted-foreground'>
                       Travel Date
                     </TableHead>
-                    <TableHead className='text-xs font-semibold tracking-[0.12em] uppercase text-muted-foreground'>
+                    <TableHead className='text-[10px] font-semibold tracking-[0.18em] uppercase text-muted-foreground'>
                       Total
                     </TableHead>
-                    <TableHead className='pr-6 text-xs font-semibold tracking-[0.12em] uppercase text-muted-foreground'>
+                    <TableHead className='pr-6 text-[10px] font-semibold tracking-[0.18em] uppercase text-muted-foreground'>
                       Status
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.recentBookings.map((booking, i) => (
-                    <TableRow
+                  {data.recentBookings.map((booking) => (
+                    <motion.tr
                       key={booking.id}
-                      className='group hover:bg-primary/5 transition-colors duration-150 animate-in fade-in'
-                      style={{ animationDelay: `${i * 40}ms` }}
+                      variants={cardVariants}
                       onClick={() =>
                         router.push(`/dashboard/admin/bookings/${booking.id}`)
                       }
+                      className='group hover:bg-primary/3 transition-colors duration-200 cursor-pointer border-b border-border last:border-0'
                     >
                       <TableCell className='pl-6 py-3'>
                         <div className='flex items-center gap-2.5'>
-                          <Avatar className='h-8 w-8 border-2 border-border'>
+                          <Avatar className='h-8 w-8 border border-border'>
                             <AvatarImage src={booking.user.image} />
                             <AvatarFallback className='text-xs font-semibold bg-primary/10 text-primary'>
                               {initials(booking.user.name)}
@@ -481,19 +558,24 @@ export default function AdminDashboard() {
                       <TableCell className='hidden md:table-cell text-sm text-muted-foreground py-3'>
                         {fmtDate(booking.travelDate)}
                       </TableCell>
-                      <TableCell className='text-sm font-bold text-primary py-3'>
-                        {fmt(booking.total)}
+                      <TableCell className='py-3'>
+                        <div className='flex items-center gap-1.5'>
+                          <div className='h-px w-3 bg-primary shrink-0' />
+                          <span className='text-sm font-bold text-primary'>
+                            {fmt(booking.total)}
+                          </span>
+                        </div>
                       </TableCell>
                       <TableCell className='pr-6 py-3'>
                         <StatusBadge status={booking.status} />
                       </TableCell>
-                    </TableRow>
+                    </motion.tr>
                   ))}
                 </TableBody>
               </Table>
-            )}
-          </CardContent>
-        </Card>
+            </motion.div>
+          )}
+        </motion.div>
       </div>
     </div>
   );

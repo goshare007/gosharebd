@@ -64,8 +64,7 @@ export interface UserDashboardStats {
       name: string;
       coverImage: string;
       durationDays: number;
-      Location: string;
-      destination: { name: string };
+      location: string;
     };
     members: Array<{
       id: string;

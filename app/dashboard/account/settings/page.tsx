@@ -622,7 +622,7 @@ function DangerZoneSection() {
 
 export default function AccountSettingsPage() {
   return (
-    <div className='max-w-2xl mx-auto px-4 py-8 sm:px-6'>
+    <div className='max-w-2xl mx-auto py-8'>
       <div className='mb-10 animate-in fade-in slide-in-from-bottom-4 duration-700'>
         <div className='flex items-center gap-3 mb-3'>
           <div className='h-px w-12 bg-primary' />
@@ -630,7 +630,7 @@ export default function AccountSettingsPage() {
             My Account
           </span>
         </div>
-        <h1 className='font-display text-4xl font-bold leading-tight tracking-tight'>
+        <h1 className='font-display text-3xl md:text-4xl font-bold leading-tight tracking-tight'>
           Account{' '}
           <span className='italic font-light text-muted-foreground'>
             settings

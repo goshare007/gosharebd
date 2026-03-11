@@ -64,7 +64,7 @@ export default function PackagesPage({
   // ── Loading ──────────────────────────────────────────────────────────────
   if (isPending) {
     return (
-      <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
+      <div className='max-w-7xl mx-auto py-8'>
         <div className='flex items-center justify-between mb-8'>
           <Skeleton className='h-8 w-40' />
           <Skeleton className='h-10 w-36' />
@@ -96,7 +96,7 @@ export default function PackagesPage({
   // ── Error ────────────────────────────────────────────────────────────────
   if (isError) {
     return (
-      <div className='flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center px-4'>
+      <div className='flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center'>
         <div className='w-16 h-16 rounded-2xl bg-destructive/10 flex items-center justify-center'>
           <AlertCircle className='w-8 h-8 text-destructive' />
         </div>
@@ -124,7 +124,7 @@ export default function PackagesPage({
   // ── Empty ────────────────────────────────────────────────────────────────
   if (!data || data.length === 0) {
     return (
-      <div className='flex flex-col items-center justify-center min-h-[60vh] gap-5 text-center px-4'>
+      <div className='flex flex-col items-center justify-center min-h-[60vh] gap-5 text-center'>
         <div className='w-20 h-20 rounded-2xl bg-muted flex items-center justify-center'>
           <Package className='w-10 h-10 text-muted-foreground' />
         </div>
@@ -184,7 +184,7 @@ export default function PackagesPage({
 
       {/* Page Header */}
       <div className='border-b border-border bg-background sticky top-0 z-20'>
-        <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between'>
+        <div className='max-w-7xl mx-auto h-14 flex items-center justify-between'>
           <p className='text-sm text-muted-foreground'>
             <span className='font-semibold text-foreground'>{data.length}</span>{' '}
             {data.length === 1 ? 'package' : 'packages'}
@@ -200,7 +200,7 @@ export default function PackagesPage({
       </div>
 
       {/* Grid */}
-      <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
+      <div className='max-w-7xl mx-auto py-8'>
         <div className='grid sm:grid-cols-2 xl:grid-cols-3 gap-5'>
           {data.map((pkg, idx) => (
             <article

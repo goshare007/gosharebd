@@ -17,15 +17,14 @@ import {
   User,
   UserCheck,
   Users,
-  XCircle,
 } from 'lucide-react';
+import { motion, useInView, type Variants } from 'motion/react';
 import Image from 'next/image';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -71,7 +70,30 @@ import {
   useUnbanUser,
 } from '@/services/admin-users';
 
-// ─── helpers ──────────────────────────────────────────────────────────────────
+// ── Animation config ──────────────────────────────────────────────────────────
+
+const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
+const fadeUp: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  show: (delay: number = 0) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: EASE, delay },
+  }),
+};
+
+const gridVariants: Variants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07 } },
+};
+
+const cardVariants: Variants = {
+  hidden: { opacity: 0, y: 16 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: EASE } },
+};
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function initials(name: string) {
   return name
@@ -89,11 +111,11 @@ function isBanned(user: AdminUser) {
   );
 }
 
-// ─── sub-components ───────────────────────────────────────────────────────────
+// ── Sub-components ────────────────────────────────────────────────────────────
 
 function UserAvatar({ user }: { user: AdminUser }) {
   return (
-    <div className='w-8 h-8 rounded-full border-2 border-border overflow-hidden bg-primary/10 shrink-0 flex items-center justify-center'>
+    <div className='w-8 h-8 rounded-full border border-border overflow-hidden bg-primary/10 shrink-0 flex items-center justify-center'>
       {user.image ? (
         <Image
           src={user.image}
@@ -154,7 +176,7 @@ function StatusBadge({ user }: { user: AdminUser }) {
   );
 }
 
-// ─── ban dialog ───────────────────────────────────────────────────────────────
+// ── Ban dialog ────────────────────────────────────────────────────────────────
 
 const banSchema = z.object({
   banReason: z.string().min(1, 'Reason is required'),
@@ -212,7 +234,7 @@ function BanDialog({
     >
       <DialogContent className='max-w-md'>
         <DialogHeader>
-          <DialogTitle className='font-display text-xl font-bold'>
+          <DialogTitle className='text-xl font-bold'>
             Ban{' '}
             <span className='italic font-light text-muted-foreground'>
               user
@@ -279,7 +301,7 @@ function BanDialog({
   );
 }
 
-// ─── delete dialog ────────────────────────────────────────────────────────────
+// ── Delete dialog ─────────────────────────────────────────────────────────────
 
 function DeleteDialog({
   user,
@@ -303,7 +325,7 @@ function DeleteDialog({
     >
       <DialogContent className='max-w-md'>
         <DialogHeader>
-          <DialogTitle className='font-display text-xl font-bold'>
+          <DialogTitle className='text-xl font-bold'>
             Delete{' '}
             <span className='italic font-light text-muted-foreground'>
               user
@@ -315,7 +337,7 @@ function DeleteDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className='p-3 rounded-xl bg-red-500/10 border-2 border-red-500/20 my-1'>
+        <div className='p-3 rounded-xl bg-red-500/10 border border-red-500/20 my-1'>
           <p className='text-sm text-red-600'>
             This permanently deletes the account, all bookings, and reviews.
             This cannot be undone.
@@ -351,7 +373,7 @@ function DeleteDialog({
   );
 }
 
-// ─── row actions menu ─────────────────────────────────────────────────────────
+// ── Row actions menu ──────────────────────────────────────────────────────────
 
 function UserRowActions({
   user,
@@ -381,7 +403,6 @@ function UserRowActions({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end' className='w-44'>
-        {/* Role toggle */}
         <DropdownMenuItem
           disabled={isSelf || settingRole}
           onClick={() =>
@@ -407,7 +428,6 @@ function UserRowActions({
 
         <DropdownMenuSeparator />
 
-        {/* Ban / unban */}
         {banned ? (
           <DropdownMenuItem
             disabled={isSelf || unbanning}
@@ -434,7 +454,6 @@ function UserRowActions({
 
         <DropdownMenuSeparator />
 
-        {/* Delete */}
         <DropdownMenuItem
           disabled={isSelf}
           onClick={() => onDelete(user)}
@@ -448,7 +467,7 @@ function UserRowActions({
   );
 }
 
-// ─── main page ────────────────────────────────────────────────────────────────
+// ── Main ──────────────────────────────────────────────────────────────────────
 
 export default function UsersManagementPage() {
   const { data: session } = useSession();
@@ -472,6 +491,16 @@ export default function UsersManagementPage() {
     status,
   });
 
+  const headerRef = useRef<HTMLDivElement>(null);
+  const statsRef = useRef<HTMLDivElement>(null);
+  const filtersRef = useRef<HTMLDivElement>(null);
+  const tableRef = useRef<HTMLDivElement>(null);
+
+  const headerInView = useInView(headerRef, { once: true, margin: '-40px' });
+  const statsInView = useInView(statsRef, { once: true, margin: '-40px' });
+  const filtersInView = useInView(filtersRef, { once: true, margin: '-40px' });
+  const tableInView = useInView(tableRef, { once: true, margin: '-40px' });
+
   const handleSearch = useCallback(() => {
     setSearch(searchInput.trim());
     setPage(1);
@@ -494,389 +523,444 @@ export default function UsersManagementPage() {
 
   const users = data?.users ?? [];
   const pagination = data?.pagination;
-
-  // summary counts from current page data (approximation)
   const totalUsers = pagination?.total ?? 0;
   const bannedCount = users.filter((u) => isBanned(u)).length;
   const adminCount = users.filter((u) => u.role === 'ADMIN').length;
 
   return (
-    <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8'>
-      {/* ── page header ───────────────────────────────────────────────── */}
-      <div className='mb-10 animate-in fade-in slide-in-from-bottom-4 duration-700'>
-        <div className='flex items-center gap-3 mb-3'>
-          <div className='h-px w-12 bg-primary' />
-          <span className='text-xs font-semibold tracking-[0.2em] uppercase text-primary'>
-            Admin
-          </span>
-        </div>
-        <h1 className='font-display text-4xl font-bold leading-tight tracking-tight'>
-          User{' '}
-          <span className='italic font-light text-muted-foreground'>
-            management
-          </span>
-          <span className='text-primary'>.</span>
-        </h1>
-        <p className='text-muted-foreground text-sm mt-1'>
-          View, ban, promote or remove user accounts.
-        </p>
-      </div>
-
-      {/* ── stat cards ────────────────────────────────────────────────── */}
-      <div
-        className='grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8 animate-in fade-in slide-in-from-bottom duration-700'
-        style={{ animationDelay: '80ms' }}
-      >
-        {[
-          {
-            label: 'Total Users',
-            value: totalUsers,
-            icon: Users,
-            color: 'text-primary',
-            bg: 'bg-primary/10',
-          },
-          {
-            label: 'Active',
-            value: isPending
-              ? '—'
-              : users.filter((u) => !isBanned(u)).length +
-                (pagination && pagination.total > users.length ? '+' : ''),
-            icon: UserCheck,
-            color: 'text-emerald-600',
-            bg: 'bg-emerald-500/10',
-          },
-          {
-            label: 'Banned',
-            value: isPending ? '—' : bannedCount,
-            icon: Ban,
-            color: 'text-red-500',
-            bg: 'bg-red-500/10',
-          },
-          {
-            label: 'Admins',
-            value: isPending ? '—' : adminCount,
-            icon: Crown,
-            color: 'text-amber-600',
-            bg: 'bg-amber-500/10',
-          },
-        ].map(({ label, value, icon: Icon, color, bg }) => (
-          <Card key={label} className='border-2'>
-            <CardContent className='p-4 flex items-center gap-3'>
-              <div
-                className={cn(
-                  'w-9 h-9 rounded-lg flex items-center justify-center shrink-0',
-                  bg,
-                )}
-              >
-                <Icon className={cn('w-4 h-4', color)} />
-              </div>
-              <div className='min-w-0'>
-                <p className='text-xs font-semibold tracking-[0.12em] uppercase text-muted-foreground truncate'>
-                  {label}
-                </p>
-                <div className='font-display text-xl font-bold'>
-                  {isPending ? <Skeleton className='h-6 w-10 mt-0.5' /> : value}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* ── filters ───────────────────────────────────────────────────── */}
-      <Card
-        className='border-2 mb-6 animate-in fade-in slide-in-from-bottom duration-700'
-        style={{ animationDelay: '160ms' }}
-      >
-        <CardContent className='p-4 flex flex-col sm:flex-row gap-3'>
-          {/* search */}
-          <div className='flex flex-1 gap-2'>
-            <div className='relative flex-1'>
-              <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground' />
-              <Input
-                placeholder='Search name or email…'
-                className='pl-9 h-9 text-sm border-2 focus-visible:ring-0 focus-visible:border-primary'
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              />
-            </div>
-            <Button size='sm' className='h-9 px-4' onClick={handleSearch}>
-              Search
-            </Button>
+    <div className='flex flex-col gap-10 mt-6 mb-16 md:mb-20'>
+      {/* ── Page header ──────────────────────────────────────────────────── */}
+      <div ref={headerRef}>
+        <motion.div
+          variants={fadeUp}
+          initial='hidden'
+          animate={headerInView ? 'show' : 'hidden'}
+          custom={0}
+        >
+          <div className='flex items-center gap-3 mb-3'>
+            <div className='h-px w-10 bg-primary' />
+            <span className='text-xs font-semibold tracking-[0.2em] uppercase text-primary'>
+              Admin
+            </span>
           </div>
+          <h1 className='text-2xl md:text-4xl font-bold leading-tight tracking-tight'>
+            User{' '}
+            <span className='italic font-light text-muted-foreground'>
+              management
+            </span>
+            <span className='text-primary'>.</span>
+          </h1>
+          <p className='text-muted-foreground text-sm mt-1'>
+            View, ban, promote or remove user accounts.
+          </p>
+        </motion.div>
+      </div>
 
-          {/* role filter */}
-          <Select
-            value={role}
-            onValueChange={(v) => handleFilterChange('role', v)}
-          >
-            <SelectTrigger className='w-36 h-9 text-xs border-2 hover:border-primary/40'>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='ALL'>All Roles</SelectItem>
-              <SelectItem value='USER'>User</SelectItem>
-              <SelectItem value='ADMIN'>Admin</SelectItem>
-            </SelectContent>
-          </Select>
+      {/* ── Stats strip — divided table pattern ──────────────────────────── */}
+      <div ref={statsRef}>
+        <motion.div
+          variants={gridVariants}
+          initial='hidden'
+          animate={statsInView ? 'show' : 'hidden'}
+          className='rounded-2xl border border-border overflow-hidden'
+        >
+          <div className='grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-border'>
+            {(
+              [
+                {
+                  label: 'Total Users',
+                  icon: Users,
+                  value: totalUsers,
+                  color: 'text-primary',
+                  bg: 'bg-primary/10',
+                },
+                {
+                  label: 'Active',
+                  icon: UserCheck,
+                  value: isPending
+                    ? null
+                    : users.filter((u) => !isBanned(u)).length,
+                  color: 'text-emerald-600',
+                  bg: 'bg-emerald-500/10',
+                },
+                {
+                  label: 'Banned',
+                  icon: Ban,
+                  value: isPending ? null : bannedCount,
+                  color: 'text-red-500',
+                  bg: 'bg-red-500/10',
+                },
+                {
+                  label: 'Admins',
+                  icon: Crown,
+                  value: isPending ? null : adminCount,
+                  color: 'text-amber-600',
+                  bg: 'bg-amber-500/10',
+                },
+              ] as const
+            ).map(({ label, icon: Icon, value, color, bg }) => (
+              <motion.div
+                key={label}
+                variants={cardVariants}
+                className='flex items-center gap-3 p-5'
+              >
+                <div
+                  className={cn(
+                    'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
+                    bg,
+                  )}
+                >
+                  <Icon className={cn('w-4 h-4', color)} />
+                </div>
+                <div className='min-w-0'>
+                  <p className='text-[10px] font-semibold tracking-[0.18em] uppercase text-muted-foreground'>
+                    {label}
+                  </p>
+                  {isPending ? (
+                    <Skeleton className='h-6 w-12 mt-1' />
+                  ) : (
+                    <p className='text-xl font-bold tabular-nums truncate'>
+                      {value ?? 0}
+                    </p>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      </div>
 
-          {/* status filter */}
-          <Select
-            value={status}
-            onValueChange={(v) => handleFilterChange('status', v)}
-          >
-            <SelectTrigger className='w-36 h-9 text-xs border-2 hover:border-primary/40'>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='ALL'>All Status</SelectItem>
-              <SelectItem value='ACTIVE'>Active</SelectItem>
-              <SelectItem value='BANNED'>Banned</SelectItem>
-            </SelectContent>
-          </Select>
-        </CardContent>
-      </Card>
-
-      {/* ── table ─────────────────────────────────────────────────────── */}
-      <Card
-        className='border-2 animate-in fade-in slide-in-from-bottom duration-700'
-        style={{ animationDelay: '240ms' }}
-      >
-        <CardHeader className='pb-3 px-6 pt-5'>
-          <div className='flex items-center gap-2'>
-            <div className='w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center'>
-              <Users className='w-4 h-4 text-primary' />
+      {/* ── Filters ──────────────────────────────────────────────────────── */}
+      <div ref={filtersRef}>
+        <motion.div
+          variants={fadeUp}
+          initial='hidden'
+          animate={filtersInView ? 'show' : 'hidden'}
+          custom={0}
+          className='rounded-2xl border border-border overflow-hidden'
+        >
+          <div className='p-4 flex flex-col sm:flex-row gap-3'>
+            <div className='flex flex-1 gap-2'>
+              <div className='relative flex-1'>
+                <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground' />
+                <Input
+                  placeholder='Search name or email…'
+                  className='pl-9 h-9 text-sm border-2 focus-visible:ring-0 focus-visible:border-primary'
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                />
+              </div>
+              <Button size='sm' className='h-9 px-4' onClick={handleSearch}>
+                Search
+              </Button>
             </div>
-            <CardTitle className='font-display text-lg font-bold'>
-              All Users
-            </CardTitle>
+
+            <Select
+              value={role}
+              onValueChange={(v) => handleFilterChange('role', v)}
+            >
+              <SelectTrigger className='w-36 h-9 text-xs border-2 hover:border-primary/40'>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='ALL'>All Roles</SelectItem>
+                <SelectItem value='USER'>User</SelectItem>
+                <SelectItem value='ADMIN'>Admin</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={status}
+              onValueChange={(v) => handleFilterChange('status', v)}
+            >
+              <SelectTrigger className='w-36 h-9 text-xs border-2 hover:border-primary/40'>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='ALL'>All Status</SelectItem>
+                <SelectItem value='ACTIVE'>Active</SelectItem>
+                <SelectItem value='BANNED'>Banned</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* ── Table ────────────────────────────────────────────────────────── */}
+      <div ref={tableRef}>
+        <motion.div
+          variants={fadeUp}
+          initial='hidden'
+          animate={tableInView ? 'show' : 'hidden'}
+          custom={0}
+          className='mb-6'
+        >
+          <div className='flex items-center justify-between'>
+            <div>
+              <div className='flex items-center gap-3 mb-1'>
+                <div className='h-px w-8 bg-primary' />
+                <span className='text-xs font-semibold tracking-[0.2em] uppercase text-primary'>
+                  Directory
+                </span>
+              </div>
+              <h2 className='text-xl font-bold tracking-tight'>
+                All{' '}
+                <span className='italic font-light text-muted-foreground'>
+                  users
+                </span>
+              </h2>
+            </div>
             {pagination && (
-              <Badge variant='outline' className='ml-auto text-xs'>
+              <Badge variant='outline' className='text-xs'>
                 {pagination.total} total
               </Badge>
             )}
           </div>
-        </CardHeader>
+        </motion.div>
 
-        <div className='overflow-x-auto'>
-          <Table>
-            <TableHeader>
-              <TableRow className='hover:bg-transparent'>
-                <TableHead className='text-xs font-semibold tracking-widest uppercase pl-6'>
-                  User
-                </TableHead>
-                <TableHead className='text-xs font-semibold tracking-widest uppercase'>
-                  Role
-                </TableHead>
-                <TableHead className='text-xs font-semibold tracking-widest uppercase'>
-                  Status
-                </TableHead>
-                <TableHead className='text-xs font-semibold tracking-widest uppercase'>
-                  Activity
-                </TableHead>
-                <TableHead className='text-xs font-semibold tracking-widest uppercase'>
-                  Joined
-                </TableHead>
-                <TableHead className='text-xs font-semibold tracking-widest uppercase text-right pr-6'>
-                  Actions
-                </TableHead>
-              </TableRow>
-            </TableHeader>
+        <motion.div
+          variants={fadeUp}
+          initial='hidden'
+          animate={tableInView ? 'show' : 'hidden'}
+          custom={0.1}
+          className='rounded-2xl border border-border overflow-hidden'
+        >
+          <div className='overflow-x-auto'>
+            <Table>
+              <TableHeader>
+                <TableRow className='hover:bg-transparent'>
+                  <TableHead className='pl-6 text-[10px] font-semibold tracking-[0.18em] uppercase text-muted-foreground'>
+                    User
+                  </TableHead>
+                  <TableHead className='text-[10px] font-semibold tracking-[0.18em] uppercase text-muted-foreground'>
+                    Role
+                  </TableHead>
+                  <TableHead className='text-[10px] font-semibold tracking-[0.18em] uppercase text-muted-foreground'>
+                    Status
+                  </TableHead>
+                  <TableHead className='text-[10px] font-semibold tracking-[0.18em] uppercase text-muted-foreground'>
+                    Activity
+                  </TableHead>
+                  <TableHead className='text-[10px] font-semibold tracking-[0.18em] uppercase text-muted-foreground'>
+                    Joined
+                  </TableHead>
+                  <TableHead className='pr-6 text-right text-[10px] font-semibold tracking-[0.18em] uppercase text-muted-foreground'>
+                    Actions
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
 
-            <TableBody>
-              {/* loading skeletons */}
-              {isPending &&
-                Array.from({ length: 8 }).map((_, i) => (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
-                  <TableRow key={i} className='hover:bg-muted/30'>
-                    <TableCell className='pl-6'>
-                      <div className='flex items-center gap-3'>
-                        <Skeleton className='w-8 h-8 rounded-full' />
-                        <div className='space-y-1.5'>
-                          <Skeleton className='h-3.5 w-28' />
-                          <Skeleton className='h-3 w-40' />
+              <TableBody>
+                {/* Loading skeletons */}
+                {isPending &&
+                  Array.from({ length: 8 }).map((_, i) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
+                    <TableRow key={i} className='hover:bg-primary/3'>
+                      <TableCell className='pl-6'>
+                        <div className='flex items-center gap-3'>
+                          <Skeleton className='w-8 h-8 rounded-full shrink-0' />
+                          <div className='space-y-1.5'>
+                            <Skeleton className='h-3.5 w-28' />
+                            <Skeleton className='h-3 w-40' />
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className='h-5 w-14' />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className='h-5 w-16' />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className='h-3.5 w-20' />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className='h-3.5 w-20' />
+                      </TableCell>
+                      <TableCell className='pr-6 text-right'>
+                        <Skeleton className='h-7 w-7 ml-auto' />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+
+                {/* Error */}
+                {isError && (
+                  <TableRow>
+                    <TableCell colSpan={6} className='py-16 text-center'>
+                      <div className='flex flex-col items-center gap-3'>
+                        <div className='flex items-center gap-3'>
+                          <div className='h-px w-8 bg-destructive' />
+                          <span className='text-xs font-semibold tracking-[0.2em] uppercase text-destructive'>
+                            Error
+                          </span>
+                          <div className='h-px w-8 bg-destructive' />
+                        </div>
+                        <p className='text-sm text-muted-foreground'>
+                          Failed to load users. Please try again.
+                        </p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+
+                {/* Empty */}
+                {!isPending && !isError && users.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className='py-16 text-center'>
+                      <div className='flex flex-col items-center gap-3'>
+                        <div className='w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center'>
+                          <Users className='w-5 h-5 text-primary' />
+                        </div>
+                        <div>
+                          <p className='text-sm font-semibold'>
+                            No users found
+                          </p>
+                          <p className='text-xs text-muted-foreground mt-1'>
+                            Try adjusting your search or filters.
+                          </p>
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <Skeleton className='h-5 w-14' />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className='h-5 w-16' />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className='h-3.5 w-20' />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className='h-3.5 w-20' />
-                    </TableCell>
-                    <TableCell className='pr-6 text-right'>
-                      <Skeleton className='h-7 w-7 ml-auto' />
-                    </TableCell>
                   </TableRow>
-                ))}
+                )}
 
-              {/* error */}
-              {isError && (
-                <TableRow>
-                  <TableCell colSpan={6} className='py-16 text-center'>
-                    <div className='flex flex-col items-center gap-2'>
-                      <XCircle className='w-8 h-8 text-destructive' />
-                      <p className='text-sm font-semibold'>
-                        Failed to load users
-                      </p>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-
-              {/* empty */}
-              {!isPending && !isError && users.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} className='py-16 text-center'>
-                    <div className='flex flex-col items-center gap-2'>
-                      <Users className='w-8 h-8 text-muted-foreground' />
-                      <p className='text-sm font-semibold'>No users found</p>
-                      <p className='text-xs text-muted-foreground'>
-                        Try adjusting your search or filters.
-                      </p>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-
-              {/* rows */}
-              {!isPending &&
-                !isError &&
-                users.map((user) => (
-                  <TableRow
-                    key={user.id}
-                    className={cn(
-                      'hover:bg-muted/30 transition-colors',
-                      isBanned(user) && 'opacity-60',
-                      user.id === currentUserId && 'bg-primary/5',
-                    )}
-                  >
-                    {/* user */}
-                    <TableCell className='pl-6'>
-                      <div className='flex items-center gap-3'>
-                        <UserAvatar user={user} />
-                        <div className='min-w-0'>
-                          <div className='flex items-center gap-1.5'>
-                            <p className='text-sm font-semibold truncate max-w-40'>
-                              {user.name}
+                {/* Rows */}
+                {!isPending &&
+                  !isError &&
+                  users.map((user, i) => (
+                    <motion.tr
+                      key={user.id}
+                      variants={cardVariants}
+                      initial='hidden'
+                      animate='show'
+                      custom={i * 0.04}
+                      className={cn(
+                        'group border-b border-border last:border-0 hover:bg-primary/3 transition-colors duration-200',
+                        isBanned(user) && 'opacity-60',
+                        user.id === currentUserId && 'bg-primary/5',
+                      )}
+                    >
+                      {/* User */}
+                      <TableCell className='pl-6'>
+                        <div className='flex items-center gap-3'>
+                          <UserAvatar user={user} />
+                          <div className='min-w-0'>
+                            <div className='flex items-center gap-1.5'>
+                              <p className='text-sm font-semibold truncate max-w-40'>
+                                {user.name}
+                              </p>
+                              {user.id === currentUserId && (
+                                <span className='text-[10px] font-bold text-primary'>
+                                  (you)
+                                </span>
+                              )}
+                            </div>
+                            <p className='text-xs text-muted-foreground truncate max-w-50'>
+                              {user.email}
                             </p>
-                            {user.id === currentUserId && (
-                              <span className='text-[10px] font-bold text-primary'>
-                                (you)
-                              </span>
+                            {isBanned(user) && user.banReason && (
+                              <p className='text-[10px] text-red-500 mt-0.5 truncate max-w-50'>
+                                Ban: {user.banReason}
+                              </p>
                             )}
                           </div>
-                          <p className='text-xs text-muted-foreground truncate max-w-50'>
-                            {user.email}
-                          </p>
-                          {isBanned(user) && user.banReason && (
-                            <p className='text-[10px] text-red-500 mt-0.5 truncate max-w-50'>
-                              Ban: {user.banReason}
-                            </p>
-                          )}
                         </div>
-                      </div>
-                    </TableCell>
+                      </TableCell>
 
-                    {/* role */}
-                    <TableCell>
-                      <RoleBadge role={user.role} />
-                    </TableCell>
+                      {/* Role */}
+                      <TableCell>
+                        <RoleBadge role={user.role} />
+                      </TableCell>
 
-                    {/* status */}
-                    <TableCell>
-                      <StatusBadge user={user} />
-                    </TableCell>
+                      {/* Status */}
+                      <TableCell>
+                        <StatusBadge user={user} />
+                      </TableCell>
 
-                    {/* activity */}
-                    <TableCell>
-                      <div className='flex items-center gap-3 text-xs text-muted-foreground'>
-                        <span className='flex items-center gap-1'>
-                          <BookOpen className='w-3 h-3' />
-                          {user._count.bookings}
-                        </span>
-                        <span className='flex items-center gap-1'>
-                          <Star className='w-3 h-3' />
-                          {user._count.reviews}
-                        </span>
-                      </div>
-                    </TableCell>
+                      {/* Activity */}
+                      <TableCell>
+                        <div className='flex items-center gap-3 text-xs text-muted-foreground'>
+                          <span className='flex items-center gap-1'>
+                            <BookOpen className='w-3 h-3' />
+                            {user._count.bookings}
+                          </span>
+                          <span className='flex items-center gap-1'>
+                            <Star className='w-3 h-3' />
+                            {user._count.reviews}
+                          </span>
+                        </div>
+                      </TableCell>
 
-                    {/* joined */}
-                    <TableCell className='text-xs text-muted-foreground'>
-                      {format(new Date(user.createdAt), 'dd MMM yyyy')}
-                    </TableCell>
+                      {/* Joined */}
+                      <TableCell className='text-xs text-muted-foreground'>
+                        {format(new Date(user.createdAt), 'dd MMM yyyy')}
+                      </TableCell>
 
-                    {/* actions */}
-                    <TableCell className='pr-6 text-right'>
-                      <UserRowActions
-                        user={user}
-                        currentUserId={currentUserId}
-                        onBan={openBan}
-                        onDelete={openDelete}
-                      />
-                    </TableCell>
-                  </TableRow>
-                ))}
-            </TableBody>
-          </Table>
-        </div>
-
-        {/* pagination */}
-        {pagination && pagination.totalPages > 1 && (
-          <div className='flex items-center justify-between px-6 py-4 border-t border-border'>
-            <p className='text-xs text-muted-foreground'>
-              Page {pagination.page} of {pagination.totalPages} ·{' '}
-              {pagination.total} users
-            </p>
-            <div className='flex items-center gap-2'>
-              <Button
-                variant='outline'
-                size='sm'
-                className='h-8 w-8 p-0 border-2'
-                disabled={page <= 1}
-                onClick={() => setPage((p) => p - 1)}
-              >
-                <ChevronLeft className='w-4 h-4' />
-              </Button>
-              {Array.from({ length: Math.min(pagination.totalPages, 5) }).map(
-                (_, i) => {
-                  const p = i + 1;
-                  return (
-                    <Button
-                      key={p}
-                      variant={p === page ? 'default' : 'outline'}
-                      size='sm'
-                      className='h-8 w-8 p-0 border-2 text-xs'
-                      onClick={() => setPage(p)}
-                    >
-                      {p}
-                    </Button>
-                  );
-                },
-              )}
-              <Button
-                variant='outline'
-                size='sm'
-                className='h-8 w-8 p-0 border-2'
-                disabled={page >= pagination.totalPages}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                <ChevronRight className='w-4 h-4' />
-              </Button>
-            </div>
+                      {/* Actions */}
+                      <TableCell className='pr-6 text-right'>
+                        <UserRowActions
+                          user={user}
+                          currentUserId={currentUserId}
+                          onBan={openBan}
+                          onDelete={openDelete}
+                        />
+                      </TableCell>
+                    </motion.tr>
+                  ))}
+              </TableBody>
+            </Table>
           </div>
-        )}
-      </Card>
 
-      {/* dialogs */}
+          {/* Pagination */}
+          {pagination && pagination.totalPages > 1 && (
+            <div className='flex items-center justify-between px-6 py-4 border-t border-border'>
+              <p className='text-xs text-muted-foreground'>
+                Page {pagination.page} of {pagination.totalPages} ·{' '}
+                {pagination.total} users
+              </p>
+              <div className='flex items-center gap-2'>
+                <Button
+                  variant='outline'
+                  size='sm'
+                  className='h-8 w-8 p-0'
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => p - 1)}
+                >
+                  <ChevronLeft className='w-4 h-4' />
+                </Button>
+                {Array.from({ length: Math.min(pagination.totalPages, 5) }).map(
+                  (_, i) => {
+                    const p = i + 1;
+                    return (
+                      <Button
+                        key={p}
+                        variant={p === page ? 'default' : 'outline'}
+                        size='sm'
+                        className='h-8 w-8 p-0 text-xs'
+                        onClick={() => setPage(p)}
+                      >
+                        {p}
+                      </Button>
+                    );
+                  },
+                )}
+                <Button
+                  variant='outline'
+                  size='sm'
+                  className='h-8 w-8 p-0'
+                  disabled={page >= pagination.totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  <ChevronRight className='w-4 h-4' />
+                </Button>
+              </div>
+            </div>
+          )}
+        </motion.div>
+      </div>
+
+      {/* Dialogs */}
       <BanDialog user={banTarget} open={banOpen} onOpenChange={setBanOpen} />
       <DeleteDialog
         user={deleteTarget}
