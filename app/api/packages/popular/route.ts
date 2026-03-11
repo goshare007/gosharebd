@@ -6,6 +6,7 @@ export async function GET() {
     const response = await prisma.package.findMany({
       where: {
         isActive: true,
+        packageType: 'REGULAR',
       },
       select: {
         id: true,

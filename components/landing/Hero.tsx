@@ -1,46 +1,63 @@
 'use client';
 
+import Autoplay from 'embla-carousel-autoplay';
 import {
   ArrowRight,
   CheckCircle2,
   Headset,
+  MapPin,
   Sparkles,
   Star,
 } from 'lucide-react';
+import {
+  AnimatePresence,
+  motion,
+  useInView,
+  type Variants,
+} from 'motion/react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  Carousel,
+  type CarouselApi,
+  CarouselContent,
+  CarouselItem,
+} from '@/components/ui/carousel';
 
 const destinations = [
   {
     name: "Cox's Bazar",
     subtitle: "World's longest natural beach",
+    tag: 'Most Popular',
     image:
       'https://images.unsplash.com/photo-1665152038920-e3b63b660075?q=80&w=774&auto=format&fit=crop',
   },
   {
     name: 'Sundarbans',
     subtitle: 'Royal Bengal Tiger habitat',
+    tag: 'Wildlife',
     image:
       'https://images.unsplash.com/photo-1551615577-1c7e180a77ac?q=80&w=967&auto=format&fit=crop',
   },
   {
     name: 'Sylhet',
     subtitle: 'Enchanting tea gardens',
+    tag: 'Nature',
     image:
       'https://images.unsplash.com/photo-1667120205301-a2a3a886886e?q=80&w=774&auto=format&fit=crop',
   },
   {
     name: 'Bandarban',
     subtitle: 'Mountain paradise',
+    tag: 'Adventure',
     image:
       'https://images.unsplash.com/photo-1585123388867-3bfe6dd4bdbf?q=80&w=801&auto=format&fit=crop',
   },
 ];
 
-// Real traveler avatars
 const travelers = [
   'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop',
   'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop',
@@ -48,219 +65,193 @@ const travelers = [
   'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop',
 ];
 
-export default function Hero() {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+const stats = [
+  { value: 50, display: '50+', label: 'Destinations' },
+  { value: 10000, display: '10K+', label: 'Travelers' },
+  { value: 500, display: '500+', label: 'Tours' },
+  { value: 4.8, display: '4.8★', label: 'Rating' },
+];
 
-  // Auto-rotate images on mobile
+const desktopPositions = [
+  'top-12 left-0 w-[44%] h-[34%] z-20',
+  'bottom-0 left-8 w-[42%] h-[32%] z-30',
+  'bottom-8 right-4 w-[34%] h-[28%] z-20',
+];
+
+// ── Animation variants ────────────────────────────────────────────────────────
+// motion v11+: cubic bezier easing must be a typed 4-tuple, not number[]
+
+const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
+const fadeUp: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  show: (delay: number = 0) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: EASE, delay },
+  }),
+};
+
+const fadeIn: Variants = {
+  hidden: { opacity: 0 },
+  show: (delay: number = 0) => ({
+    opacity: 1,
+    transition: { duration: 0.45, ease: 'easeOut', delay },
+  }),
+};
+
+const scaleIn: Variants = {
+  hidden: { opacity: 0, scale: 0.88 },
+  show: (delay: number = 0) => ({
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.5, ease: EASE, delay },
+  }),
+};
+
+// ── Animated stat counter (desktop) ──────────────────────────────────────────
+function StatCounter({ stat }: { stat: (typeof stats)[0] }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref, { once: true, margin: '-40px' });
+  const [displayed, setDisplayed] = useState('0');
+
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentImageIndex((prev) => (prev + 1) % destinations.length);
-    }, 5000); // Change every 5 seconds
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const currentDestination = destinations[currentImageIndex];
+    if (!isInView) return;
+    const timeout = setTimeout(() => {
+      const duration = 900;
+      const steps = 40;
+      const stepMs = duration / steps;
+      let step = 0;
+      const interval = setInterval(() => {
+        step++;
+        const eased = 1 - (1 - step / steps) ** 3;
+        const current = eased * stat.value;
+        if (stat.label === 'Rating') {
+          setDisplayed(`${Math.min(current, stat.value).toFixed(1)}★`);
+        } else if (stat.label === 'Travelers') {
+          setDisplayed(`${Math.round(Math.min(current, stat.value) / 1000)}K+`);
+        } else {
+          setDisplayed(`${Math.round(Math.min(current, stat.value))}+`);
+        }
+        if (step >= steps) {
+          setDisplayed(stat.display);
+          clearInterval(interval);
+        }
+      }, stepMs);
+      return () => clearInterval(interval);
+    }, 200);
+    return () => clearTimeout(timeout);
+  }, [isInView, stat]);
 
   return (
-    <section className='relative min-h-screen flex items-center overflow-hidden'>
-      {/* Animated gradient background */}
-      <div className='absolute inset-0 bg-linear-to-br from-primary/5 via-background to-secondary/5' />
+    <motion.div
+      ref={ref}
+      variants={scaleIn}
+      initial='hidden'
+      animate={isInView ? 'show' : 'hidden'}
+      custom={0}
+      className='p-4 rounded-xl bg-muted/40 border border-border/50 hover:scale-105 transition-transform cursor-default text-center'
+    >
+      <p className='text-2xl font-bold tabular-nums'>{displayed}</p>
+      <p className='text-xs text-muted-foreground mt-1'>{stat.label}</p>
+    </motion.div>
+  );
+}
 
-      {/* Decorative blobs */}
-      <div className='absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl animate-pulse' />
-      <div
-        className='absolute bottom-20 right-10 w-96 h-96 bg-secondary/10 rounded-full blur-3xl animate-pulse'
-        style={{ animationDelay: '1s' }}
-      />
+// ── Animated stat counter (mobile strip) ─────────────────────────────────────
+function MobileStatCounter({
+  stat,
+  delay,
+}: {
+  stat: (typeof stats)[0];
+  delay: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref, { once: true, margin: '-20px' });
+  const [displayed, setDisplayed] = useState('0');
 
-      <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 relative z-20 w-full'>
-        <div className='grid lg:grid-cols-2 gap-12 lg:gap-16 items-center'>
-          {/* Left side - Content */}
-          <div className='space-y-6 sm:space-y-8'>
-            {/* Heading */}
-            <div
-              className='space-y-5 text-center lg:text-left animate-in fade-in slide-in-from-bottom duration-700'
-              style={{ animationDelay: '100ms' }}
-            >
-              <h1 className='text-5xl font-display sm:text-6xl md:text-6xl lg:text-7xl font-extrabold'>
-                See the Beauty. <br className='hidden md:block' />
-                <span className='relative inline-block'>
-                  <span className='relative z-10 text-primary font-display'>
-                    GoShare
-                  </span>
-                </span>{' '}
-                the Story.
-              </h1>
+  useEffect(() => {
+    if (!isInView) return;
+    const timeout = setTimeout(() => {
+      const duration = 800;
+      const steps = 35;
+      const stepMs = duration / steps;
+      let step = 0;
+      const interval = setInterval(() => {
+        step++;
+        const eased = 1 - (1 - step / steps) ** 3;
+        const current = eased * stat.value;
+        if (stat.label === 'Rating') {
+          setDisplayed(`${Math.min(current, stat.value).toFixed(1)}★`);
+        } else if (stat.label === 'Travelers') {
+          setDisplayed(`${Math.round(Math.min(current, stat.value) / 1000)}K+`);
+        } else {
+          setDisplayed(`${Math.round(Math.min(current, stat.value))}+`);
+        }
+        if (step >= steps) {
+          setDisplayed(stat.display);
+          clearInterval(interval);
+        }
+      }, stepMs);
+      return () => clearInterval(interval);
+    }, delay);
+    return () => clearTimeout(timeout);
+  }, [isInView, stat, delay]);
 
-              <p className='text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto lg:mx-0 leading-relaxed'>
-                Go beyond the map with 10,000+ travelers who found their
-                paradise. Experience the raw beauty of pristine shores and
-                mystical highlands, guided by the heartbeat of Bangladesh.
-              </p>
-            </div>
+  return (
+    <motion.div
+      ref={ref}
+      variants={fadeUp}
+      initial='hidden'
+      animate={isInView ? 'show' : 'hidden'}
+      custom={delay / 1000}
+      className='text-center'
+    >
+      <p className='text-xl font-bold text-foreground tabular-nums'>
+        {displayed}
+      </p>
+      <p className='text-[10px] text-muted-foreground mt-0.5'>{stat.label}</p>
+    </motion.div>
+  );
+}
 
-            {/* Social Proof - Enhanced */}
-            <div
-              className='flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 sm:gap-8 animate-in fade-in duration-700'
-              style={{ animationDelay: '200ms' }}
-            >
-              {/* Travelers */}
-              <div className='flex items-center gap-3'>
-                <div className='flex -space-x-3'>
-                  {travelers.map((avatar, idx) => (
-                    <div
-                      // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
-                      key={idx}
-                      className='relative w-10 h-10 rounded-full border-2 border-background ring-2 ring-primary/20 overflow-hidden'
-                    >
-                      <Image
-                        src={avatar}
-                        alt={`Traveler ${idx + 1}`}
-                        fill
-                        className='object-cover'
-                      />
-                    </div>
-                  ))}
-                  <div className='w-10 h-10 rounded-full border-2 border-background ring-2 ring-primary/20 bg-primary flex items-center justify-center text-xs font-bold text-primary-foreground'>
-                    10K+
-                  </div>
-                </div>
-                <div>
-                  <div className='flex items-center gap-1 mb-0.5'>
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
-                        key={i}
-                        className='w-4 h-4 fill-yellow-400 text-yellow-400'
-                      />
-                    ))}
-                  </div>
-                  <p className='text-sm font-semibold'>
-                    4.8/5 from 10,247 reviews
-                  </p>
-                </div>
-              </div>
+// ── Main component ────────────────────────────────────────────────────────────
+export default function Hero() {
+  const [api, setApi] = useState<CarouselApi>();
+  const [activeIdx, setActiveIdx] = useState(0);
 
-              {/* Satisfaction */}
-              <div className='flex items-center gap-2 px-4 py-2 bg-green-500/10 rounded-full'>
-                <CheckCircle2 className='w-5 h-5 text-green-500' />
-                <div>
-                  <p className='font-bold text-sm text-green-700 dark:text-green-400'>
-                    98% Happy
-                  </p>
-                  <p className='text-xs text-muted-foreground'>Travelers</p>
-                </div>
-              </div>
-            </div>
+  useEffect(() => {
+    if (!api) return;
+    const onSelect = () => setActiveIdx(api.selectedScrollSnap());
+    api.on('select', onSelect);
+    return () => {
+      api.off('select', onSelect);
+    };
+  }, [api]);
 
-            {/* CTAs - Improved */}
-            <div
-              className='flex flex-col sm:flex-row gap-4 animate-in fade-in duration-700'
-              style={{ animationDelay: '300ms' }}
-            >
-              <Button
-                size='lg'
-                className='text-base h-14 px-8 gap-2 w-full sm:w-auto  transition-all hover:scale-105'
-                asChild
-              >
-                <Link href='/packages'>
-                  Explore All Tours
-                  <ArrowRight />
-                </Link>
-              </Button>
-              <Button
-                size='lg'
-                variant='outline'
-                asChild
-                className='text-base h-14 px-8 gap-2 w-full sm:w-auto  transition-all hover:scale-105'
-              >
-                <Link href='/contact'>
-                  <Headset className='w-5 h-5 text-base' />
-                  Contact Us
-                </Link>
-              </Button>
-            </div>
-
-            {/* Features - Quick highlights */}
-            <div
-              className='flex flex-wrap gap-4 justify-center lg:justify-start animate-in fade-in duration-700'
-              style={{ animationDelay: '400ms' }}
-            >
-              <div className='flex items-center gap-2 text-sm text-muted-foreground'>
-                <CheckCircle2 className='w-4 h-4 text-primary' />
-                <span>Free Cancellation</span>
-              </div>
-              <div className='flex items-center gap-2 text-sm text-muted-foreground'>
-                <CheckCircle2 className='w-4 h-4 text-primary' />
-                <span>Best Price Guarantee</span>
-              </div>
-              <div className='flex items-center gap-2 text-sm text-muted-foreground'>
-                <CheckCircle2 className='w-4 h-4 text-primary' />
-                <span>24/7 Support</span>
-              </div>
-            </div>
-
-            {/* Stats - Redesigned */}
-            <div
-              className='grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 animate-in fade-in duration-700'
-              style={{ animationDelay: '500ms' }}
-            >
-              {[
-                {
-                  value: '50+',
-                  label: 'Destinations',
-                  color: 'from-blue-500/20 to-blue-500/5',
-                },
-                {
-                  value: '10K+',
-                  label: 'Travelers',
-                  color: 'from-green-500/20 to-green-500/5',
-                },
-                {
-                  value: '500+',
-                  label: 'Tours',
-                  color: 'from-purple-500/20 to-purple-500/5',
-                },
-                {
-                  value: '4.8★',
-                  label: 'Rating',
-                  color: 'from-yellow-500/20 to-yellow-500/5',
-                },
-              ].map((stat, idx) => (
-                <div
-                  // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
-                  key={idx}
-                  className={`p-4 rounded-xl bg-linear-to-br ${stat.color} border border-border/50 hover:scale-105 transition-transform cursor-default`}
-                >
-                  <p className='text-2xl sm:text-3xl font-bold text-foreground'>
-                    {stat.value}
-                  </p>
-                  <p className='text-xs sm:text-sm text-muted-foreground mt-1'>
-                    {stat.label}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Right side - Improved Image Section */}
-          <div
-            className='relative h-125 sm:h-150 lg:h-175 animate-in fade-in slide-in-from-right duration-700'
-            style={{ animationDelay: '200ms' }}
+  return (
+    <section className='relative min-h-screen flex flex-col overflow-hidden bg-background'>
+      {/* ─── MOBILE LAYOUT ───────────────────────────────────────────── */}
+      <div className='flex flex-col lg:hidden min-h-screen'>
+        {/* Carousel fades in on mount */}
+        <motion.div
+          variants={fadeIn}
+          initial='hidden'
+          animate='show'
+          custom={0}
+          className='w-full'
+        >
+          <Carousel
+            setApi={setApi}
+            plugins={[Autoplay({ delay: 5000, stopOnInteraction: true })]}
+            opts={{ loop: true }}
+            className='w-full'
           >
-            {/* Mobile: Carousel with indicators */}
-            <div className='lg:hidden relative w-full h-full'>
-              <div className='relative w-full h-full rounded-3xl overflow-hidden shadow-2xl'>
-                {/* Images */}
-                {destinations.map((dest, idx) => (
-                  <div
-                    // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
-                    key={idx}
-                    className={`absolute inset-0 transition-opacity duration-1000 ${
-                      idx === currentImageIndex ? 'opacity-100' : 'opacity-0'
-                    }`}
-                  >
+            <CarouselContent>
+              {destinations.map((dest, idx) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: static list
+                <CarouselItem key={idx}>
+                  <div className='relative w-full' style={{ height: '52svh' }}>
                     <Image
                       src={dest.image}
                       alt={dest.name}
@@ -268,91 +259,443 @@ export default function Hero() {
                       className='object-cover'
                       priority={idx === 0}
                     />
-                  </div>
-                ))}
+                    <div className='absolute inset-0 bg-linear-to-b from-black/20 via-transparent to-black' />
 
-                {/* Gradient overlay */}
-                <div className='absolute inset-0 bg-linear-to-t from-black/80 via-black/30 to-transparent' />
-
-                {/* Content */}
-                <div className='absolute bottom-0 left-0 right-0 p-6 sm:p-8 text-white'>
-                  <Badge className='bg-primary/90 backdrop-blur-sm mb-3'>
-                    <Sparkles className='w-3 h-3 mr-1' />
-                    Featured Destination
-                  </Badge>
-                  <h3 className='text-3xl sm:text-4xl font-bold mb-2'>
-                    {currentDestination.name}
-                  </h3>
-                  <p className='text-sm sm:text-base opacity-90 mb-6'>
-                    {currentDestination.subtitle}
-                  </p>
-
-                  {/* Thumbnail navigation */}
-                  <div className='flex gap-2'>
-                    {destinations.map((dest, idx) => (
-                      <Button
-                        // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
-                        key={idx}
-                        onClick={() => setCurrentImageIndex(idx)}
-                        className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border-2 transition-all ${
-                          idx === currentImageIndex
-                            ? 'border-primary scale-110 shadow-xl'
-                            : 'border-white/30 opacity-60 hover:opacity-100'
-                        }`}
-                      >
-                        <Image
-                          src={dest.image}
-                          alt={dest.name}
-                          fill
-                          className='object-cover'
-                        />
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Floating rating badge */}
-                <div className='absolute top-6 right-6 bg-background/95 backdrop-blur-sm rounded-2xl p-4 shadow-2xl border-2 border-primary/20'>
-                  <div className='text-center'>
-                    <p className='text-3xl font-bold text-primary'>4.8</p>
-                    <div className='flex gap-0.5 mt-1 justify-center'>
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
-                          key={i}
-                          className='w-3 h-3 fill-yellow-400 text-yellow-400'
-                        />
-                      ))}
+                    {/* Tag */}
+                    <div className='absolute top-4 left-4'>
+                      <Badge className='bg-primary/90 backdrop-blur-sm text-primary-foreground gap-1 text-xs px-3 py-1'>
+                        <Sparkles className='w-3 h-3' />
+                        {dest.tag}
+                      </Badge>
                     </div>
-                    <p className='text-xs text-muted-foreground mt-1 font-medium'>
-                      10K+ Reviews
-                    </p>
-                  </div>
-                </div>
 
-                {/* Carousel indicators */}
-                <div className='absolute bottom-32 left-1/2 -translate-x-1/2 flex gap-2'>
-                  {destinations.map((_, idx) => (
-                    <Button
-                      // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
-                      key={idx}
-                      onClick={() => setCurrentImageIndex(idx)}
-                      className={`h-1.5 rounded-full transition-all ${
-                        idx === currentImageIndex
-                          ? 'w-8 bg-white'
-                          : 'w-1.5 bg-white/50'
-                      }`}
-                      aria-label={`Go to slide ${idx + 1}`}
+                    {/* Trust pill */}
+                    <div className='absolute top-4 right-4 bg-background/90 backdrop-blur-sm rounded-full px-3 py-1.5 flex items-center gap-1.5 shadow-lg'>
+                      <Star className='w-3.5 h-3.5 fill-yellow-400 text-yellow-400' />
+                      <span className='text-xs font-bold'>4.8</span>
+                      <span className='text-xs text-muted-foreground'>
+                        · 10K+
+                      </span>
+                    </div>
+
+                    {/* Location text — slides up/down on slide change */}
+                    <AnimatePresence mode='wait'>
+                      {activeIdx === idx && (
+                        <motion.div
+                          key={dest.name}
+                          initial={{ opacity: 0, y: 14 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{
+                            duration: 0.35,
+                            ease: [0.22, 1, 0.36, 1],
+                          }}
+                          className='absolute bottom-6 left-4 text-white'
+                        >
+                          <div className='flex items-center gap-1.5 mb-0.5'>
+                            <MapPin className='w-4 h-4 opacity-80' />
+                            <span className='text-sm font-medium opacity-80'>
+                              Bangladesh
+                            </span>
+                          </div>
+                          <p className='text-2xl font-bold leading-tight'>
+                            {dest.name}
+                          </p>
+                          <p className='text-sm opacity-80 mt-0.5'>
+                            {dest.subtitle}
+                          </p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+          </Carousel>
+        </motion.div>
+
+        {/* Destination Switcher Pills */}
+        <motion.div
+          variants={fadeUp}
+          initial='hidden'
+          animate='show'
+          custom={0.15}
+          className='flex gap-2 px-4 pt-4 overflow-x-auto scrollbar-none'
+        >
+          {destinations.map((dest, idx) => (
+            <button
+              // biome-ignore lint/suspicious/noArrayIndexKey: static list
+              key={idx}
+              type='button'
+              onClick={() => api?.scrollTo(idx)}
+              className={`flex-none flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap ${
+                idx === activeIdx
+                  ? 'bg-primary text-primary-foreground shadow-md shadow-primary/25 scale-105'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              }`}
+            >
+              {/* Icon slides in with layoutId for smooth transfer */}
+              {idx === activeIdx && (
+                <motion.span
+                  layoutId='mobile-active-pill-icon'
+                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                >
+                  <MapPin className='w-3.5 h-3.5' />
+                </motion.span>
+              )}
+              {dest.name}
+            </button>
+          ))}
+        </motion.div>
+
+        {/* Content Block */}
+        <div className='flex flex-col flex-1 px-4 pt-5 pb-6 gap-5'>
+          {/* Headline */}
+          <div>
+            <motion.h1
+              variants={fadeUp}
+              initial='hidden'
+              animate='show'
+              custom={0.2}
+              className='text-4xl font-extrabold tracking-tight leading-[1.1]'
+            >
+              See the Beauty.
+              <br />
+              <span className='text-primary'>GoShare</span> the Story.
+            </motion.h1>
+            <motion.p
+              variants={fadeUp}
+              initial='hidden'
+              animate='show'
+              custom={0.3}
+              className='text-muted-foreground text-sm mt-2.5 leading-relaxed'
+            >
+              10,000+ travelers have found their paradise with us. Guided tours
+              across Bangladesh&apos;s most breathtaking destinations.
+            </motion.p>
+          </div>
+
+          {/* CTAs */}
+          <motion.div
+            variants={fadeUp}
+            initial='hidden'
+            animate='show'
+            custom={0.4}
+            className='flex gap-3'
+          >
+            {/* Primary CTA — one-time pulse ring after load settles */}
+            <div className='relative flex-1'>
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: [1, 1.06, 1], opacity: [0.5, 0.2, 0] }}
+                transition={{ delay: 1.4, duration: 1.6, ease: 'easeOut' }}
+                className='absolute inset-0 rounded-lg bg-primary pointer-events-none'
+              />
+              <Button
+                size='lg'
+                className='w-full h-12 text-sm gap-1.5 shadow-lg shadow-primary/20'
+                asChild
+              >
+                <Link href='/packages'>
+                  Explore Tours
+                  <ArrowRight className='w-4 h-4' />
+                </Link>
+              </Button>
+            </div>
+            <Button
+              variant='outline'
+              size='lg'
+              className='h-12 px-4 gap-1.5 text-sm'
+              asChild
+            >
+              <Link href='/contact'>
+                <Headset className='w-4 h-4' />
+                Contact
+              </Link>
+            </Button>
+          </motion.div>
+
+          {/* Social Proof Bar */}
+          <motion.div
+            variants={fadeUp}
+            initial='hidden'
+            animate='show'
+            custom={0.5}
+            className='flex items-center justify-between rounded-2xl bg-muted/50 px-4 py-3 border border-border/40'
+          >
+            <div className='flex items-center gap-2.5'>
+              <div className='flex -space-x-2.5'>
+                {travelers.map((avatar, idx) => (
+                  <motion.div
+                    // biome-ignore lint/suspicious/noArrayIndexKey: static list
+                    key={idx}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{
+                      delay: 0.55 + idx * 0.07,
+                      duration: 0.35,
+                      ease: 'easeOut',
+                    }}
+                    className='w-8 h-8 rounded-full border-2 border-background overflow-hidden'
+                  >
+                    <Image
+                      src={avatar}
+                      alt=''
+                      width={32}
+                      height={32}
+                      className='object-cover'
                     />
+                  </motion.div>
+                ))}
+              </div>
+              <div>
+                <p className='text-xs font-semibold'>10,247 happy travelers</p>
+                <div className='flex items-center gap-0.5 mt-0.5'>
+                  {[...Array(5)].map((_, i) => (
+                    <motion.span
+                      // biome-ignore lint/suspicious/noArrayIndexKey: static list
+                      key={i}
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.7 + i * 0.06, duration: 0.25 }}
+                    >
+                      <Star className='w-3 h-3 fill-yellow-400 text-yellow-400' />
+                    </motion.span>
                   ))}
                 </div>
               </div>
             </div>
+            <div className='flex items-center gap-1.5 bg-green-500/10 rounded-full px-3 py-1.5'>
+              <CheckCircle2 className='w-4 h-4 text-green-500' />
+              <span className='text-xs font-bold text-green-700 dark:text-green-400'>
+                98% Happy
+              </span>
+            </div>
+          </motion.div>
 
-            {/* Desktop: Grid layout */}
-            <div className='hidden lg:block relative w-full h-full'>
-              {/* Main large image */}
-              <div className='absolute top-0 right-0 w-[70%] h-[55%] rounded-2xl overflow-hidden shadow-2xl border-4 border-background z-10 group'>
+          {/* Trust Micro-copy */}
+          <motion.div
+            variants={fadeUp}
+            initial='hidden'
+            animate='show'
+            custom={0.6}
+            className='flex items-center justify-center gap-4 text-xs text-muted-foreground'
+          >
+            {['Free Cancellation', 'Best Price', '24/7 Support'].map((f) => (
+              <span key={f} className='flex items-center gap-1'>
+                <CheckCircle2 className='w-3.5 h-3.5 text-primary' />
+                {f}
+              </span>
+            ))}
+          </motion.div>
+
+          {/* Animated Stats Strip */}
+          <div className='grid grid-cols-4 gap-2 pt-1'>
+            {stats.map((stat, i) => (
+              <MobileStatCounter key={stat.label} stat={stat} delay={i * 100} />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ─── DESKTOP LAYOUT ──────────────────────────────────────────── */}
+      <div className='hidden lg:flex min-h-screen items-center'>
+        {/* Decorative blobs — slow ambient float */}
+        <motion.div
+          animate={{ y: [0, -16, 0] }}
+          transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
+          className='absolute top-20 left-10 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none'
+        />
+        <motion.div
+          animate={{ y: [0, 14, 0] }}
+          transition={{
+            duration: 9,
+            repeat: Infinity,
+            ease: 'easeInOut',
+            delay: 1,
+          }}
+          className='absolute bottom-20 right-10 w-120 h-120 bg-secondary/10 rounded-full blur-3xl pointer-events-none'
+        />
+
+        <div className='max-w-7xl mx-auto px-6 lg:px-8 py-20 relative z-10 w-full'>
+          <div className='grid lg:grid-cols-2 gap-16 items-center'>
+            {/* Left — Content */}
+            <div className='space-y-8'>
+              <div className='space-y-5'>
+                <motion.h1
+                  variants={fadeUp}
+                  initial='hidden'
+                  animate='show'
+                  custom={0.1}
+                  className='text-6xl xl:text-7xl font-extrabold tracking-tight leading-[1.05]'
+                >
+                  See the Beauty. <br />
+                  <span className='text-primary'>GoShare</span> the Story.
+                </motion.h1>
+                <motion.p
+                  variants={fadeUp}
+                  initial='hidden'
+                  animate='show'
+                  custom={0.25}
+                  className='text-xl text-muted-foreground max-w-lg leading-relaxed'
+                >
+                  Go beyond the map with 10,000+ travelers who found their
+                  paradise. Experience the raw beauty of pristine shores and
+                  mystical highlands.
+                </motion.p>
+              </div>
+
+              {/* Social proof */}
+              <motion.div
+                variants={fadeUp}
+                initial='hidden'
+                animate='show'
+                custom={0.35}
+                className='flex items-center gap-8'
+              >
+                <div className='flex items-center gap-3'>
+                  <div className='flex -space-x-3'>
+                    {travelers.map((avatar, idx) => (
+                      <motion.div
+                        // biome-ignore lint/suspicious/noArrayIndexKey: static list
+                        key={idx}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.4 + idx * 0.08, duration: 0.35 }}
+                        className='w-10 h-10 rounded-full border-2 border-background overflow-hidden'
+                      >
+                        <Image
+                          src={avatar}
+                          alt=''
+                          width={40}
+                          height={40}
+                          className='object-cover'
+                        />
+                      </motion.div>
+                    ))}
+                    <motion.div
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.72, duration: 0.35 }}
+                      className='w-10 h-10 rounded-full border-2 border-background bg-primary flex items-center justify-center text-[10px] font-bold text-primary-foreground'
+                    >
+                      10K+
+                    </motion.div>
+                  </div>
+                  <div>
+                    <div className='flex gap-0.5 mb-0.5'>
+                      {[...Array(5)].map((_, i) => (
+                        <motion.span
+                          // biome-ignore lint/suspicious/noArrayIndexKey: static list
+                          key={i}
+                          initial={{ opacity: 0, scale: 0.4 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{
+                            delay: 0.5 + i * 0.07,
+                            type: 'spring',
+                            stiffness: 300,
+                          }}
+                        >
+                          <Star className='w-4 h-4 fill-yellow-400 text-yellow-400' />
+                        </motion.span>
+                      ))}
+                    </div>
+                    <p className='text-sm font-semibold'>
+                      4.8 · 10,247 reviews
+                    </p>
+                  </div>
+                </div>
+                <div className='flex items-center gap-2 px-4 py-2.5 bg-green-500/10 rounded-full'>
+                  <CheckCircle2 className='w-5 h-5 text-green-500' />
+                  <div>
+                    <p className='font-bold text-sm text-green-700 dark:text-green-400'>
+                      98% Happy
+                    </p>
+                    <p className='text-xs text-muted-foreground'>Travelers</p>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* CTAs */}
+              <motion.div
+                variants={fadeUp}
+                initial='hidden'
+                animate='show'
+                custom={0.45}
+                className='flex gap-4'
+              >
+                <div className='relative'>
+                  <motion.div
+                    initial={{ scale: 0.95, opacity: 0 }}
+                    animate={{ scale: [1, 1.08, 1], opacity: [0.6, 0.15, 0] }}
+                    transition={{ delay: 1.5, duration: 1.8, ease: 'easeOut' }}
+                    className='absolute inset-0 rounded-lg bg-primary pointer-events-none'
+                  />
+                  <Button
+                    size='lg'
+                    className='h-14 px-8 gap-2 text-base shadow-lg shadow-primary/20 hover:scale-105 transition-transform'
+                    asChild
+                  >
+                    <Link href='/packages'>
+                      Explore All Tours
+                      <ArrowRight />
+                    </Link>
+                  </Button>
+                </div>
+                <Button
+                  size='lg'
+                  variant='outline'
+                  className='h-14 px-8 gap-2 text-base hover:scale-105 transition-transform'
+                  asChild
+                >
+                  <Link href='/contact'>
+                    <Headset className='w-5 h-5' />
+                    Contact Us
+                  </Link>
+                </Button>
+              </motion.div>
+
+              {/* Trust micro-copy */}
+              <motion.div
+                variants={fadeUp}
+                initial='hidden'
+                animate='show'
+                custom={0.55}
+                className='flex gap-6'
+              >
+                {[
+                  'Free Cancellation',
+                  'Best Price Guarantee',
+                  '24/7 Support',
+                ].map((f) => (
+                  <div
+                    key={f}
+                    className='flex items-center gap-2 text-sm text-muted-foreground'
+                  >
+                    <CheckCircle2 className='w-4 h-4 text-primary' />
+                    {f}
+                  </div>
+                ))}
+              </motion.div>
+
+              {/* Animated Stats */}
+              <div className='grid grid-cols-4 gap-3 pt-2'>
+                {stats.map((stat) => (
+                  <StatCounter key={stat.label} stat={stat} />
+                ))}
+              </div>
+            </div>
+
+            {/* Right — Image Grid */}
+            <div className='relative h-150 xl:h-170'>
+              {/* Main image */}
+              <motion.div
+                variants={scaleIn}
+                initial='hidden'
+                animate='show'
+                custom={0.2}
+                className='absolute top-0 right-0 w-[68%] h-[55%] rounded-2xl overflow-hidden shadow-2xl border-4 border-background z-10 group'
+              >
                 <Image
                   src={destinations[0].image}
                   alt={destinations[0].name}
@@ -361,89 +704,78 @@ export default function Hero() {
                 />
                 <div className='absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent' />
                 <div className='absolute bottom-0 left-0 right-0 p-6 text-white'>
-                  <Badge className='bg-primary/90 backdrop-blur-sm mb-2'>
-                    <Sparkles className='w-3 h-3 mr-1' />
-                    Featured
+                  <Badge className='bg-primary/90 backdrop-blur-sm mb-2 text-xs'>
+                    <Sparkles className='w-3 h-3 mr-1' /> Featured
                   </Badge>
-                  <p className='text-2xl font-bold mb-1'>
-                    {destinations[0].name}
-                  </p>
+                  <p className='text-2xl font-bold'>{destinations[0].name}</p>
                   <p className='text-sm opacity-90'>
                     {destinations[0].subtitle}
                   </p>
                 </div>
-              </div>
+              </motion.div>
 
-              {/* Secondary images */}
-              <div className='absolute top-12 left-0 w-[45%] h-[35%] rounded-2xl overflow-hidden shadow-xl border-4 border-background z-20 group'>
-                <Image
-                  src={destinations[1].image}
-                  alt={destinations[1].name}
-                  fill
-                  className='object-cover group-hover:scale-110 transition-transform duration-700'
-                />
-                <div className='absolute inset-0 bg-linear-to-t from-black/70 via-transparent to-transparent' />
-                <div className='absolute bottom-0 left-0 right-0 p-4 text-white'>
-                  <p className='font-bold'>{destinations[1].name}</p>
-                  <p className='text-xs opacity-90'>
-                    {destinations[1].subtitle}
-                  </p>
-                </div>
-              </div>
+              {/* Secondary images — stagger in */}
+              {([1, 2, 3] as const).map((destIdx, i) => (
+                <motion.div
+                  key={destIdx}
+                  variants={scaleIn}
+                  initial='hidden'
+                  animate='show'
+                  custom={0.3 + i * 0.12}
+                  className={`absolute ${desktopPositions[i]} rounded-2xl overflow-hidden shadow-xl border-4 border-background group`}
+                >
+                  <Image
+                    src={destinations[destIdx].image}
+                    alt={destinations[destIdx].name}
+                    fill
+                    className='object-cover group-hover:scale-110 transition-transform duration-700'
+                  />
+                  <div className='absolute inset-0 bg-linear-to-t from-black/70 via-transparent to-transparent' />
+                  <div className='absolute bottom-0 left-0 right-0 p-4 text-white'>
+                    <p className='font-bold text-sm'>
+                      {destinations[destIdx].name}
+                    </p>
+                    <p className='text-xs opacity-90'>
+                      {destinations[destIdx].subtitle}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
 
-              <div className='absolute bottom-0 left-8 w-[42%] h-[32%] rounded-2xl overflow-hidden shadow-xl border-4 border-background z-30 group'>
-                <Image
-                  src={destinations[2].image}
-                  alt={destinations[2].name}
-                  fill
-                  className='object-cover group-hover:scale-110 transition-transform duration-700'
-                />
-                <div className='absolute inset-0 bg-linear-to-t from-black/70 via-transparent to-transparent' />
-                <div className='absolute bottom-0 left-0 right-0 p-4 text-white'>
-                  <p className='font-bold'>{destinations[2].name}</p>
-                  <p className='text-xs opacity-90'>
-                    {destinations[2].subtitle}
-                  </p>
-                </div>
-              </div>
-
-              <div className='absolute bottom-8 right-4 w-[35%] h-[28%] rounded-2xl overflow-hidden shadow-xl border-4 border-background z-20 group'>
-                <Image
-                  src={destinations[3].image}
-                  alt={destinations[3].name}
-                  fill
-                  className='object-cover group-hover:scale-110 transition-transform duration-700'
-                />
-                <div className='absolute inset-0 bg-linear-to-t from-black/70 via-transparent to-transparent' />
-                <div className='absolute bottom-0 left-0 right-0 p-3 text-white'>
-                  <p className='text-sm font-bold'>{destinations[3].name}</p>
-                  <p className='text-xs opacity-90'>
-                    {destinations[3].subtitle}
-                  </p>
-                </div>
-              </div>
-
-              {/* Floating badge */}
-              <div
-                className='absolute top-[45%] left-[15%] z-40 bg-background/95 backdrop-blur-sm rounded-2xl p-4 shadow-2xl border-2 border-primary/20 animate-bounce'
-                style={{ animationDuration: '3s' }}
+              {/* Floating rating badge — gentle infinite bob */}
+              <motion.div
+                variants={scaleIn}
+                initial='hidden'
+                animate='show'
+                custom={0.6}
+                className='absolute top-[43%] left-[12%] z-40'
               >
-                <div className='text-center'>
-                  <p className='text-3xl font-bold text-primary'>4.8</p>
+                <motion.div
+                  animate={{ y: [0, -8, 0] }}
+                  transition={{
+                    duration: 4,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  }}
+                  className='bg-background/95 backdrop-blur-md rounded-2xl p-4 shadow-2xl border border-border/60'
+                >
+                  <p className='text-3xl font-bold text-primary text-center'>
+                    4.8
+                  </p>
                   <div className='flex gap-0.5 mt-1 justify-center'>
                     {[...Array(5)].map((_, i) => (
                       <Star
-                        // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
+                        // biome-ignore lint/suspicious/noArrayIndexKey: static list
                         key={i}
                         className='w-3.5 h-3.5 fill-primary text-primary'
                       />
                     ))}
                   </div>
-                  <p className='text-xs text-muted-foreground mt-1 font-medium'>
+                  <p className='text-xs text-muted-foreground mt-1 font-medium text-center'>
                     10K+ Reviews
                   </p>
-                </div>
-              </div>
+                </motion.div>
+              </motion.div>
             </div>
           </div>
         </div>

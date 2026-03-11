@@ -1,11 +1,24 @@
 'use client';
 import { ArrowRight, Award, Clock, MapPin, Package, Tag } from 'lucide-react';
+import { motion, useInView, type Variants } from 'motion/react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { usePopularPackages } from '@/services/packages';
+
+const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
+const fadeUp: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  show: (delay: number = 0) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: EASE, delay },
+  }),
+};
 
 function PackageCardSkeleton() {
   return (
@@ -41,6 +54,8 @@ function EmptyState() {
 
 export default function PopularPackages() {
   const { data: packages, isPending, isError } = usePopularPackages();
+  const headerRef = useRef<HTMLDivElement>(null);
+  const headerInView = useInView(headerRef, { once: true, margin: '-60px' });
 
   return (
     <section
@@ -48,18 +63,57 @@ export default function PopularPackages() {
       className='py-12 md:py-20 bg-linear-to-br from-secondary/10 to-background relative overflow-hidden'
     >
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10'>
-        {/* Section header */}
-        <div className='text-center space-y-4 mb-16 animate-in fade-in slide-in-from-bottom duration-700'>
-          <div className='inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium border border-primary/20 mb-4'>
-            <Package className='w-4 h-4' />
-            <span>Tour Packages</span>
+        {/* ── Section header — same pattern as Features ── */}
+        <div ref={headerRef} className='mb-14'>
+          <motion.div
+            variants={fadeUp}
+            initial='hidden'
+            animate={headerInView ? 'show' : 'hidden'}
+            custom={0}
+            className='flex items-center gap-3 mb-5'
+          >
+            <div className='h-px w-10 bg-primary' />
+            <span className='text-xs font-semibold tracking-[0.2em] uppercase text-primary'>
+              Tour Packages
+            </span>
+          </motion.div>
+
+          <div className='flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6'>
+            <motion.h2
+              variants={fadeUp}
+              initial='hidden'
+              animate={headerInView ? 'show' : 'hidden'}
+              custom={0.1}
+              className='text-3xl sm:text-5xl font-bold tracking-tight leading-tight max-w-xl'
+            >
+              Our most{' '}
+              <span className='italic font-light text-muted-foreground'>
+                loved
+              </span>{' '}
+              tours across Bangladesh
+              <span className='text-primary'>.</span>
+            </motion.h2>
+
+            <motion.div
+              variants={fadeUp}
+              initial='hidden'
+              animate={headerInView ? 'show' : 'hidden'}
+              custom={0.2}
+              className='lg:pb-1'
+            >
+              <Button
+                asChild
+                size='sm'
+                variant='outline'
+                className='gap-2 group/btn'
+              >
+                <Link href='/packages'>
+                  Browse all packages
+                  <ArrowRight className='w-4 h-4 group-hover/btn:translate-x-0.5 transition-transform duration-200' />
+                </Link>
+              </Button>
+            </motion.div>
           </div>
-          <h2 className='text-4xl font-display sm:text-5xl font-bold text-foreground'>
-            Popular Packages
-          </h2>
-          <p className='text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto'>
-            Explore our most loved tour packages across Bangladesh
-          </p>
         </div>
 
         {/* Packages grid */}

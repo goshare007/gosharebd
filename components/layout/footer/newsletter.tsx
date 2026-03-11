@@ -55,22 +55,41 @@ export default function Newsletter() {
 
   return (
     <div className='border-b border-border'>
-      <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12'>
+      <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10'>
         <div className='grid md:grid-cols-2 gap-8 items-center'>
-          <div className='space-y-2'>
-            <h3 className='text-2xl md:text-3xl font-bold'>Stay Updated</h3>
-            <p className='text-muted-foreground'>
-              Subscribe to get special offers, free giveaways, and travel
-              inspiration.
+          {/* Left — editorial label + headline */}
+          <div className='space-y-3'>
+            <div className='flex items-center gap-3'>
+              <div className='h-px w-8 bg-primary' />
+              <span className='text-xs font-semibold tracking-[0.2em] uppercase text-primary'>
+                Newsletter
+              </span>
+            </div>
+            <h3 className='text-2xl md:text-3xl font-bold tracking-tight leading-tight'>
+              Stay{' '}
+              <span className='italic font-light text-muted-foreground'>
+                inspired
+              </span>
+              <span className='text-primary'>.</span>
+            </h3>
+            <p className='text-sm text-muted-foreground leading-relaxed max-w-sm'>
+              Special offers, travel guides, and hidden gems — delivered to your
+              inbox.
             </p>
           </div>
 
+          {/* Right — form or success */}
           {subscribed ? (
-            <div className='flex items-center gap-3 p-4 rounded-xl border-2 border-emerald-500/20 bg-emerald-500/10 animate-in fade-in slide-in-from-bottom duration-300'>
-              <CheckCircle2 className='w-5 h-5 text-emerald-600 shrink-0' />
-              <p className='text-sm font-medium text-emerald-700'>
-                You&apos;re subscribed! We&apos;ll be in touch soon.
-              </p>
+            <div className='flex items-center gap-3 rounded-2xl border border-border px-5 py-4'>
+              <div className='w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0'>
+                <CheckCircle2 className='w-4 h-4 text-primary' />
+              </div>
+              <div>
+                <p className='text-sm font-semibold'>You&apos;re subscribed!</p>
+                <p className='text-xs text-muted-foreground mt-0.5'>
+                  We&apos;ll be in touch soon.
+                </p>
+              </div>
             </div>
           ) : (
             <form onSubmit={handleSubmit(onSubmit)}>
@@ -78,8 +97,8 @@ export default function Newsletter() {
                 <Field className='flex-1' data-invalid={!!errors.email}>
                   <Input
                     type='email'
-                    placeholder='Enter your email'
-                    className='h-12'
+                    placeholder='your@email.com'
+                    className='h-11 rounded-xl'
                     disabled={isPending}
                     aria-invalid={!!errors.email}
                     {...register('email')}
@@ -88,10 +107,9 @@ export default function Newsletter() {
                     <FieldError>{errors.email.message}</FieldError>
                   )}
                 </Field>
-
                 <Button
                   type='submit'
-                  className='h-12 px-6 gap-2 whitespace-nowrap self-start'
+                  className='h-11 px-6 gap-2 whitespace-nowrap self-start'
                   disabled={isPending}
                 >
                   {isPending ? (
@@ -99,7 +117,7 @@ export default function Newsletter() {
                   ) : (
                     <Send className='w-4 h-4' />
                   )}
-                  {isPending ? 'Subscribing...' : 'Subscribe'}
+                  {isPending ? 'Subscribing…' : 'Subscribe'}
                 </Button>
               </div>
             </form>

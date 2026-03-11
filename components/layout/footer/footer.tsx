@@ -1,4 +1,5 @@
 'use client';
+
 import {
   Compass,
   Facebook,
@@ -9,224 +10,169 @@ import {
   Twitter,
   Youtube,
 } from 'lucide-react';
+import Link from 'next/link';
 import Newsletter from './newsletter';
+
+// ── Data ──────────────────────────────────────────────────────────────────────
+
+const nav = [
+  {
+    label: 'Company',
+    links: [
+      { label: 'About Us', href: '/about' },
+      { label: 'Careers', href: '/careers' },
+      { label: 'Blog', href: '/blog' },
+      { label: 'Press', href: '/press' },
+    ],
+  },
+  {
+    label: 'Support',
+    links: [
+      { label: 'Help Center', href: '/help' },
+      { label: 'Contact Us', href: '/contact' },
+      { label: 'Safety', href: '/safety' },
+      { label: 'FAQs', href: '/faq' },
+    ],
+  },
+  {
+    label: 'Legal',
+    links: [
+      { label: 'Privacy Policy', href: '/privacy' },
+      { label: 'Terms of Service', href: '/terms' },
+      { label: 'Cookie Policy', href: '/cookies' },
+      { label: 'Refund Policy', href: '/refund' },
+    ],
+  },
+];
+
+const social = [
+  { icon: Facebook, label: 'Facebook', href: 'https://facebook.com' },
+  { icon: Instagram, label: 'Instagram', href: 'https://instagram.com' },
+  { icon: Twitter, label: 'Twitter / X', href: 'https://twitter.com' },
+  { icon: Youtube, label: 'YouTube', href: 'https://youtube.com' },
+];
+
+const contact = [
+  {
+    icon: Mail,
+    label: 'info@gosharebd.com',
+    href: 'mailto:info@gosharebd.com',
+  },
+  { icon: Phone, label: '+880 123 456 7890', href: 'tel:+8801234567890' },
+  { icon: MapPin, label: 'Dhaka, Bangladesh', href: null },
+];
+
+// ── Footer ────────────────────────────────────────────────────────────────────
 
 export default function Footer() {
   return (
-    <footer className='bg-linear-to-b from-background to-secondary/20 border-t border-border'>
-      {/* Newsletter Section */}
+    <footer className='bg-background border-t border-border'>
+      {/* Newsletter */}
       <Newsletter />
 
-      {/* Main Footer Content */}
+      {/* Main content */}
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12'>
         <div className='grid grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-8 mb-12'>
-          {/* Brand Column */}
-          <div className='space-y-4 col-span-2'>
-            <div className='flex items-center gap-2'>
-              <div className='w-10 h-10 bg-primary rounded-lg flex items-center justify-center'>
-                <Compass className='w-6 h-6 text-primary-foreground' />
+          {/* ── Brand column ── */}
+          <div className='col-span-2 space-y-6'>
+            {/* Logo */}
+            <div className='flex items-center gap-2.5'>
+              <div className='w-9 h-9 bg-primary rounded-xl flex items-center justify-center shrink-0'>
+                <Compass className='w-5 h-5 text-primary-foreground' />
               </div>
-              <span className='font-bold text-xl'>GoShareBD</span>
+              <span className='font-bold text-lg tracking-tight'>
+                GoShareBD
+              </span>
             </div>
-            <p className='text-sm text-muted-foreground max-w-xs leading-relaxed'>
-              Discover authentic travel experiences across Bangladesh. Join
-              thousands of travelers exploring hidden gems with local expert
-              guides.
+
+            {/* Tagline */}
+            <p className='text-sm text-muted-foreground leading-relaxed max-w-xs'>
+              Discover authentic travel experiences across Bangladesh — from
+              mangrove forests to mountain peaks, guided by locals who love
+              their home.
             </p>
-            {/* Contact Info */}
-            <div className='space-y-2'>
-              <div className='flex items-center gap-2 text-sm text-muted-foreground'>
-                <Mail className='w-4 h-4 text-primary' />
+
+            {/* Contact info — matches contact page channel cards */}
+            <div className='space-y-2.5'>
+              {contact.map(({ icon: Icon, label, href }) =>
+                href ? (
+                  <a
+                    key={label}
+                    href={href}
+                    className='flex items-center gap-2.5 text-sm text-muted-foreground hover:text-primary transition-colors duration-200 group'
+                  >
+                    <Icon className='w-3.5 h-3.5 text-primary shrink-0' />
+                    {label}
+                  </a>
+                ) : (
+                  <div
+                    key={label}
+                    className='flex items-center gap-2.5 text-sm text-muted-foreground'
+                  >
+                    <Icon className='w-3.5 h-3.5 text-primary shrink-0' />
+                    {label}
+                  </div>
+                ),
+              )}
+            </div>
+
+            {/* Social icons — border style matching contact page */}
+            <div className='flex items-center gap-2'>
+              {social.map(({ icon: Icon, label, href }) => (
                 <a
-                  href='mailto:info@gosharebd.com'
-                  className='hover:text-foreground transition-colors'
+                  key={label}
+                  href={href}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  aria-label={label}
+                  className='w-9 h-9 rounded-xl border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all duration-200'
                 >
-                  info@gosharebd.com
+                  <Icon className='w-4 h-4' />
                 </a>
-              </div>
-              <div className='flex items-center gap-2 text-sm text-muted-foreground'>
-                <Phone className='w-4 h-4 text-primary' />
-                <a
-                  href='tel:+8801234567890'
-                  className='hover:text-foreground transition-colors'
-                >
-                  +880 123 456 7890
-                </a>
-              </div>
-              <div className='flex items-start gap-2 text-sm text-muted-foreground'>
-                <MapPin className='w-4 h-4 text-primary mt-0.5' />
-                <span>Dhaka, Bangladesh</span>
-              </div>
+              ))}
             </div>
           </div>
 
-          {/* Company Column */}
-          <div>
-            <h3 className='font-semibold mb-4 text-foreground'>Company</h3>
-            <ul className='space-y-3'>
-              <li>
-                <a
-                  href='/about'
-                  className='text-sm text-muted-foreground hover:text-primary transition-colors'
-                >
-                  About Us
-                </a>
-              </li>
-              <li>
-                <a
-                  href='/careers'
-                  className='text-sm text-muted-foreground hover:text-primary transition-colors'
-                >
-                  Careers
-                </a>
-              </li>
-              <li>
-                <a
-                  href='/blog'
-                  className='text-sm text-muted-foreground hover:text-primary transition-colors'
-                >
-                  Blog
-                </a>
-              </li>
-              <li>
-                <a
-                  href='/press'
-                  className='text-sm text-muted-foreground hover:text-primary transition-colors'
-                >
-                  Press
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          {/* Support Column */}
-          <div>
-            <h3 className='font-semibold mb-4 text-foreground'>Support</h3>
-            <ul className='space-y-3'>
-              <li>
-                <a
-                  href='/help'
-                  className='text-sm text-muted-foreground hover:text-primary transition-colors'
-                >
-                  Help Center
-                </a>
-              </li>
-              <li>
-                <a
-                  href='/contact'
-                  className='text-sm text-muted-foreground hover:text-primary transition-colors'
-                >
-                  Contact Us
-                </a>
-              </li>
-              <li>
-                <a
-                  href='/safety'
-                  className='text-sm text-muted-foreground hover:text-primary transition-colors'
-                >
-                  Safety
-                </a>
-              </li>
-              <li>
-                <a
-                  href='/faq'
-                  className='text-sm text-muted-foreground hover:text-primary transition-colors'
-                >
-                  FAQs
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          {/* Legal Column */}
-          <div>
-            <h3 className='font-semibold mb-4 text-foreground'>Legal</h3>
-            <ul className='space-y-3'>
-              <li>
-                <a
-                  href='/privacy'
-                  className='text-sm text-muted-foreground hover:text-primary transition-colors'
-                >
-                  Privacy Policy
-                </a>
-              </li>
-              <li>
-                <a
-                  href='/terms'
-                  className='text-sm text-muted-foreground hover:text-primary transition-colors'
-                >
-                  Terms of Service
-                </a>
-              </li>
-              <li>
-                <a
-                  href='/cookies'
-                  className='text-sm text-muted-foreground hover:text-primary transition-colors'
-                >
-                  Cookie Policy
-                </a>
-              </li>
-              <li>
-                <a
-                  href='/refund'
-                  className='text-sm text-muted-foreground hover:text-primary transition-colors'
-                >
-                  Refund Policy
-                </a>
-              </li>
-            </ul>
-          </div>
+          {/* ── Nav columns ── */}
+          {nav.map((col) => (
+            <div key={col.label}>
+              {/* Column header — editorial rule pattern */}
+              <div className='flex items-center gap-2.5 mb-5'>
+                <div className='h-px w-5 bg-primary' />
+                <span className='text-[10px] font-semibold tracking-[0.2em] uppercase text-primary'>
+                  {col.label}
+                </span>
+              </div>
+              <ul className='space-y-3'>
+                {col.links.map(({ label, href }) => (
+                  <li key={label}>
+                    <Link
+                      href={href}
+                      className='text-sm text-muted-foreground hover:text-primary transition-colors duration-200'
+                    >
+                      {label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
 
-        {/* Bottom Section */}
+        {/* ── Bottom bar — same divided pattern ── */}
         <div className='border-t border-border pt-8'>
-          <div className='flex flex-col md:flex-row justify-between items-center gap-4'>
-            {/* Copyright */}
-            <p className='text-sm text-muted-foreground text-center md:text-left'>
-              © 2026 GoShareBD. All rights reserved.
+          <div className='flex flex-col sm:flex-row items-center justify-between gap-4'>
+            <p className='text-xs text-muted-foreground'>
+              © {new Date().getFullYear()} GoShareBD. All rights reserved.
             </p>
 
-            {/* Social Media Links */}
-            <div className='flex items-center gap-4'>
-              <a
-                href='https://facebook.com'
-                target='_blank'
-                rel='noopener noreferrer'
-                className='w-9 h-9 rounded-full bg-secondary hover:bg-primary hover:text-primary-foreground transition-all flex items-center justify-center group'
-              >
-                <Facebook className='w-4 h-4' />
-              </a>
-              <a
-                href='https://instagram.com'
-                target='_blank'
-                rel='noopener noreferrer'
-                className='w-9 h-9 rounded-full bg-secondary hover:bg-primary hover:text-primary-foreground transition-all flex items-center justify-center group'
-              >
-                <Instagram className='w-4 h-4' />
-              </a>
-              <a
-                href='https://twitter.com'
-                target='_blank'
-                rel='noopener noreferrer'
-                className='w-9 h-9 rounded-full bg-secondary hover:bg-primary hover:text-primary-foreground transition-all flex items-center justify-center group'
-              >
-                <Twitter className='w-4 h-4' />
-              </a>
-              <a
-                href='https://youtube.com'
-                target='_blank'
-                rel='noopener noreferrer'
-                className='w-9 h-9 rounded-full bg-secondary hover:bg-primary hover:text-primary-foreground transition-all flex items-center justify-center group'
-              >
-                <Youtube className='w-4 h-4' />
-              </a>
-            </div>
-
-            {/* Payment/Trust Badges */}
-            <div className='flex items-center gap-2 text-xs text-muted-foreground'>
+            <div className='flex items-center gap-1.5 text-xs text-muted-foreground'>
+              <span className='w-1 h-1 rounded-full bg-primary/50' />
               <span>Secure Payment</span>
-              <span>•</span>
-              <span>100% Verified</span>
+              <span className='w-1 h-1 rounded-full bg-primary/50 ml-1' />
+              <span>100% Verified Tours</span>
+              <span className='w-1 h-1 rounded-full bg-primary/50 ml-1' />
+              <span>Local Guides</span>
             </div>
           </div>
         </div>

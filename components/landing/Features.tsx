@@ -1,4 +1,5 @@
 'use client';
+
 import {
   Calendar,
   DollarSign,
@@ -8,113 +9,208 @@ import {
   TrendingUp,
   Users,
 } from 'lucide-react';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { motion, useInView, type Variants } from 'motion/react';
+import { useRef } from 'react';
+
+// ── Data ──────────────────────────────────────────────────────────────────────
+
+const features = [
+  {
+    icon: Star,
+    title: 'Verified Tours & Guides',
+    description:
+      'Every tour and guide is rigorously vetted for quality, safety, and authenticity — so you can explore Bangladesh with complete confidence.',
+    tag: 'Quality Assured',
+  },
+  {
+    icon: DollarSign,
+    title: 'Best Price Guarantee',
+    description:
+      "Find a lower price anywhere and we'll match it — no questions asked, no hidden fees.",
+    tag: 'Best Value',
+  },
+  {
+    icon: Users,
+    title: 'Community Driven',
+    description:
+      'Connect with local guides and like-minded travelers. Share stories, tips, and build friendships that outlast the trip.',
+    tag: 'Local First',
+  },
+  {
+    icon: TrendingUp,
+    title: 'Real Reviews',
+    description:
+      'Honest, unfiltered feedback from verified travelers only. No paid promotions, no inflated ratings.',
+    tag: 'Transparent',
+  },
+  {
+    icon: Calendar,
+    title: 'Flexible Booking',
+    description:
+      'Instant confirmations, easy amendments, and stress-free cancellations. Travel on your terms.',
+    tag: 'No Stress',
+  },
+  {
+    icon: MapPin,
+    title: 'Hidden Gems',
+    description:
+      'Go beyond the tourist trail. Our local guides reveal the authentic Bangladesh most visitors never see.',
+    tag: 'Off the Map',
+  },
+];
+
+// ── Animation config ──────────────────────────────────────────────────────────
+
+const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
+const fadeUp: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  show: (delay: number = 0) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: EASE, delay },
+  }),
+};
+
+const gridVariants: Variants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07, delayChildren: 0.05 } },
+};
+
+const cardVariants: Variants = {
+  hidden: { opacity: 0, y: 24 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.45, ease: EASE },
+  },
+};
+
+// ── Feature card — matches the contact channel card pattern ──────────────────
+
+function FeatureCard({
+  feature,
+  index,
+}: {
+  feature: (typeof features)[0];
+  index: number;
+}) {
+  return (
+    <motion.div
+      variants={cardVariants}
+      whileHover={{ y: -3 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 22 }}
+      className='group rounded-2xl border border-border p-6 hover:border-primary/30 hover:bg-primary/2 transition-colors duration-300 cursor-default flex flex-col gap-5'
+    >
+      {/* Top row: icon + tag */}
+      <div className='flex items-start justify-between'>
+        <motion.div
+          whileHover={{ scale: 1.1, rotate: -5 }}
+          transition={{ type: 'spring', stiffness: 340, damping: 18 }}
+          className='w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/15 transition-colors duration-300'
+        >
+          <feature.icon className='w-5 h-5 text-primary' />
+        </motion.div>
+
+        <span className='text-[10px] font-semibold tracking-[0.18em] uppercase text-muted-foreground border border-border rounded-full px-2.5 py-1 group-hover:border-primary/30 group-hover:text-primary transition-colors duration-300'>
+          {feature.tag}
+        </span>
+      </div>
+
+      {/* Content */}
+      <div className='space-y-2 flex-1'>
+        {/* Index line — same editorial rule pattern as contact page */}
+        <div className='flex items-center gap-2.5 mb-3'>
+          <div className='h-px w-5 bg-primary/40 group-hover:w-8 transition-all duration-300' />
+          <span className='text-[10px] font-semibold tracking-[0.2em] uppercase text-primary/60'>
+            {String(index + 1).padStart(2, '0')}
+          </span>
+        </div>
+
+        <h3 className='text-base font-bold tracking-tight group-hover:text-primary transition-colors duration-200 leading-snug'>
+          {feature.title}
+        </h3>
+        <p className='text-sm text-muted-foreground leading-relaxed'>
+          {feature.description}
+        </p>
+      </div>
+    </motion.div>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
 
 export default function Features() {
-  const features = [
-    {
-      icon: Star,
-      title: 'Verified Tours & Guides',
-      description:
-        'All tours and guides are thoroughly verified to ensure quality and authenticity of experiences.',
-      color: 'text-yellow-500',
-      bgColor: 'bg-yellow-500/10',
-    },
-    {
-      icon: DollarSign,
-      title: 'Best Price Guarantee',
-      description:
-        "We guarantee the most competitive prices. Find a better deal and we'll match it.",
-      color: 'text-green-500',
-      bgColor: 'bg-green-500/10',
-    },
-    {
-      icon: Users,
-      title: 'Community Driven',
-      description:
-        'Connect with local guides and fellow travelers. Share experiences and build lasting friendships.',
-      color: 'text-blue-500',
-      bgColor: 'bg-blue-500/10',
-    },
-    {
-      icon: TrendingUp,
-      title: 'Real Reviews',
-      description:
-        'Honest reviews from real travelers help you make informed decisions about your tours.',
-      color: 'text-purple-500',
-      bgColor: 'bg-purple-500/10',
-    },
-    {
-      icon: Calendar,
-      title: 'Flexible Booking',
-      description:
-        'Book and cancel with ease. We offer flexible booking options and instant confirmations.',
-      color: 'text-pink-500',
-      bgColor: 'bg-pink-500/10',
-    },
-    {
-      icon: MapPin,
-      title: 'Explore More',
-      description:
-        'Discover hidden gems and authentic experiences beyond the typical tourist attractions.',
-      color: 'text-orange-500',
-      bgColor: 'bg-orange-500/10',
-    },
-  ];
+  const headerRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const headerInView = useInView(headerRef, { once: true, margin: '-60px' });
+  const gridInView = useInView(gridRef, { once: true, margin: '-60px' });
 
   return (
     <section
       id='features'
-      className='py-12 bg-linear-to-b from-background to-secondary/20 relative overflow-hidden'
+      className='py-16 md:py-24 border-b border-border bg-background relative overflow-hidden'
     >
-      <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10'>
-        {/* Section header */}
-        <div className='text-center space-y-4 mb-16 animate-in fade-in slide-in-from-bottom duration-700'>
-          <div className='inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium border border-primary/20 mb-4'>
-            <Shield className='w-4 h-4' />
-            <span>Trusted & Reliable</span>
+      <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
+        {/* ── Section header — matches contact page hero header pattern ── */}
+        <div ref={headerRef} className='mb-14'>
+          {/* Editorial eyebrow — identical pattern to contact page */}
+          <motion.div
+            variants={fadeUp}
+            initial='hidden'
+            animate={headerInView ? 'show' : 'hidden'}
+            custom={0}
+            className='flex items-center gap-3 mb-5'
+          >
+            <div className='h-px w-10 bg-primary' />
+            <span className='text-xs font-semibold tracking-[0.2em] uppercase text-primary'>
+              Why GoShareBD
+            </span>
+          </motion.div>
+
+          <div className='flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6'>
+            <motion.h2
+              variants={fadeUp}
+              initial='hidden'
+              animate={headerInView ? 'show' : 'hidden'}
+              custom={0.1}
+              className='text-3xl sm:text-5xl font-bold tracking-tight leading-tight md:max-w-xl'
+            >
+              Everything you need for an{' '}
+              <span className='italic font-light text-muted-foreground'>
+                unforgettable
+              </span>{' '}
+              journey
+              <span className='text-primary'>.</span>
+            </motion.h2>
+
+            <motion.div
+              variants={fadeUp}
+              initial='hidden'
+              animate={headerInView ? 'show' : 'hidden'}
+              custom={0.2}
+              className='flex items-center gap-3 lg:pb-1'
+            >
+              <Shield className='w-4 h-4 text-primary shrink-0' />
+              <p className='text-sm text-muted-foreground max-w-xs leading-relaxed'>
+                Trusted by over 10,000 travelers across Bangladesh since 2020.
+              </p>
+            </motion.div>
           </div>
-          <h2 className='text-4xl font-display sm:text-5xl font-bold tracking-tight text-foreground'>
-            Why Choose GoShare<span className='text-primary'>BD</span>?
-          </h2>
-          <p className='text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto'>
-            Everything you need for an unforgettable travel experience
-          </p>
         </div>
 
-        {/* Features grid */}
-        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8'>
-          {features.map((feature, idx) => (
-            <Card
-              // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
-              key={idx}
-              className='group border-2 bg-background hover:border-primary/50 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-default animate-in fade-in slide-in-from-bottom'
-              style={{ animationDelay: `${idx * 100}ms` }}
-            >
-              <CardHeader className='space-y-4'>
-                <div
-                  className={`w-14 h-14 rounded-xl ${feature.bgColor} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}
-                >
-                  <feature.icon className={`w-7 h-7 ${feature.color}`} />
-                </div>
-                <CardTitle className='text-xl font-bold group-hover:text-primary transition-colors'>
-                  {feature.title}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className='text-base leading-relaxed'>
-                  {feature.description}
-                </CardDescription>
-              </CardContent>
-            </Card>
+        {/* ── Feature grid ── */}
+        <motion.div
+          ref={gridRef}
+          variants={gridVariants}
+          initial='hidden'
+          animate={gridInView ? 'show' : 'hidden'}
+          className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
+        >
+          {features.map((feature, i) => (
+            <FeatureCard key={feature.title} feature={feature} index={i} />
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );
