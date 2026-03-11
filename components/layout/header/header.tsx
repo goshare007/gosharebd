@@ -1,9 +1,5 @@
 'use client';
 
-import { Compass, Menu, Plus } from 'lucide-react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -13,6 +9,10 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
+import { Compass, Menu, Plus } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { ModeToggle } from './theme-toggle';
 import UserDropDown from './user';
 
@@ -158,8 +158,14 @@ export default function Header() {
 
         {/* ── Right: actions ── */}
         <div className='flex items-center gap-1.5'>
+          <ModeToggle />
           {/* Book Now — primary, drives conversion */}
-          <Button size='sm' asChild className='hidden sm:flex gap-2'>
+          <Button
+            size='sm'
+            asChild
+            className='hidden sm:flex gap-2'
+            variant='outline'
+          >
             <Link href='/book'>
               <Plus className='w-4 h-4' />
               Book Now
@@ -167,7 +173,6 @@ export default function Header() {
           </Button>
 
           {/* Ghost mode toggle — no border box */}
-          <ModeToggle />
           <UserDropDown />
         </div>
       </div>
