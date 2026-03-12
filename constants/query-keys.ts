@@ -16,4 +16,6 @@ export const QUERY_KEYS = {
   SINGLE_PACKAGE_WITH_DEPARTURES: 'single-package-with-departures',
   ADMIN_PACKAGES_WITH_GALLERY: 'admin-packages-with-gallery',
   FESTIVAL_PACKAGES: 'festival-packages',
+  PACKAGE_REVIEWS: 'package-reviews',
+  ADMIN_REVIEWS: 'admin-reviews',
 };

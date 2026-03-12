@@ -27,12 +27,36 @@ export async function GET(req: NextRequest) {
           },
         },
         itinerary: { orderBy: { order: 'asc' } },
+        _count: {
+          select: {
+            reviews: {
+              where: { approved: true },
+            },
+          },
+        },
+        reviews: {
+          where: { approved: true },
+          select: { rating: true },
+        },
       },
     });
     if (!pkg) {
       return NextResponse.json({ error: 'Package not found' }, { status: 404 });
     }
-    return NextResponse.json(pkg);
+    const reviewCount = pkg._count.reviews;
+    const averageRating =
+      reviewCount > 0
+        ? pkg.reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount
+        : null;
+
+    // Strip raw reviews array before sending — client only needs the aggregates
+    const { reviews, _count, ...rest } = pkg;
+
+    return NextResponse.json({
+      ...rest,
+      reviewCount,
+      averageRating,
+    });
   } catch (_error) {
     return NextResponse.json(
       { error: 'Failed to fetch package' },

@@ -22,6 +22,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { use, useState } from 'react';
 import Share from '@/components/common/share';
+import { ReviewList } from '@/components/reviews';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -490,6 +491,11 @@ export default function PackageDetailPage({
                   </div>
                 ))}
               </div>
+            </section>
+
+            <section>
+              <h2 className='text-2xl font-bold mb-6'>Reviews</h2>
+              <ReviewList slug={slug} packageId={packageData.id} />
             </section>
           </div>
 

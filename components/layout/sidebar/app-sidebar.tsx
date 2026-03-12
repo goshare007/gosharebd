@@ -88,6 +88,12 @@ export const data: { navMain: NavItem[]; navSecondary: NavItem[] } = {
       role: ['ADMIN'],
     },
     {
+      title: 'Manage Reviews',
+      url: '/dashboard/admin/reviews',
+      icon: Star,
+      role: ['ADMIN'],
+    },
+    {
       title: 'Manage Gallery',
       url: '/dashboard/admin/gallery',
       icon: Image,

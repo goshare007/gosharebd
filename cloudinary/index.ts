@@ -6,6 +6,9 @@ export async function UploadImage(
   image: Blob,
   folder: string,
 ): Promise<{ secure_url: string; public_id: string }> {
+  if (!image || !(image as File).name) {
+    throw new Error('Invalid image file');
+  }
   const filename = `${Date.now()}_${(image as File).name.replaceAll(' ', '_')}`;
   const buffer = Buffer.from(await image.arrayBuffer());
 

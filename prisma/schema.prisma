@@ -254,22 +254,49 @@ model GalleryImage {
 
 // ─── Reviews ──────────────────────────────────────────────────────────────────
 
+// ─── Reviews ──────────────────────────────────────────────────────────────────
+
 model Review {
   id        String  @id @default(cuid())
   packageId String
   package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
   userId    String
-  user      User    @relation(fields: [userId], references: [id])
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   name    String
   avatar  String?
   rating  Int
   comment String
-  images  String[]
   date    DateTime @default(now())
 
+  // Moderation
+  approved    Boolean @default(false)
+
+  // Verified purchase — set to true only if user has a CONFIRMED booking for this package
+  isVerified  Boolean @default(false)
+  bookingId   String? // reference to the qualifying booking (optional but traceable)
+
+  // Relations
+  images ReviewImage[]
+
+  @@unique([userId, packageId]) // one review per user per package
   @@index([packageId])
+  @@index([packageId, approved]) // fast: fetch only approved reviews for a package
   @@map("review")
+}
+
+model ReviewImage {
+  id       String @id @default(cuid())
+  url      String
+  publicId String // Cloudinary public_id — required for deletion
+
+  reviewId String
+  review   Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([reviewId])
+  @@map("review_image")
 }
 
 // ─── Bookings ─────────────────────────────────────────────────────────────────
