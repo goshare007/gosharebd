@@ -1,45 +1,36 @@
 # Project Optimization Plan
 
-## Phase 1: Clean Up (Based on Knip Report)
+## Phase 1: Clean Up ✅ COMPLETED
 
-### Remove Unused Files
-- [x] `types/destination.ts` - unused file
+### Removed
+- Unused dependencies: `@base-ui/react`, `@tiptap/extension-bubble-menu`
+- Unused devDependencies: `eslint`, `eslint-config-next`
+- Unused file: `types/destination.ts`
+- Unused config: `prisma.config.ts` (Next.js handles env vars)
+- Unused exported types (10 types across services)
 
-### Remove Unused Dependencies
-- [x] `@base-ui/react` - not being used
-- [x] `@tiptap/extension-bubble-menu` - not being used
+### Added
+- Missing dependencies: `zod`, `postcss`
 
-### Remove Unused DevDependencies
-- [x] `eslint` - not needed (using biome)
-- [x] `eslint-config-next` - not needed
+### Fixed
+- Zod v4 syntax to v3 (z.email, z.date)
 
-### Add Missing Dependencies
-- [x] Add `zod` to package.json (16 files use it but it's not listed)
-- [x] Add `postcss` to dependencies (postcss.config.mjs exists)
+---
 
-### Fix Imports
-- [x] `dotenv/config` in `prisma.config.ts` - removed prisma.config.ts (Next.js handles env vars)
+## Package Updates ✅ COMPLETED
 
-### Fix Unused Exports (Consider removing or using)
-- [x] Review and clean up unused exports in:
-  - `components/reviews/index.ts` - ReviewCard, ReviewForm, ReviewStats, StarRating
-  - `components/ui/*` - many shadcn unused exports (these are normal - shadcn exports all components)
-  - `lib/help.ts` - getAllArticles function
-  - `services/gallery.ts` - useSinglePackageImages
-  - `services/packages.ts` - useFestivalPackages
-  - `services/wishlist.ts` - useToggleWishlist
-  - `context/lenis-provider.tsx` - useLenis
-- [x] Remove unused exported types:
-  - `Session` from lib/auth-client.ts
-  - `ArticleMeta` from lib/help.ts
-  - `UsersResponse` from services/admin-users.ts
-  - `UsersParams` from services/admin-users.ts
-  - `BlogPostListItem` from services/blog.ts
-  - `DeparturePackage` from services/departure.ts
-  - `DeparturesResponse` from services/departure.ts
-  - `CreateSinglePayload` from services/departure.ts
-  - `CreateBulkPayload` from services/departure.ts
-  - `UpdateDeparturePayload` from services/departure.ts
+Updated packages:
+- Prisma: 7.4.0 → 7.5.0
+- better-auth: 1.4.18 → 1.5.5
+- lenis: 1.3.18-dev.0 → 1.3.18
+- tailwindcss: 4.1.18 → 4.2.1
+- @tailwindcss/postcss: 4.1.18 → 4.2.1
+- shadcn: 3.8.4 → 3.8.5
+- lucide-react: 0.563.0 → 0.577.0
+- tailwind-merge: 3.4.0 → 3.5.0
+- And other minor updates
+
+Note: zod kept at 3.x (4.x has breaking changes)
 
 ---
 
