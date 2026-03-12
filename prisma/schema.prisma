@@ -499,3 +499,31 @@ model BlogComment {
   @@index([postId, approved]) // fast: only approved comments for a post
   @@map("blog_comment")
 }
+
+// ─── Notifications ───────────────────────────────────────────────────────────
+
+enum NotificationType {
+  BOOKING_CONFIRMED
+  BOOKING_CANCELLED
+  BOOKING_PENDING
+  REVIEW_APPROVED
+  REVIEW_REJECTED
+  NEW_COMMENT
+  PAYMENT_RECEIVED
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  link      String?
+  read      Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, read])
+  @@map("notification")
+}
