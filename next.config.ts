@@ -1,6 +1,21 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  experimental: {
+    optimizePackageImports: [
+      '@tanstack/react-query',
+      '@tanstack/react-query-devtools',
+      'lucide-react',
+      'clsx',
+      'date-fns',
+      'embla-carousel-react',
+      'embla-carousel-autoplay',
+      'radix-ui',
+      'motion',
+      'better-auth',
+      'zod',
+    ],
+  },
   images: {
     remotePatterns: [
       {

@@ -109,9 +109,13 @@ export default function RootLayout({
               enableSystem
               disableTransitionOnChange
             >
-              <TooltipProvider>{children}</TooltipProvider>
-              <Toaster richColors />
-              <ReactQueryDevtools initialIsOpen={false} />
+              <TooltipProvider>
+                {children}
+                <Toaster richColors />
+                {process.env.NODE_ENV === 'development' && (
+                  <ReactQueryDevtools initialIsOpen={false} />
+                )}
+              </TooltipProvider>
             </ThemeProvider>
           </LenisProvider>
         </body>

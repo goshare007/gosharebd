@@ -34,23 +34,27 @@ Note: zod kept at 3.x (4.x has breaking changes)
 
 ---
 
-## Phase 2: Performance
+---
 
-### Database (Prisma)
-- [ ] Add indexes to frequently queried columns
-- [ ] Review query patterns for N+1 issues
-
-### Images
-- [ ] Implement next/image with Cloudinary loader
-- [ ] Add blur placeholders
-
-### Rendering
-- [ ] Add RSC for static pages
-- [ ] Add `dynamic = 'force-static'` for appropriate pages
+## Phase 2: Performance ✅ COMPLETED
 
 ### Caching
-- [ ] Add revalidate periods to fetch calls
-- [ ] Configure TanStack Query staleTime
+- Added TanStack Query default staleTime (60s) and gcTime (5min)
+- Added revalidate to public API routes:
+  - `/api/packages/popular`: 60s
+  - `/api/packages/all`: 60s
+  - `/api/packages/single-package`: 60s
+  - `/api/packages/single-package/departures`: 30s
+  - `/api/festivals`: 60s
+  - `/api/blog`: 60s
+  - `/api/blog/categories`: 300s
+  - `/api/gallery`: 300s
+  - `/api/reviews/package/[slug]`: 30s
+
+### Database (Prisma)
+- Added indexes:
+  - Package: isActive, packageType, isActive+packageType, division, isBestseller
+  - Booking: status, userId+status
 
 ---
 
