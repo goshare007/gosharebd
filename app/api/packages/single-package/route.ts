@@ -9,6 +9,8 @@ import type {
   PackageType,
 } from '@/prisma/generated/prisma/client/enums';
 
+export const revalidate = 60;
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);

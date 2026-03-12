@@ -1,6 +1,8 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+export const revalidate = 60;
+
 type PackageType = 'REGULAR' | 'FESTIVAL';
 const VALID_TYPES: PackageType[] = ['REGULAR', 'FESTIVAL'];
 

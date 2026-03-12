@@ -190,6 +190,11 @@ model Package {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([isActive])
+  @@index([packageType])
+  @@index([isActive, packageType])
+  @@index([division])
+  @@index([isBestseller])
   @@map("package")
 }
 
@@ -335,6 +340,8 @@ model Booking {
   @@index([userId])
   @@index([packageId])
   @@index([departureId])
+  @@index([status])
+  @@index([userId, status])
   @@map("booking")
 }
 
