@@ -6,6 +6,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { LenisProvider } from '@/context/lenis-provider';
 import TanstackQueryProvider from '@/context/tanstack-query-provider';
 import { ThemeProvider } from '@/context/theme-provider';
+import { jsonLd } from '@/lib/seo';
 import './globals.css';
 
 // 1. Set Geist as our primary Sans font
@@ -26,10 +27,10 @@ const philosopher = Philosopher({
   variable: '--font-philosopher',
 });
 
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://gosharebd.com';
+
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_API_URL || 'https://gosharebd.com',
-  ),
+  metadataBase: new URL(BASE_URL),
   title: {
     default: 'GoShareBD | See Bangladesh Like Never Before',
     template: '%s | GoShareBD',
@@ -45,6 +46,12 @@ export const metadata: Metadata = {
     'destinations',
     'packages',
     'booking',
+    'Bangladesh tour',
+    'travel Bangladesh',
+    'Dhaka',
+    'Sylhet',
+    "Cox's Bazar",
+    'Sundarbans',
   ],
   authors: [{ name: 'GoShareBD' }],
   creator: 'GoShareBD',
@@ -57,7 +64,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://gosharebd.com',
+    url: BASE_URL,
     siteName: 'GoShareBD',
     title: 'GoShareBD | See Bangladesh Like Never Before',
     description:
@@ -89,6 +96,15 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
+  alternates: {
+    canonical: BASE_URL,
+    languages: {
+      en: BASE_URL,
+      'en-BD': BASE_URL,
+    },
+  },
+  category: 'travel',
+  classification: 'Travel and Tourism',
 };
 
 export default function RootLayout({
@@ -99,6 +115,13 @@ export default function RootLayout({
   return (
     <TanstackQueryProvider>
       <html lang='en' suppressHydrationWarning>
+        <head>
+          <script
+            type='application/ld+json'
+            // biome-ignore lint/security/noDangerouslySetInnerHtml: this is fine
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          />
+        </head>
         <body
           className={`${geistSans.variable} ${geistMono.variable} ${philosopher.variable} font-sans antialiased`}
         >
