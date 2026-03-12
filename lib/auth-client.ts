@@ -8,5 +8,3 @@ const authClient = createAuthClient({
 
 export const { signIn, useSession, signOut, updateUser, revokeOtherSessions } =
   authClient;
-
-export type Session = typeof authClient.$Infer.Session;

@@ -28,18 +28,18 @@ export type Departure = {
   _count?: { bookings: number };
 };
 
-export type DeparturePackage = {
+type DeparturePackage = {
   id: string;
   name: string;
   durationDays: number;
 };
 
-export type DeparturesResponse = {
+type DeparturesResponse = {
   package: DeparturePackage;
   departures: Departure[];
 };
 
-export type CreateSinglePayload = {
+type CreateSinglePayload = {
   mode: 'single';
   startDate: string; // ISO datetime
   totalSeats: number;
@@ -51,7 +51,7 @@ export type CreateSinglePayload = {
   originalCouplePrice?: number | null;
 };
 
-export type CreateBulkPayload = {
+type CreateBulkPayload = {
   mode: 'bulk';
   recurringDays: number[]; // 0=Sun … 6=Sat
   rangeStart: string;
@@ -65,7 +65,7 @@ export type CreateBulkPayload = {
   originalCouplePrice?: number | null;
 };
 
-export type UpdateDeparturePayload = {
+type UpdateDeparturePayload = {
   startDate?: string;
   totalSeats?: number;
   status?: DepartureStatus;

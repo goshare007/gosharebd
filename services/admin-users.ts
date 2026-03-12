@@ -20,7 +20,7 @@ export type AdminUser = {
   _count: { bookings: number; reviews: number };
 };
 
-export type UsersResponse = {
+type UsersResponse = {
   users: AdminUser[];
   pagination: {
     page: number;
@@ -30,7 +30,7 @@ export type UsersResponse = {
   };
 };
 
-export type UsersParams = {
+type UsersParams = {
   page?: number;
   limit?: number;
   search?: string;

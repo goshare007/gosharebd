@@ -36,7 +36,7 @@ export interface BlogPost {
   updatedAt: string;
 }
 
-export interface BlogPostListItem extends BlogPost {
+interface BlogPostListItem extends BlogPost {
   _count?: { comments: number; images: number };
 }
 

@@ -4,7 +4,7 @@ import matter from 'gray-matter';
 
 const contentDirectory = path.join(process.cwd(), 'content/help');
 
-export interface ArticleMeta {
+interface ArticleMeta {
   slug: string;
   title: string;
   category: string;

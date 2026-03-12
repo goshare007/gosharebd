@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 
 const schema = z.object({
-  email: z.email('Invalid email address'),
+  email: z.string().email('Invalid email address'),
   name: z.string().optional(),
   source: z.string().optional(),
 });

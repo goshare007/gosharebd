@@ -19,7 +19,7 @@ export const memberSchema = z.object({
     .max(30, 'ID number is too long')
     .regex(/^[A-Z0-9\s-]+$/i, 'ID number contains invalid characters'),
 
-  email: z.email({ message: 'Enter a valid email address' }),
+  email: z.string().email({ message: 'Enter a valid email address' }),
 
   phone: z
     .string()

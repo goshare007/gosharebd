@@ -124,7 +124,7 @@ const today = startOfDay(new Date());
 // ─── zod schemas ──────────────────────────────────────────────────────────────
 
 const singleSchema = z.object({
-  startDate: z.date('Pick a start date'),
+  startDate: z.date({ message: 'Pick a start date' }),
   startTime: z.string().min(1, 'Time is required'),
   totalSeats: z.number().int().min(1, 'At least 1 seat'),
   isGuaranteed: z.boolean(),
@@ -135,8 +135,8 @@ const singleSchema = z.object({
 
 const bulkSchema = z.object({
   recurringDays: z.array(z.number()).min(1, 'Select at least one day'),
-  rangeStart: z.date('Pick a start date'),
-  rangeEnd: z.date('Pick an end date'),
+  rangeStart: z.date({ message: 'Pick a start date' }),
+  rangeEnd: z.date({ message: 'Pick an end date' }),
   startTime: z.string().min(1, 'Time is required'),
   totalSeats: z.number().int().min(1, 'At least 1 seat'),
   isGuaranteed: z.boolean(),
@@ -146,7 +146,7 @@ const bulkSchema = z.object({
 });
 
 const editSchema = z.object({
-  startDate: z.date('Pick a date'),
+  startDate: z.date({ message: 'Pick a date' }),
   startTime: z.string().min(1),
   totalSeats: z.number().int().min(1),
   status: z.enum(['ACTIVE', 'FULL', 'CANCELLED', 'COMPLETED']),
