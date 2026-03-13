@@ -1,284 +1,225 @@
 # GoShareBD - Tour & Travel Platform
 
-A Next.js 16 + TypeScript + Prisma + PostgreSQL travel booking platform built with Shadcn UI.
+A full-featured tour and travel booking platform built with modern technologies.
 
 ## Tech Stack
 
-- **Framework**: Next.js 16 (App Router)
-- **Language**: TypeScript
-- **Database**: PostgreSQL with Prisma ORM
-- **Auth**: Better Auth
-- **UI**: Shadcn UI + Tailwind CSS
-- **State**: TanStack Query
-- **Runtime**: Bun
+| Category | Technology |
+|----------|------------|
+| Framework | Next.js 16 (App Router) |
+| Language | TypeScript |
+| Database | PostgreSQL with Prisma ORM |
+| Auth | Better Auth |
+| UI | Shadcn UI + Tailwind CSS |
+| State | TanStack Query |
+| Runtime | Bun |
+
+## Features
+
+- **User Authentication** - Secure login/signup with Better Auth
+- **Package Browsing** - Browse tour packages with filtering and search
+- **Booking System** - Complete booking flow with payment integration
+- **Wishlist** - Save favorite packages
+- **Reviews & Ratings** - User reviews for packages
+- **Admin Dashboard** - Full admin panel for managing:
+  - Packages (CRUD)
+  - Destinations
+  - Bookings
+  - Users
+  - Gallery images
+  - Blog content
+
+## Prerequisites
+
+- [Bun](https://bun.sh) - JavaScript runtime
+- [PostgreSQL](https://postgresql.org) - Database
 
 ## Getting Started
 
+### 1. Clone and Install
+
 ```bash
-# Install dependencies
+git clone https://github.com/sejarparvez/gosharebd.git
+cd gosharebd
 bun install
+```
+
+### 2. Environment Variables
+
+Create a `.env` file in the root directory:
+
+```env
+# Database
+DATABASE_URL="postgresql://user:password@localhost:5432/gosharebd?schema=public"
+
+# Auth
+BETTER_AUTH_SECRET="your-secret-key-min-32-chars-long-here"
+BETTER_AUTH_URL="http://localhost:3000"
+
+# Cloudinary (for image uploads)
+CLOUDINARY_CLOUD_NAME="your-cloud-name"
+CLOUDINARY_API_KEY="your-api-key"
+CLOUDINARY_API_SECRET="your-api-secret"
+```
+
+### 3. Database Setup
+
+```bash
+# Generate Prisma client
+bunx prisma generate
+
+# Run migrations
+bunx prisma migrate dev --name init
+
+# (Optional) Seed the database
+bunx prisma db seed
+```
+
+### 4. Start Development Server
+
+```bash
+bun run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## Available Scripts
+
+| Command | Description |
+|---------|-------------|
+| `bun run dev` | Start development server |
+| `bun run build` | Build for production |
+| `bun run start` | Start production server |
+| `bun run lint` | Run Biome linter |
+| `bun run format` | Format code with Biome |
+| `bun run check` | Lint + format + type check |
+
+## Database
+
+### Prisma Commands
+
+```bash
+# Create new migration
+bunx prisma migrate dev --name migration_name
+
+# Apply migrations (production)
+bunx prisma migrate deploy
+
+# Reset database
+bunx prisma migrate reset
 
 # Generate Prisma client
 bunx prisma generate
 
-# Run development server
-bun run dev
+# Open Prisma Studio (database GUI)
+bunx prisma studio
 ```
+
+### Schema Overview
+
+The database includes these main models:
+- **User** - User accounts with roles (USER, ADMIN)
+- **Package** - Tour packages with details, pricing, availability
+- **Destination** - Travel destinations
+- **Booking** - User bookings with status tracking
+- **Departure** - Package departure dates
+- **Gallery** - Package images
+- **Wishlist** - Saved packages
+- **Review** - User reviews and ratings
+- **Blog** - Blog posts and categories
 
 ## Project Structure
 
 ```
 gosharebd/
-├── app/                        # Next.js App Router pages
-│   ├── api/                    # API routes (Backend)
-│   │   ├── auth/              # Authentication endpoints
+├── app/                        # Next.js App Router
+│   ├── api/                    # API routes
+│   │   ├── admin/             # Admin endpoints
 │   │   ├── bookings/          # Booking API
 │   │   ├── packages/          # Package API
 │   │   ├── destinations/      # Destination API
-│   │   ├── user/              # User-specific API
-│   │   ├── dashboard/         # Dashboard stats API
-│   │   ├── admin/             # General admin API
 │   │   ├── gallery/
-│   │   └── subscribe/
-│   │
-│   ├── (public)/              # Public-facing routes (conceptual)
-│   │   ├── page.tsx           # Homepage
-│   │   ├── packages/          # Package listing
-│   │   ├── book/              # Booking flow
-│   │   ├── blog/
-│   │   ├── gallery/
-│   │   ├── festivals/
-│   │   └── sign-in/
-│   │
-│   ├── dashboard/             # Protected dashboard routes
-│   │   ├── layout.tsx         # Dashboard layout with sidebar
-│   │   ├── account/           # Account management
-│   │   ├── bookings/          # User bookings
-│   │   ├── wishlist/
-│   │   ├── my-reviews/
-│   │   ├── notifications/
-│   │   ├── admin/             # Admin section
-│   │   │   ├── bookings/
-│   │   │   ├── packages/
-│   │   │   ├── destinations/
-│   │   │   ├── users/
-│   │   │   └── gallery/
-│   │   ├── page.tsx           # User dashboard
-│   │   ├── user-dashboard.tsx
-│   │   └── admin-dashboard.tsx
-│   │
-│   ├── layout.tsx             # Root layout
-│   ├── globals.css            # Global styles
-│   ├── not-found.tsx          # 404 page
-│   ├── robots.ts              # Robots.txt
-│   └── sitemap.ts             # Sitemap
+│   │   └── ...
+│   ├── dashboard/             # Protected routes
+│   │   ├── admin/             # Admin dashboard
+│   │   └── ...                # User dashboard
+│   └── (public)/              # Public pages
 │
 ├── components/                # React components
 │   ├── ui/                   # Shadcn UI components
-│   │   ├── button.tsx
-│   │   ├── card.tsx
-│   │   ├── dialog.tsx
-│   │   ├── input.tsx
-│   │   └── ...
-│   ├── layout/               # Layout components
-│   │   ├── header/           # Header components
-│   │   │   ├── header.tsx
-│   │   │   ├── user.tsx
-│   │   │   ├── theme-toggle.tsx
-│   │   │   └── logout.tsx
-│   │   ├── footer/           # Footer components
-│   │   │   ├── footer.tsx
-│   │   │   └── newsletter.tsx
-│   │   └── sidebar/          # Sidebar components
-│   │       ├── app-sidebar.tsx
-│   │       ├── nav-main.tsx
-│   │       ├── nav-user.tsx
-│   │       └── breadcrumb-component.tsx
-│   ├── landing/              # Landing page components
-│   │   ├── Hero.tsx
-│   │   ├── Features.tsx
-│   │   ├── PopularDestinations.tsx
-│   │   ├── Testimonials.tsx
-│   │   └── Cta.tsx
-│   └── common/               # Shared components
-│       └── share.tsx
+│   ├── layout/               # Header, Footer, Sidebar
+│   └── landing/              # Landing page components
 │
-├── lib/                      # Utility libraries
-│   ├── auth.ts               # Better Auth configuration
-│   ├── auth-client.ts         # Client-side auth helpers
-│   ├── auth-utils.ts         # Auth utility functions
-│   ├── prisma.ts             # Prisma client instance
-│   └── utils.ts              # General utilities (cn, etc.)
+├── lib/                       # Core utilities
+│   ├── auth.ts               # Better Auth config
+│   ├── prisma.ts             # Prisma client
+│   └── utils.ts              # Helper functions
 │
-├── services/                 # API service functions (React Query)
-│   ├── booking.ts            # Booking mutations/queries
-│   ├── packages.ts           # Package mutations/queries
-│   ├── destinations.ts       # Destination mutations/queries
-│   ├── departure.ts         # Departure mutations/queries
-│   ├── gallery.ts            # Gallery mutations/queries
-│   ├── subscribe.ts          # Subscribe mutations
-│   ├── dashboard.ts          # Dashboard stats queries
-│   ├── wishlist.ts           # Wishlist mutations/queries
-│   └── admin-users.ts        # Admin user management
+├── services/                 # TanStack Query hooks
+│   ├── packages.ts           # Package API calls
+│   ├── booking.ts            # Booking API calls
+│   └── ...
 │
-├── types/                    # TypeScript type definitions
-│   ├── package.ts            # Package-related types
-│   ├── booking.ts            # Booking-related types
-│   ├── destination.ts        # Destination types
-│   ├── gallery.ts            # Gallery types
-│   ├── wishlist.ts           # Wishlist types
-│   ├── dashboard.ts          # Dashboard stats types
-│   └── bookings.ts           # Additional booking types
-│
+├── types/                    # TypeScript definitions
 ├── context/                  # React context providers
-│   ├── theme-provider.tsx    # Dark mode theme
-│   ├── tanstack-query-provider.tsx
-│   └── lenis-provider.tsx    # Smooth scrolling (Lenis)
-│
-├── hooks/                    # Custom React hooks
-│   └── use-mobile.ts        # Mobile detection hook
-│
-├── cloudinary/              # Cloudinary configuration
-│   ├── config.ts
-│   └── index.ts
-│
-├── prisma/                   # Database schema
-│   └── schema.prisma
-│
 ├── constants/               # App constants
-│   └── query-keys.ts        # TanStack Query keys
-│
-├── public/                  # Static assets
-│   ├── favicon.ico
-│   └── ...
-│
-├── package.json
-├── tsconfig.json
-├── next.config.ts
-├── tailwind.config.ts
-├── biome.json
-└── prisma.config.ts
+└── prisma/                  # Database schema
 ```
-
-## Recommended Folder Structure Improvements
-
-The following improvements are recommended for better organization but not yet implemented:
-
-### 1. Use Route Groups
-
-Group routes using Next.js route groups `(folder)`:
-
-```
-app/
-├── (public)/                # Public routes (no URL change)
-│   ├── packages/
-│   ├── book/
-│   └── ...
-├── (dashboard)/             # Protected routes (no URL change)
-│   ├── admin/
-│   └── ...
-```
-
-### 2. Consolidate API Routes
-
-Current inconsistent patterns:
-- `app/api/admin/users/` 
-- `app/api/packages/admin/packages/`
-
-Should be standardized to:
-- `app/api/admin/users/`
-- `app/api/packages/admin/`
-
-### 3. Group Services by Feature
-
-Consider creating subdirectories in `services/`:
-```
-services/
-├── admin/
-│   ├── users.ts
-│   └── bookings.ts
-├── user/
-│   ├── bookings.ts
-│   └── wishlist.ts
-└── public/
-    ├── packages.ts
-    └── destinations.ts
-```
-
----
 
 ## Key Conventions
 
 ### API Routes
 
-- `app/api/[resource]/` - Public or general endpoints
-- `app/api/[resource]/admin/` - Admin-only endpoints
-- `app/api/[resource]/my-[resource]/` - User-specific endpoints
+```
+app/api/
+├── [resource]/              # Public endpoints
+├── [resource]/admin/        # Admin-only endpoints
+└── [resource]/my-[resource]/ # User-specific endpoints
+```
 
-### Components
+### Query Keys (TanStack Query)
 
-- `components/ui/` - Shadcn UI components (don't modify directly)
-- `components/layout/` - Layout shell components  
+All query keys are defined in `constants/query-keys.ts`:
+- `QUERY_KEYS.ALL_PACKAGES` - List all packages
+- `QUERY_KEYS.SINGLE_PACKAGES` - Single package details
+- `QUERY_KEYS.ADMIN_PACKAGES_WITH_GALLERY` - Admin package list with gallery
+- etc.
+
+### Component Organization
+
+- `components/ui/` - Shadcn UI (don't modify directly)
+- `components/layout/` - Layout shell components
 - `components/landing/` - Page-specific components
-- `components/common/` - Reusable components across pages
+- `components/common/` - Shared reusable components
 
-### Services
+## Deployment
 
-All API calls go through React Query hooks in the `services/` folder. Each service file corresponds to a major feature area.
-
----
-
-## Prisma Schema Changes
-
-### Adding a New Model
-
-**1. Update `prisma/schema.prisma`**
-- Add the new model
-- Add any back-relation fields to related models
-
-**2. Create and apply the migration**
-```bash
-bunx prisma migrate dev --name add_your_model_name
-```
-
-**3. Regenerate Prisma Client**
-```bash
-bunx prisma generate
-```
-
-### Database Migration (One-time Setup)
-
-If migration history is lost or corrupted:
+### Build for Production
 
 ```bash
-# 1. Remove new models from schema.prisma temporarily
-# 2. Delete existing migrations
-rm -rf prisma/migrations
-
-# 3. Clear Prisma's migration history
-echo 'DELETE FROM "_prisma_migrations";' | bunx prisma db execute --stdin
-
-# 4. Create baseline
-mkdir -p prisma/migrations/0001_baseline
-bunx prisma migrate diff --from-empty --to-schema prisma/schema.prisma --script > prisma/migrations/0001_baseline/migration.sql
-
-# 5. Mark as applied
-bunx prisma migrate resolve --applied 0001_baseline
-
-# 6. Add models back and migrate
-bunx prisma migrate dev --name add_your_model_name
-bunx prisma generate
+bun run build
+bun run start
 ```
 
----
+### Environment Variables (Production)
 
-## Scripts
+Set these in your deployment platform:
+- `DATABASE_URL` - PostgreSQL connection string
+- `BETTER_AUTH_SECRET` - Auth secret (generate with: `bun run --bun -e "console.log(crypto.randomUUID())"`)
+- `BETTER_AUTH_URL` - Production URL
+- Cloudinary credentials
 
-```bash
-bun run dev          # Start development server
-bun run build        # Build for production
-bun run start        # Start production server
-bun run lint         # Run Biome linter
-bun run format       # Format code with Biome
-bun run check        # Lint + format + type check
-```
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run lint and type check:
+   ```bash
+   bun run check
+   ```
+5. Commit and push
+
+## License
+
+MIT License
