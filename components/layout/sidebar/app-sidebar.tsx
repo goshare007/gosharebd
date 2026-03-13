@@ -1,6 +1,17 @@
 'use client';
 
 import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from '@/components/ui/sidebar';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useSession } from '@/lib/auth-client';
+import {
   Bell,
   BookOpen,
   Calendar,
@@ -15,17 +26,6 @@ import {
   Star,
   Users,
 } from 'lucide-react';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from '@/components/ui/sidebar';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useSession } from '@/lib/auth-client';
 import { NavMain } from './nav-main';
 import { NavUser } from './nav-user';
 
@@ -113,7 +113,7 @@ export const data: { navMain: NavItem[]; navSecondary: NavItem[] } = {
       url: '/dashboard/notifications',
       icon: Bell,
       role: ['ADMIN', 'USER'],
-      badge: 3, // Example badge
+      // badge: 3,
     },
     {
       title: 'Settings',

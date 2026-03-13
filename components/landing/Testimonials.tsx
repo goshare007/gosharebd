@@ -1,10 +1,5 @@
 'use client';
 
-import Autoplay from 'embla-carousel-autoplay';
-import { Quote, Star } from 'lucide-react';
-import { motion, useInView, type Variants } from 'motion/react';
-import Image from 'next/image';
-import { useRef } from 'react';
 import {
   Carousel,
   CarouselContent,
@@ -12,6 +7,11 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel';
+import Autoplay from 'embla-carousel-autoplay';
+import { Quote, Star } from 'lucide-react';
+import { motion, useInView, type Variants } from 'motion/react';
+import Image from 'next/image';
+import { useRef } from 'react';
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 
@@ -161,7 +161,7 @@ export default function Testimonials() {
   return (
     <section
       id='testimonials'
-      className='py-16 md:py-24 border-b border-border bg-background relative overflow-hidden'
+      className=' bg-background relative overflow-hidden'
     >
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>
         {/* ── Section header ── */}
