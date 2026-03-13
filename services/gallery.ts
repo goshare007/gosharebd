@@ -1,15 +1,23 @@
-import { useQuery } from '@tanstack/react-query';
+import {
+  type UseMutationOptions,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import axios from 'axios';
 import { QUERY_KEYS } from '@/constants/query-keys';
 import type { GalleryItem, SinglePackageImages } from '@/types/gallery';
+
+// ─── Query Hooks ─────────────────────────────────────────────────────────────
 
 export const useGalleryImages = () => {
   return useQuery<GalleryItem[]>({
     queryKey: [QUERY_KEYS.GALLERY_IMAGES],
     queryFn: async () => {
-      const response = await axios.get<GalleryItem[]>('/api/gallery');
-      return response.data;
+      const { data } = await axios.get<GalleryItem[]>('/api/gallery');
+      return data;
     },
+    staleTime: 1000 * 60 * 5, // 5 min — gallery doesn't change often
   });
 };
 
@@ -17,18 +25,18 @@ export const useSinglePackageImages = (packageId: string) => {
   return useQuery<SinglePackageImages>({
     queryKey: [QUERY_KEYS.GALLERY_IMAGES, packageId],
     queryFn: async () => {
-      const response = await axios.get<SinglePackageImages>(
-        `/api/gallery/package?packageId=${packageId}`,
-        {
-          params: { packageId },
-        },
+      const { data } = await axios.get<SinglePackageImages>(
+        `/api/gallery/package`,
+        { params: { packageId } }, // ✅ single source of truth for the param
       );
-      return response.data;
+      return data;
     },
+    enabled: Boolean(packageId), // ✅ skip fetch if packageId is empty
+    staleTime: 1000 * 60 * 5,
   });
 };
 
-// --- Mutations for Admin Gallery Management ---
+// ─── Mutation Hooks ───────────────────────────────────────────────────────────
 
 interface AddImagePayload {
   packageId: string;
@@ -36,19 +44,27 @@ interface AddImagePayload {
   publicId: string;
 }
 
-export const addImageToPackage = async ({
-  packageId,
-  imageUrl,
-  publicId,
-}: AddImagePayload) => {
-  const response = await axios.post(
-    `/api/admin/packages/${packageId}/gallery`,
-    {
-      imageUrl,
-      publicId,
+export const useAddImageToPackage = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ packageId, imageUrl, publicId }: AddImagePayload) => {
+      const { data } = await axios.post(
+        `/api/admin/packages/${packageId}/gallery`,
+        { imageUrl, publicId },
+      );
+      return data;
     },
-  );
-  return response.data;
+    onSuccess: (_, { packageId }) => {
+      // Invalidate both the specific package and the full gallery list
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.GALLERY_IMAGES, packageId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.GALLERY_IMAGES],
+      });
+    },
+  });
 };
 
 interface DeleteImagePayload {
@@ -56,23 +72,44 @@ interface DeleteImagePayload {
   imageId: string;
 }
 
-export const deleteImageFromPackage = async ({
-  packageId,
-  imageId,
-}: DeleteImagePayload) => {
-  const response = await axios.delete(
-    `/api/admin/packages/${packageId}/gallery/${imageId}`,
-  );
-  return response.data;
-};
+export const useDeleteImageFromPackage = () => {
+  const queryClient = useQueryClient();
 
-export const uploadGalleryImage = async (
-  formData: FormData,
-): Promise<{ imageUrl: string; publicId: string }> => {
-  const response = await axios.post('/api/admin/gallery/upload', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
+  return useMutation({
+    mutationFn: async ({ packageId, imageId }: DeleteImagePayload) => {
+      const { data } = await axios.delete(
+        `/api/admin/packages/${packageId}/gallery/${imageId}`,
+      );
+      return data;
+    },
+    onSuccess: (_, { packageId }) => {
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.GALLERY_IMAGES, packageId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.GALLERY_IMAGES],
+      });
     },
   });
-  return response.data;
+};
+
+interface UploadResponse {
+  imageUrl: string;
+  publicId: string;
+}
+
+export const useUploadGalleryImage = (
+  options?: UseMutationOptions<UploadResponse, Error, FormData>,
+) => {
+  return useMutation({
+    mutationFn: async (formData: FormData): Promise<UploadResponse> => {
+      const { data } = await axios.post<UploadResponse>(
+        '/api/admin/gallery/upload',
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } },
+      );
+      return data;
+    },
+    ...options,
+  });
 };

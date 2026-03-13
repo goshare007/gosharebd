@@ -1,17 +1,15 @@
 'use client';
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ImagePlus, Loader2, Trash2, UploadCloud, X } from 'lucide-react';
 import Image from 'next/image';
 import type React from 'react';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { QUERY_KEYS } from '@/constants/query-keys';
 import {
-  addImageToPackage,
-  deleteImageFromPackage,
-  uploadGalleryImage,
+  useAddImageToPackage,
+  useDeleteImageFromPackage,
+  useUploadGalleryImage,
 } from '@/services/gallery';
 import type { AdminPackageWithGalleryType } from '@/types/package';
 
@@ -23,31 +21,16 @@ interface GalleryManagerProps {
 }
 
 export function GalleryManager({ packageData }: GalleryManagerProps) {
-  const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
 
-  const invalidateQuery = () => {
-    queryClient.invalidateQueries({
-      queryKey: [QUERY_KEYS.ADMIN_PACKAGES_WITH_GALLERY],
-    });
-  };
+  const addImageMutation = useAddImageToPackage();
 
-  const addImageMutation = useMutation({
-    mutationFn: addImageToPackage,
-    onSuccess: () => {
-      toast.success('Image added to gallery.');
-      invalidateQuery();
-    },
-    onError: (error) => {
-      toast.error(`Failed to add image: ${error.message}`);
-    },
-  });
+  const deleteMutation = useDeleteImageFromPackage();
 
-  const uploadMutation = useMutation({
-    mutationFn: uploadGalleryImage,
+  const uploadMutation = useUploadGalleryImage({
     onSuccess: (data) => {
       addImageMutation.mutate({
         packageId: packageData.id,
@@ -58,17 +41,6 @@ export function GalleryManager({ packageData }: GalleryManagerProps) {
     },
     onError: (error) => {
       toast.error(`Upload failed: ${error.message}`);
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: deleteImageFromPackage,
-    onSuccess: () => {
-      toast.success('Image removed.');
-      invalidateQuery();
-    },
-    onError: (error) => {
-      toast.error(`Failed to delete: ${error.message}`);
     },
   });
 
@@ -114,7 +86,6 @@ export function GalleryManager({ packageData }: GalleryManagerProps) {
 
   return (
     <div className='space-y-6'>
-      {/* Section label */}
       <div className='flex items-center gap-3'>
         <div className='h-px w-6 bg-primary shrink-0' />
         <span className='text-xs font-semibold tracking-[0.15em] uppercase text-primary'>
@@ -123,7 +94,6 @@ export function GalleryManager({ packageData }: GalleryManagerProps) {
         </span>
       </div>
 
-      {/* Drop zone */}
       {/** biome-ignore lint/a11y/noStaticElementInteractions: this is fine */}
       {/** biome-ignore lint/a11y/useKeyWithClickEvents: this is fine */}
       <div
@@ -154,7 +124,6 @@ export function GalleryManager({ packageData }: GalleryManagerProps) {
           disabled={isUploading}
         />
 
-        {/* Preview state */}
         {selectedFile && preview ? (
           <div className='flex items-center gap-4 p-4'>
             <div className='relative w-16 h-16 rounded-lg overflow-hidden shrink-0 border border-border'>
@@ -207,13 +176,10 @@ export function GalleryManager({ packageData }: GalleryManagerProps) {
             </div>
           </div>
         ) : (
-          /* Empty / drag state */
           <div className='flex flex-col items-center justify-center py-10 px-4 text-center'>
             <div
-              className={`
-              w-12 h-12 rounded-xl flex items-center justify-center mb-3 transition-colors
-              ${dragging ? 'bg-primary/15' : 'bg-muted'}
-            `}
+              className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 transition-colors
+              ${dragging ? 'bg-primary/15' : 'bg-muted'}`}
             >
               <ImagePlus
                 className={`w-5 h-5 transition-colors ${dragging ? 'text-primary' : 'text-muted-foreground'}`}
@@ -229,7 +195,6 @@ export function GalleryManager({ packageData }: GalleryManagerProps) {
         )}
       </div>
 
-      {/* Image grid */}
       {packageData.gallery.length > 0 ? (
         <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3'>
           {packageData.gallery.map((image, i) => {
@@ -252,10 +217,7 @@ export function GalleryManager({ packageData }: GalleryManagerProps) {
                   fill
                   className='object-cover transition-transform duration-300 group-hover:scale-105'
                 />
-                {/* Hover overlay */}
                 <div className='absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-200' />
-
-                {/* Delete button */}
                 <div className='absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200'>
                   <Button
                     type='button'
@@ -277,8 +239,6 @@ export function GalleryManager({ packageData }: GalleryManagerProps) {
                     )}
                   </Button>
                 </div>
-
-                {/* Deleting overlay */}
                 {isThisDeleting && (
                   <div className='absolute inset-0 bg-black/50 flex items-center justify-center'>
                     <Loader2 className='w-5 h-5 text-white animate-spin' />
