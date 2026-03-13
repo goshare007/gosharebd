@@ -1,5 +1,14 @@
 'use client';
 
+import Share from '@/components/common/share';
+import { ReviewList } from '@/components/reviews';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useSinglePackages } from '@/services/packages';
+import { useWishlist } from '@/services/wishlist';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -21,15 +30,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { use, useState } from 'react';
-import Share from '@/components/common/share';
-import { ReviewList } from '@/components/reviews';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useSinglePackages } from '@/services/packages';
-import { useWishlist } from '@/services/wishlist';
 
 export default function PackageDetailPage({
   params,
@@ -351,7 +351,7 @@ export default function PackageDetailPage({
 
             {packageData.gallery.length > 1 && (
               <section className='grid sm:grid-cols-2 gap-4'>
-                {packageData.gallery.slice(0, 3).map((img, idx) => (
+                {packageData.gallery.slice(0, 2).map((img, idx) => (
                   <div
                     // biome-ignore lint/suspicious/noArrayIndexKey: this is fine
                     key={idx}
