@@ -15,6 +15,8 @@ export const QUERY_KEYS = {
   USER_WISHLIST: 'user-wishlist',
   SINGLE_PACKAGE_WITH_DEPARTURES: 'single-package-with-departures',
   ADMIN_PACKAGES_WITH_GALLERY: 'admin-packages-with-gallery',
+  ADMIN_SINGLE_PACKAGE_WITH_GALLERY: 'admin-single-package-with-gallery',
+  ADMIN_PACKAGES_LIST: 'admin-packages-list',
   FESTIVAL_PACKAGES: 'festival-packages',
   PACKAGE_REVIEWS: 'package-reviews',
   ADMIN_REVIEWS: 'admin-reviews',

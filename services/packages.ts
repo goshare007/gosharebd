@@ -174,6 +174,37 @@ export const useAdminPackagesWithGallery = () => {
   });
 };
 
+export const useAdminSinglePackageWithGallery = (packageId: string | null) => {
+  return useQuery<AdminPackageWithGalleryType | null>({
+    queryKey: [QUERY_KEYS.ADMIN_SINGLE_PACKAGE_WITH_GALLERY, packageId],
+    queryFn: async () => {
+      if (!packageId) return null;
+      const response = await axios.get<AdminPackageWithGalleryType>(
+        `/api/admin/packages/${packageId}/with-gallery`,
+      );
+      return response.data;
+    },
+    enabled: Boolean(packageId),
+  });
+};
+
+interface AdminPackageListItem {
+  id: string;
+  name: string;
+}
+
+export const useAdminPackagesList = () => {
+  return useQuery<AdminPackageListItem[]>({
+    queryKey: [QUERY_KEYS.ADMIN_PACKAGES_LIST],
+    queryFn: async () => {
+      const response = await axios.get<AdminPackageListItem[]>(
+        '/api/admin/packages/list',
+      );
+      return response.data;
+    },
+  });
+};
+
 export const useFestivalPackages = () => {
   return useQuery<FestivalPackageType[]>({
     queryKey: [QUERY_KEYS.FESTIVAL_PACKAGES],

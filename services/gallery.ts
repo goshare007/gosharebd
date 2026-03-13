@@ -56,12 +56,20 @@ export const useAddImageToPackage = () => {
       return data;
     },
     onSuccess: (_, { packageId }) => {
-      // Invalidate both the specific package and the full gallery list
       queryClient.invalidateQueries({
         queryKey: [QUERY_KEYS.GALLERY_IMAGES, packageId],
       });
       queryClient.invalidateQueries({
         queryKey: [QUERY_KEYS.GALLERY_IMAGES],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.ADMIN_PACKAGES_WITH_GALLERY],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.ADMIN_PACKAGES_LIST],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.ADMIN_SINGLE_PACKAGE_WITH_GALLERY, packageId],
       });
     },
   });
@@ -88,6 +96,15 @@ export const useDeleteImageFromPackage = () => {
       });
       queryClient.invalidateQueries({
         queryKey: [QUERY_KEYS.GALLERY_IMAGES],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.ADMIN_PACKAGES_WITH_GALLERY],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.ADMIN_PACKAGES_LIST],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.ADMIN_SINGLE_PACKAGE_WITH_GALLERY, packageId],
       });
     },
   });

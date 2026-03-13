@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
@@ -10,7 +10,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAdminPackagesWithGallery } from '@/services/packages';
+import {
+  useAdminPackagesList,
+  useAdminSinglePackageWithGallery,
+} from '@/services/packages';
 import { GalleryManager } from './GalleryManager';
 
 const AdminGalleryPage = () => {
@@ -18,19 +21,13 @@ const AdminGalleryPage = () => {
     null,
   );
 
-  const {
-    data: packages,
-    isLoading,
-    isError,
-    error,
-  } = useAdminPackagesWithGallery();
+  const { data: packages, isLoading: isLoadingPackages } =
+    useAdminPackagesList();
 
-  const selectedPackage = useMemo(() => {
-    if (!selectedPackageId || !packages) return null;
-    return packages.find((p) => p.id === selectedPackageId);
-  }, [selectedPackageId, packages]);
+  const { data: selectedPackageData, isLoading: isLoadingSelectedPackage } =
+    useAdminSinglePackageWithGallery(selectedPackageId);
 
-  if (isLoading) {
+  if (isLoadingPackages) {
     return (
       <div className='space-y-4'>
         <Skeleton className='h-12 w-1/3' />
@@ -39,11 +36,10 @@ const AdminGalleryPage = () => {
     );
   }
 
-  if (isError) {
+  if (!packages) {
     return (
       <div className='text-red-500'>
-        <p>An error occurred while fetching packages:</p>
-        <pre>{error.message}</pre>
+        <p>Failed to load packages</p>
       </div>
     );
   }
@@ -63,7 +59,7 @@ const AdminGalleryPage = () => {
               <SelectValue placeholder='Choose a package...' />
             </SelectTrigger>
             <SelectContent>
-              {packages?.map((pkg) => (
+              {packages.map((pkg) => (
                 <SelectItem key={pkg.id} value={pkg.id}>
                   {pkg.name}
                 </SelectItem>
@@ -73,18 +69,27 @@ const AdminGalleryPage = () => {
         </CardContent>
       </Card>
 
-      {selectedPackage && (
+      {isLoadingSelectedPackage && selectedPackageId ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Loading...</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Skeleton className='h-64 w-full' />
+          </CardContent>
+        </Card>
+      ) : selectedPackageData ? (
         <Card>
           <CardHeader>
             <CardTitle>
-              Manage Gallery for &quot;{selectedPackage.name}&quot;
+              Manage Gallery for &quot;{selectedPackageData.name}&quot;
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <GalleryManager packageData={selectedPackage} />
+            <GalleryManager packageData={selectedPackageData} />
           </CardContent>
         </Card>
-      )}
+      ) : null}
     </div>
   );
 };
