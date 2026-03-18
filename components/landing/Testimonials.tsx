@@ -1,5 +1,10 @@
 'use client';
 
+import Autoplay from 'embla-carousel-autoplay';
+import { Quote, Star } from 'lucide-react';
+import { motion, useInView, type Variants } from 'motion/react';
+import Image from 'next/image';
+import { useRef } from 'react';
 import {
   Carousel,
   CarouselContent,
@@ -7,11 +12,6 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel';
-import Autoplay from 'embla-carousel-autoplay';
-import { Quote, Star } from 'lucide-react';
-import { motion, useInView, type Variants } from 'motion/react';
-import Image from 'next/image';
-import { useRef } from 'react';
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 
