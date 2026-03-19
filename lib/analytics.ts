@@ -2,6 +2,7 @@
 
 import { browserTracingIntegration, replayIntegration } from '@sentry/browser';
 import * as Sentry from '@sentry/nextjs';
+import { logger } from '@/lib/logger';
 
 const SENTRY_DSN = process.env.NEXT_PUBLIC_SENTRY_DSN;
 const SENTRY_ENVIRONMENT =
@@ -28,10 +29,7 @@ export const trackEvent = (
   eventName: string,
   properties?: Record<string, unknown>,
 ) => {
-  if (process.env.NODE_ENV === 'development') {
-    // biome-ignore lint/suspicious/noConsole: this is for development logging
-    console.log('[Analytics]', eventName, properties);
-  }
+  logger.debug(`[Analytics] ${eventName}`, properties);
 };
 
 export const trackPageView = (pagePath: string) => {

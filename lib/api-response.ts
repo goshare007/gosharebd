@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 
 export interface ApiErrorResponse {
   error: string;
@@ -64,8 +65,7 @@ export function getErrorMessage(response: unknown): string {
 }
 
 export function handleApiError(error: unknown, _request: NextRequest) {
-  // biome-ignore lint/suspicious/noConsole: this is for error logging
-  console.error('API Error:', error);
+  logger.error('API Error:', error);
 
   if (error instanceof SyntaxError && 'body' in error) {
     return apiError('Invalid JSON in request body', 400, 'INVALID_JSON');
