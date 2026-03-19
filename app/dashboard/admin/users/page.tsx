@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { motion, useInView, type Variants } from 'motion/react';
 import Image from 'next/image';
-import { useCallback, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Badge } from '@/components/ui/badge';
@@ -59,6 +59,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useDebounce } from '@/hooks/use-debounce';
 import { useSession } from '@/lib/auth-client';
 import { cn } from '@/lib/utils';
 import {
@@ -474,10 +475,20 @@ export default function UsersManagementPage() {
   const currentUserId = session?.user.id ?? '';
 
   const [page, setPage] = useState(1);
-  const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [role, setRole] = useState('ALL');
   const [status, setStatus] = useState('ALL');
+
+  const debouncedSearch = useDebounce(searchInput, 300);
+  const prevDebouncedSearch = useRef<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (prevDebouncedSearch.current !== debouncedSearch) {
+      prevDebouncedSearch.current = debouncedSearch;
+      setPage(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch]);
 
   const [banTarget, setBanTarget] = useState<AdminUser | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
@@ -486,7 +497,7 @@ export default function UsersManagementPage() {
 
   const { data, isPending, isError } = useAdminUsers({
     page,
-    search,
+    search: debouncedSearch,
     role,
     status,
   });
@@ -500,11 +511,6 @@ export default function UsersManagementPage() {
   const statsInView = useInView(statsRef, { once: true, margin: '-40px' });
   const filtersInView = useInView(filtersRef, { once: true, margin: '-40px' });
   const tableInView = useInView(tableRef, { once: true, margin: '-40px' });
-
-  const handleSearch = useCallback(() => {
-    setSearch(searchInput.trim());
-    setPage(1);
-  }, [searchInput]);
 
   const handleFilterChange = (key: 'role' | 'status', val: string) => {
     if (key === 'role') setRole(val);
@@ -648,12 +654,8 @@ export default function UsersManagementPage() {
                   className='pl-9 h-9 text-sm border-2 focus-visible:ring-0 focus-visible:border-primary'
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 />
               </div>
-              <Button size='sm' className='h-9 px-4' onClick={handleSearch}>
-                Search
-              </Button>
             </div>
 
             <Select

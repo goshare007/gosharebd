@@ -39,6 +39,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Tooltip,
   TooltipContent,
@@ -47,6 +48,27 @@ import {
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { uploadBlogImage } from '@/services/blog';
+
+export function TipTapEditorSkeleton() {
+  return (
+    <div className='rounded-xl border border-border bg-background overflow-hidden'>
+      <div className='flex items-center gap-0.5 px-3 py-2 border-b border-border bg-muted/30 flex-wrap'>
+        <Skeleton className='h-8 w-8 rounded-md' />
+        <Skeleton className='h-8 w-8 rounded-md' />
+        <div className='w-px h-5 bg-border mx-0.5' />
+        <Skeleton className='h-8 w-8 rounded-md' />
+        <Skeleton className='h-8 w-8 rounded-md' />
+        <Skeleton className='h-8 w-8 rounded-md' />
+      </div>
+      <div className='min-h-90 px-6 py-5'>
+        <Skeleton className='h-4 w-full mb-2' />
+        <Skeleton className='h-4 w-3/4 mb-2' />
+        <Skeleton className='h-4 w-5/6 mb-2' />
+        <Skeleton className='h-4 w-2/3' />
+      </div>
+    </div>
+  );
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface TipTapEditorProps {

@@ -50,6 +50,8 @@ export const useSinglePackages = (slug: string) => {
       );
       return response.data;
     },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 };
 
@@ -60,7 +62,6 @@ export const useAllPackages = ({
   type?: 'REGULAR' | 'FESTIVAL' | 'ALL';
   isActive?: boolean;
 } = {}) => {
-  // Default to empty object
   return useQuery<AllPackagesType[]>({
     queryKey: [QUERY_KEYS.ALL_PACKAGES, type, isActive],
     queryFn: async () => {
@@ -72,6 +73,8 @@ export const useAllPackages = ({
       });
       return response.data;
     },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 };
 
@@ -84,6 +87,8 @@ export const usePopularPackages = () => {
       );
       return response.data;
     },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 };
 
@@ -212,5 +217,7 @@ export const useFestivalPackages = () => {
       const response = await axios.get<FestivalPackageType[]>('/api/festivals');
       return response.data;
     },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 };

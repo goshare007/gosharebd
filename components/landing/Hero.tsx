@@ -258,6 +258,7 @@ export default function Hero() {
                       fill
                       className='object-cover'
                       priority={idx === 0}
+                      sizes='100vw'
                     />
                     <div className='absolute inset-0 bg-linear-to-b from-black/20 via-transparent to-black' />
 
@@ -701,6 +702,8 @@ export default function Hero() {
                   alt={destinations[0].name}
                   fill
                   className='object-cover group-hover:scale-110 transition-transform duration-700'
+                  priority
+                  sizes='(max-width: 1024px) 100vw, 50vw'
                 />
                 <div className='absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent' />
                 <div className='absolute bottom-0 left-0 right-0 p-6 text-white'>
@@ -729,6 +732,8 @@ export default function Hero() {
                     alt={destinations[destIdx].name}
                     fill
                     className='object-cover group-hover:scale-110 transition-transform duration-700'
+                    priority={destIdx === 1}
+                    sizes='(max-width: 1024px) 50vw, 30vw'
                   />
                   <div className='absolute inset-0 bg-linear-to-t from-black/70 via-transparent to-transparent' />
                   <div className='absolute bottom-0 left-0 right-0 p-4 text-white'>

@@ -8,6 +8,8 @@ import {
 import Footer from '@/components/layout/footer/footer';
 import Header from '@/components/layout/header/header';
 
+export const revalidate = 3600;
+
 export default function Page() {
   return (
     <div className='flex flex-col min-h-screen'>

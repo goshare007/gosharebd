@@ -17,10 +17,36 @@ export const useToggleWishlist = () => {
       });
       return (await p).data;
     },
-    onSuccess: () =>
-      queryClient.invalidateQueries({
-        queryKey: [QUERY_KEYS.USER_WISHLIST],
-      }),
+    onMutate: async (slug) => {
+      await queryClient.cancelQueries({
+        queryKey: [QUERY_KEYS.USER_WISHLIST, slug],
+      });
+      const previousWishlisted = queryClient.getQueryData([
+        QUERY_KEYS.USER_WISHLIST,
+        slug,
+      ]);
+
+      queryClient.setQueryData(
+        [QUERY_KEYS.USER_WISHLIST, slug],
+        (old: { wishlisted: boolean } | undefined) => ({
+          ...old,
+          wishlisted: !old?.wishlisted,
+        }),
+      );
+
+      return { previousWishlisted };
+    },
+    onError: (_err, slug, context) => {
+      if (context?.previousWishlisted) {
+        queryClient.setQueryData(
+          [QUERY_KEYS.USER_WISHLIST, slug],
+          context.previousWishlisted,
+        );
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.USER_WISHLIST] });
+    },
   });
 };
 

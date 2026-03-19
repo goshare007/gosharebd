@@ -140,6 +140,8 @@ export default function PopularPackages() {
                         alt={pkg.name}
                         fill
                         className='object-cover group-hover:scale-110 transition-transform duration-700'
+                        priority={idx < 3}
+                        sizes='(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw'
                       />
                     ) : (
                       <div className='h-full w-full bg-muted flex items-center justify-center'>

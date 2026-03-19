@@ -8,13 +8,14 @@ import {
   Tag,
   X,
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import slugify from 'slugify';
 import { toast } from 'sonner';
-import { TipTapEditor } from '@/components/tiptap-editor';
+import { TipTapEditorSkeleton } from '@/components/tiptap-editor';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -36,6 +37,14 @@ import {
   useUpdateBlogPost,
 } from '@/services/blog';
 import { useCheckBlogSlug } from '@/services/slug';
+
+const TipTapEditor = dynamic(
+  () => import('@/components/tiptap-editor').then((mod) => mod.TipTapEditor),
+  {
+    loading: () => <TipTapEditorSkeleton />,
+    ssr: false,
+  },
+);
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface BlogPostFormData {

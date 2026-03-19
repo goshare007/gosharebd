@@ -85,12 +85,19 @@ export async function generateMetadata({
   };
 }
 
-export const revalidate = 3600;
-export const dynamicParams = true;
-
 export async function generateStaticParams() {
-  return [];
+  try {
+    const packages = await prisma.package.findMany({
+      where: { isActive: true },
+      select: { slug: true },
+    });
+    return packages.map((pkg) => ({ slug: pkg.slug }));
+  } catch {
+    return [];
+  }
 }
+
+export const revalidate = 3600;
 
 export default async function PackageDetailPage({ params }: PageProps) {
   const { slug } = await params;

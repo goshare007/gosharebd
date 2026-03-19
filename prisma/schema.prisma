@@ -193,8 +193,10 @@ model Package {
   @@index([isActive])
   @@index([packageType])
   @@index([isActive, packageType])
+  @@index([isActive, packageType, division])
   @@index([division])
   @@index([isBestseller])
+  @@index([createdAt])
   @@map("package")
 }
 
@@ -227,6 +229,7 @@ model Departure {
   @@index([packageId])
   @@index([startDate])
   @@index([packageId, status])
+  @@index([status, startDate])
   @@map("departure")
 }
 
@@ -342,6 +345,8 @@ model Booking {
   @@index([departureId])
   @@index([status])
   @@index([userId, status])
+  @@index([createdAt])
+  @@index([status, createdAt])
   @@map("booking")
 }
 

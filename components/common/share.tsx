@@ -90,15 +90,15 @@ export default function Share({ pageurl }: { pageurl: string }) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant='outline' size='icon'>
+        <Button variant='outline' size='icon' aria-label='Share this page'>
           <Share2 />
         </Button>
       </DialogTrigger>
       <DialogContent className='sm:max-w-md'>
         <DialogHeader>
-          <DialogTitle>Share This Design</DialogTitle>
+          <DialogTitle>Share This Page</DialogTitle>
           <DialogDescription>
-            Share this design on your favorite platform or copy the link.
+            Share this page on your favorite platform or copy the link.
           </DialogDescription>
         </DialogHeader>
         <Tabs defaultValue='social' className='w-full'>
